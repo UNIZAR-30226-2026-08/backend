@@ -1,0 +1,11 @@
+asgiref
+channels
+Django
+django-cors-headers
+djangorestframework
+djangorestframework_simplejwt
+gunicorn
+packaging
+psycopg2-binary
+PyJWT
+sqlparse

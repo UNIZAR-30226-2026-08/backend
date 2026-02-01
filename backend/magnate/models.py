@@ -35,3 +35,11 @@ class Game(models.Model):
     datetime = models.DateTimeField()
     # TODO: What happens if a user has deleted his account
 
+class QueueMetadata(models.Model):
+    # Waiting users in the queue
+    # TODO: create single row at the start of the application
+    users = models.IntegerField(default=0)
+
+class QueuePosition(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    # TODO: implement skill based matchmaking

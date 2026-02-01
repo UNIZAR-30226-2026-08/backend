@@ -1,0 +1,73 @@
+Clases genéricas
+    Tablero
+        Casilla
+            Propiedad
+            Fantasía
+            Cárcel (atrapado y visitas, tenerlo en cuenta)
+            Salida
+            Parking
+            Acción (dan o quitan dinero, en racha aumenta efecto)
+
+
+----------------------------------------------------
+Cosas para cada clase, presupongo que vamos a poner
+ids únicos y esas vainas
+
+
+Tablero:
+
+
+- Casilla:
+Engloba todo lo que sea una posición donde pueda caer un jugador
+Datos:
+    Número de orden en el tablero (unsigned)
+
+
+
+- Propiedad:
+Representa un bien, se cobra alquiler, se puede comprar... Una Propiedad vaya
+Datos:
+    Nombre (string)
+    Grupo (enum?) TODO: valorar
+    Valor de compra (unsigned)
+    Valores de alquiler (unsigneds) [base, grupo completo, 1 casa, ..., 4 casas, 1 hotel]
+    Valor de hipoteca (unsigned)
+    Precio casa (unsigned)
+    Dueño? TODO: valorar, mirar a cada jugador que tiene, o definir en cada 
+                 casilla de quién es?
+
+
+- Fantasía:
+Casilla de evento. Pueden ser buenos o malos, al azar. TODO: reflexionar mecánicas
+Datos:
+    En principio ningún dato en concreto, pero podríamos hacer fantasía buena
+    y mala.
+
+
+- Cárcel:
+Casilla donde van a parar los que van a la cárcel. También se puede cruzar de paso
+Datos:
+    En principio ninguno en concreto. Guardar info de encarcelados aquí o en 
+    jugador? También hay que guardar info de cuánto rato lleva. TODO
+
+
+- Salida:
+Casilla de partida, al pasar los jugadores reciben dinero.
+Datos:
+    ninguno
+
+
+- Parking:
+Si caes en esta casilla recibes el dinero acumulado de pagos a la banca (no es regla
+original, pero mola).
+Datos:
+    Guardar aquí el dinero acumulado o en clase tablero? TODO
+
+
+- Acción:
+2 tipos, azul y roja. Azul ganas pasta, roja pierdes.
+Si entras en racha de caer en casillas (las propiedades no reinician racha).
+Máximo 3 de racha: x1, x1.2, x1.5. La racha sí que hay que acumularla en el jugador.
+Datos:
+    Tipo de casilla (enum o booleano, mejor enum por si ampliamos)
+    Dinero que da/quita (unsigned) TODO: hacemos todas el mismo valor?

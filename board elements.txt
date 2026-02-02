@@ -1,12 +1,14 @@
 Clases genéricas
-    Tablero
-        Casilla
-            Propiedad
-            Fantasía
-            Cárcel (atrapado y visitas, tenerlo en cuenta)
-            Salida
-            Parking
-            Acción (dan o quitan dinero, en racha aumenta efecto)
+    tablero
+    
+    Casilla
+        Propiedad
+            Estación
+        Fantasía
+        Cárcel (atrapado y visitas, tenerlo en cuenta)
+        Salida
+        Parking
+        Acción (dan o quitan dinero, en racha aumenta efecto)
 
 
 ----------------------------------------------------
@@ -15,6 +17,8 @@ ids únicos y esas vainas
 
 
 Tablero:
+    Dinero acumulado del parking (unsigned)
+    Dinero que te da pasar por la salida
 
 
 - Casilla:
@@ -33,22 +37,28 @@ Datos:
     Valores de alquiler (unsigneds) [base, grupo completo, 1 casa, ..., 4 casas, 1 hotel]
     Valor de hipoteca (unsigned)
     Precio casa (unsigned)
-    Dueño? TODO: valorar, mirar a cada jugador que tiene, o definir en cada 
-                 casilla de quién es?
+    Dueño
+
+    - Estación:
+        Ganas más por alquileres en función de cuántas estaciones tengas.
+        También son casillas de transición de cuadrado
 
 
 - Fantasía:
-Casilla de evento. Pueden ser buenos o malos, al azar. TODO: reflexionar mecánicas
+Casilla de evento. Pueden ser buenos o malos, al azar.
+Sale un evento bueno de pago, y uno aleatorio desconocido. El jugador
+elige qué hacer.
 Datos:
     En principio ningún dato en concreto, pero podríamos hacer fantasía buena
     y mala.
+    Están relacionadas con eventos. Hacer los eventos.
 
 
 - Cárcel:
 Casilla donde van a parar los que van a la cárcel. También se puede cruzar de paso
 Datos:
-    En principio ninguno en concreto. Guardar info de encarcelados aquí o en 
-    jugador? También hay que guardar info de cuánto rato lleva. TODO
+    En principio ninguno en concreto. 
+    Guardar info de jugadores en la cárcel y cuánto rato llevan en cada jugador.
 
 
 - Salida:
@@ -61,13 +71,22 @@ Datos:
 Si caes en esta casilla recibes el dinero acumulado de pagos a la banca (no es regla
 original, pero mola).
 Datos:
-    Guardar aquí el dinero acumulado o en clase tablero? TODO
+    El tablero guarda el acumulado, así que nada
 
 
 - Acción:
 2 tipos, azul y roja. Azul ganas pasta, roja pierdes.
 Si entras en racha de caer en casillas (las propiedades no reinician racha).
 Máximo 3 de racha: x1, x1.2, x1.5. La racha sí que hay que acumularla en el jugador.
+Da/quita el valor de la casilla de salida. A la cuarta casilla (después de racha de 3)
+penaliza si eran de ganar pasta, y algo bueno si eran rojas.
 Datos:
     Tipo de casilla (enum o booleano, mejor enum por si ampliamos)
-    Dinero que da/quita (unsigned) TODO: hacemos todas el mismo valor?
+
+
+- Ir a la cárcel
+Autodefinida
+
+- Tranvía. Vas a cualquier otro tranvía por la puta cara.
+Quien dice metro dice helicóptero, bus...
+Hay 4, en esquinas, pagar pequeña cuota

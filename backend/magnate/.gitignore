@@ -1,1 +1,2 @@
-private.py
+.env
+__pycache__/

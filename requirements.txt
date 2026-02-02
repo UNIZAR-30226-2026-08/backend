@@ -26,6 +26,7 @@ pyasn1_modules
 pycparser
 PyJWT
 pyOpenSSL
+python-decouple
 redis
 service-identity
 sqlparse

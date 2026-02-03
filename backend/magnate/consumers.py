@@ -1,6 +1,6 @@
 import json 
 from channels.generic.websocket import AsyncWebsocketConsumer
-from .models import QueueMetadata, QueuePosition
+from .models import QueueMetadata, PublicQueuePosition, PrivateRoom
 
 # TODO: check how to implement DB access form async context -> database_sync_to_async in doc
 

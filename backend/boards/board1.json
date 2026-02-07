@@ -1,0 +1,386 @@
+{
+    "id": 0,
+    "property_squares":[
+    {
+        "id": "001",
+        "id_successor": "002",
+        "group": 1,
+        "buy_price": 60,
+        "rent_prices": [2,10,30,90,160,250],
+        "build_price": 50
+    },
+    {
+        "id": "003",
+        "id_successor": "004",
+        "group": 1,
+        "buy_price": 60,
+        "rent_prices": [4,20,60,180,320,450],
+        "build_price": 50
+    },
+    
+    {
+        "id": "006",
+        "id_successor": "007",
+        "group": 2,
+        "buy_price": 100,
+        "rent_prices": [6,30,90,270,400,550],
+        "build_price": 50
+    },
+    {
+        "id": "008",
+        "id_successor": "009",
+        "group": 2,
+        "buy_price": 100,
+        "rent_prices": [6,30,90,270,400,550],
+        "build_price": 50
+    },
+    {
+        "id": "009",
+        "id_successor": "010",
+        "group": 2,
+        "buy_price": 120,
+        "rent_prices": [8,40,100,300,450,600],
+        "build_price": 50
+    },
+
+    {
+        "id": "011",
+        "id_successor": "012",
+        "group": 3,
+        "buy_price": 140,
+        "rent_prices": [10,50,150,450,625,750],
+        "build_price": 100
+    },
+    {
+        "id": "013",
+        "id_successor": "014",
+        "group": 3,
+        "buy_price": 140,
+        "rent_prices": [10,50,150,450,625,750],
+        "build_price": 100
+    },
+    {
+        "id": "014",
+        "id_successor": "015",
+        "group": 3,
+        "buy_price": 160,
+        "rent_prices": [12,60,180,500,700,900],
+        "build_price": 100
+    },
+
+    {
+        "id": "016",
+        "id_successor": "017",
+        "group": 4,
+        "buy_price": 180,
+        "rent_prices": [14,70,200,550,750,950],
+        "build_price": 100
+    },
+    {
+        "id": "018",
+        "id_successor": "019",
+        "group": 4,
+        "buy_price": 180,
+        "rent_prices": [14,70,200,550,750,950],
+        "build_price": 100
+    },
+    {
+        "id": "019",
+        "id_successor": "020",
+        "group": 4,
+        "buy_price": 200,
+        "rent_prices": [16,80,220,600,800,1000],
+        "build_price": 100
+    },
+
+    {
+        "id": "021",
+        "id_successor": "022",
+        "group": 5,
+        "buy_price": 220,
+        "rent_prices": [18,90,250,700,875,1050],
+        "build_price": 150
+    },
+    {
+        "id": "023",
+        "id_successor": "024",
+        "group": 5,
+        "buy_price": 220,
+        "rent_prices": [18,90,250,700,875,1050],
+        "build_price": 150
+    },
+    {
+        "id": "024",
+        "id_successor": "025",
+        "group": 5,
+        "buy_price": 240,
+        "rent_prices": [20,100,300,750,925,1100],
+        "build_price": 150
+    },
+
+    {
+        "id": "026",
+        "id_successor": "027",
+        "group": 6,
+        "buy_price": 260,
+        "rent_prices": [22,110,330,800,975,1150],
+        "build_price": 150
+    },
+    {
+        "id": "027",
+        "id_successor": "028",
+        "group": 6,
+        "buy_price": 260,
+        "rent_prices": [22,110,330,800,975,1150],
+        "build_price": 150
+    },
+    {
+        "id": "029",
+        "id_successor": "030",
+        "group": 6,
+        "buy_price": 280,
+        "rent_prices": [24,120,360,850,1025,1200],
+        "build_price": 150
+    },
+
+    {
+        "id": "031",
+        "id_successor": "032",
+        "group": 7,
+        "buy_price": 300,
+        "rent_prices": [26,130,390,900,1100,1275],
+        "build_price": 200
+    },
+    {
+        "id": "032",
+        "id_successor": "033",
+        "group": 7,
+        "buy_price": 300,
+        "rent_prices": [26,130,390,900,1100,1275],
+        "build_price": 200
+    },
+    {
+        "id": "034",
+        "id_successor": "035",
+        "group": 7,
+        "buy_price": 320,
+        "rent_prices": [28,150,450,1000,1200,1400],
+        "build_price": 200
+    },
+
+    {
+        "id": "037",
+        "id_successor": "038",
+        "group": 8,
+        "buy_price": 350,
+        "rent_prices": [35,175,500,1100,1300,1500],
+        "build_price": 200
+    },
+    {
+        "id": "039",
+        "id_successor": "000",
+        "group": 8,
+        "buy_price": 400,
+        "rent_prices": [50,200,600,1400,1700,2000],
+        "build_price": 200
+    },
+
+    {
+        "id": "101",
+        "id_successor": "102",
+        "group": 9,
+        "buy_price": 90,
+        "rent_prices": [7,35,100,250,420,560],
+        "build_price": 50
+    },
+    {
+        "id": "103",
+        "id_successor": "104",
+        "group": 9,
+        "buy_price": 100,
+        "rent_prices": [8,40,100,260,460,580],
+        "build_price": 50
+    },
+
+    {
+        "id": "105",
+        "id_successor": "015",
+        "group": 10,
+        "buy_price": 180,
+        "rent_prices": [15,75,200,550,800,950],
+        "build_price": 100
+    },
+    {
+        "id": "106",
+        "id_successor": "107",
+        "group": 10,
+        "buy_price": 190,
+        "rent_prices": [16,70,210,600,840,1000],
+        "build_price": 100
+    },
+
+    {
+        "id": "108",
+        "id_successor": "109",
+        "group": 11,
+        "buy_price": 270,
+        "rent_prices": [22,120,350,810,1000,1150],
+        "build_price": 150
+    },
+    {
+        "id": "110",
+        "id_successor": "111",
+        "group": 11,
+        "buy_price": 280,
+        "rent_prices": [23,150,350,820,1050,1175],
+        "build_price": 150
+    },
+
+    {
+        "id": "112",
+        "id_successor": "035",
+        "group": 12,
+        "buy_price": 340,
+        "rent_prices": [25,120,360,800,950,1100],
+        "build_price": 200
+    },
+    {
+        "id": "113",
+        "id_successor": "100",
+        "group": 12,
+        "buy_price": 450,
+        "rent_prices": [50,250,700,1600,1950,2500],
+        "build_price": 220
+    }
+    ],
+
+    "bridge_squares":[
+    {
+        "id": "015",
+        "in_successor": "106",
+        "out_successor": "016",
+        "buy_price": 250,
+        "rent_prices": [20,40]
+    },
+    {
+        "id": "035",
+        "in_successor": "113",
+        "out_successor": "036",
+        "buy_price": 250,
+        "rent_prices": [20,40]
+    }
+    ],
+
+    "tram_squares":[
+    {
+        "id": "010",
+        "id_successor": "011",
+        "buy_price": 30
+    },
+    {
+        "id": "030",
+        "id_successor": "031",
+        "buy_price": 30
+    },
+    {
+        "id": "100",
+        "id_successor": "101",
+        "buy_price": 30
+    },
+    {
+        "id": "107",
+        "id_successor": "108",
+        "buy_price": 30
+    }
+    ],
+
+    "server_squares":[
+    {
+        "id": "102",
+        "id_successor": "103",
+        "buy_price": 300,
+        "rent_prices": [20,60]
+    },
+    {
+        "id": "109",
+        "id_successor": "110",
+        "buy_price": 300,
+        "rent_prices": [20,60]
+    }
+    ],
+
+    "exit_square":
+    {
+        "id": "000",
+        "id_successor": "001",
+        "init_money": 200
+    },
+
+    "go_to_jail_square":
+    {
+        "id": "020",
+        "id_successor": "021"
+    },
+    "jail_square":
+    {
+        "id": "104",
+        "id_successor": "105",
+        "bail_price": 40
+    },
+    "parking_square":
+    {
+        "id": "111",
+        "id_successor": "112"
+    },
+
+    "fantasy_squares":[
+    {
+        "id":"002",
+        "id_successor":"003"
+    },
+    {
+        "id":"004",
+        "id_successor":"005"
+    },
+    {
+        "id":"005",
+        "id_successor":"006"
+    },
+    {
+        "id":"007",
+        "id_successor":"008"
+    },
+    {
+        "id":"012",
+        "id_successor":"013"
+    },
+    {
+        "id":"017",
+        "id_successor":"018"
+    },
+    {
+        "id":"022",
+        "id_successor":"023"
+    },
+    {
+        "id":"025",
+        "id_successor":"026"
+    },
+    {
+        "id":"028",
+        "id_successor":"029"
+    },
+    {
+        "id":"033",
+        "id_successor":"034"
+    },
+    {
+        "id":"036",
+        "id_successor":"037"
+    },
+    {
+        "id":"038",
+        "id_successor":"039"
+    }
+    ]
+}

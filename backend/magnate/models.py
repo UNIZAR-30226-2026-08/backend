@@ -51,7 +51,7 @@ class PublicQueuePosition(models.Model):
 #------ Models for Private Management ------#
 class PrivateRoom(models.Model):
     #The one who starts the room and later the game
-    host = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='hosted_rooms')
+    owler = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='hosted_rooms')
     # TODO: set max_length
     # Players will be linked from CustomUser.current_private_room
     room_code = models.CharField(max_length=10, unique=True)

@@ -56,3 +56,9 @@ class PrivateRoom(models.Model):
     # Players will be linked from CustomUser.current_private_room
     room_code = models.CharField(max_length=10, unique=True)
     
+class FantasyEvent(models.Model):
+    class FantasyType(models.TextChoices):
+        loseMoney = 'loseMoney',
+        gainMoney = 'gainMoney'
+    fantasyType = models.CharField(choices=FantasyType, max_length=10)
+    rent_prices = models.JSONField(null=True)

@@ -41,7 +41,7 @@
         "cost":60
     },
     {
-        "type":"share_money_all_players",
+        "type":"share_money_all",
         "values":[20,30,50],
         "cost":5
     },
@@ -66,7 +66,7 @@
         "cost":25
     },
     {
-        "type":"send_someone_to_jail",
+        "type":"send_to_jail",
         "cost":80
     },
     {
@@ -74,7 +74,7 @@
         "cost":50
     },
     {
-        "type":"double_or_nothing_user_selection_money",
+        "type":"double_or_nothing",
         "cost":"50"
     },
     {

@@ -1,4 +1,5 @@
 #!/bin/sh
+
 rm -rf db.sqlite3
 for f in magnate
 do

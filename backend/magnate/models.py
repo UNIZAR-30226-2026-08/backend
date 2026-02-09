@@ -60,5 +60,6 @@ class FantasyEvent(models.Model):
     class FantasyType(models.TextChoices):
         loseMoney = 'loseMoney',
         gainMoney = 'gainMoney'
-    fantasyType = models.CharField(choices=FantasyType, max_length=10)
-    rent_prices = models.JSONField(null=True)
+    fantasy_type = models.CharField(choices=FantasyType, max_length=10)
+    values = models.JSONField(null=True)
+

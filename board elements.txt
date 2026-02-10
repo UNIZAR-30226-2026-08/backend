@@ -1,0 +1,113 @@
+Clases genéricas
+    tablero
+    
+    Casilla
+        Propiedad
+            Estación
+        Fantasía
+        Cárcel (atrapado y visitas, tenerlo en cuenta)
+        Salida
+        Parking
+        Acción (dan o quitan dinero, en racha aumenta efecto)
+
+
+----------------------------------------------------
+Cosas para cada clase, presupongo que vamos a poner
+ids únicos y esas vainas
+
+
+Tablero:
+    Variable
+        Dinero acumulado del parking (unsigned)
+    Fijo
+        Dinero que te da pasar por la salida
+
+
+- Casilla:
+Engloba todo lo que sea una posición donde pueda caer un jugador
+Datos:
+    Fijo
+        Posición en el tablero
+        Sucesor
+
+
+
+- Propiedad:
+Representa un bien, se cobra alquiler, se puede comprar... Una Propiedad vaya
+Datos:
+    Fijo
+        Nombre (string)
+        Grupo (enum?) TODO: valorar
+        Valor de compra (unsigned)
+        Valores de alquiler (unsigneds) [base, grupo completo, 1 casa, ..., 4 casas, 1 hotel]
+        Valor de hipoteca (unsigned)
+        Precio casa (unsigned)
+    Variable
+        Dueño (Relación jugador-Propiedad)
+        Num construcciones
+
+
+- Estación transicion:
+Ganas más por alquileres en función de cuántas transicion tengas.
+Son casillas de transición de cuadrado
+Datos:
+    Fijo
+        Nombre (string)
+        Valor de compra (unsigned)
+        Valores de alquiler (unsigneds) [tienes 1, tienes las 2]
+        Valor de hipoteca (unsigned)
+        Sucesor interior
+        Sucesor exterior
+    Variable
+        Dueño (Relación jugador-Propiedad)
+
+- Estación taxi:
+Ganas más por alquileres en función de cuántas taxi tengas.
+Datos:
+    Fijo
+        Nombre (string)
+        Valor de compra (unsigned)
+        Valores de alquiler (unsigneds) [tienes 1, tienes las 2]
+        Valor de hipoteca (unsigned)
+    Variable
+        Dueño (Relación jugador-Propiedad)
+
+
+- Fantasía:
+Casilla de evento. Pueden ser buenos o malos, al azar.
+Sale un evento bueno de pago, y uno aleatorio desconocido. El jugador
+elige qué hacer.
+Datos:
+    En principio ningún dato en concreto, todas son iguales.
+    Están relacionadas con eventos. Hacer los eventos.
+
+
+- Cárcel:
+Casilla donde van a parar los que van a la cárcel. También se puede cruzar de paso
+Datos:
+    En principio ninguno en concreto. 
+    Variable:
+        Guardar info de jugadores en la cárcel y cuánto rato llevan en cada jugador.
+
+
+- Salida:
+Casilla de partida, al pasar los jugadores reciben dinero.
+Datos:
+    ninguno, o el dinero que te dan por pasar
+
+
+- Parking:
+Si caes en esta casilla recibes el dinero acumulado de pagos a la banca
+Datos:
+    El tablero guarda el acumulado, así que nada
+
+
+- Ir a la cárcel
+Autodefinida
+
+
+- Tranvía. Vas a cualquier otro tranvía.
+Quien dice metro dice helicóptero, bus...
+Hay 4, en esquinas, pagar pequeña cuota
+Datos:
+    ninguno, o el dinero por viajar

@@ -296,14 +296,14 @@
 
     "server_squares":[
     {
-        "id": "102",
-        "id_successor": "103",
+        "id": "005",
+        "id_successor": "006",
         "buy_price": 300,
         "rent_prices": [20,60]
     },
     {
-        "id": "109",
-        "id_successor": "110",
+        "id": "025",
+        "id_successor": "026",
         "buy_price": 300,
         "rent_prices": [20,60]
     }
@@ -343,10 +343,6 @@
         "id_successor":"005"
     },
     {
-        "id":"005",
-        "id_successor":"006"
-    },
-    {
         "id":"007",
         "id_successor":"008"
     },
@@ -363,10 +359,6 @@
         "id_successor":"023"
     },
     {
-        "id":"025",
-        "id_successor":"026"
-    },
-    {
         "id":"028",
         "id_successor":"029"
     },
@@ -381,6 +373,14 @@
     {
         "id":"038",
         "id_successor":"039"
+    },
+    {
+        "id":"102",
+        "id_successor":"103"
+    },
+    {
+        "id":"109",
+        "id_successor":"110"
     }
     ]
 }

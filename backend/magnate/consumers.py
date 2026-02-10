@@ -1,13 +1,17 @@
 import json 
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
-from .models import QueueMetadata, PublicQueuePosition, PrivateRoom
+from django.utils import timezone
+from django.db import transaction
+from .models import  PublicQueuePosition, PrivateRoom, Game, CustomUser
 
 # TODO: check how to implement DB access form async context -> database_sync_to_async in doc
 
 # TODO: temporarily here, should be in json config file o smth like that
-MIN_PLAYERS = 2
-MAX_PLAYERS = 8
+
+MIN_PRIVATE_GAME_PLAYERS = 2
+MAX_PRIVATE_GAME_PLAYERS = 4
+NUM_PUBLIC_GAME_PLAYERS = 4
 
 
 class PublicQueueConsumer(AsyncWebsocketConsumer):
@@ -82,19 +86,62 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
 # ---------------- DB access methods --------------#
     @database_sync_to_async
     def add_user_to_queue(self, user, channel_name):
-        # Add user to matchmaking DB table
-        pass
+        existing_position = PublicQueuePosition.objects.filter(user=user).first()
+        if existing_position:
+            # User already in queue, don't add again
+            return None
+        
+        # Create queue position for the user
+        PublicQueuePosition.objects.create(
+            user=user,
+            channel = channel_name,
+            date_time=timezone.now()
+            
+        )
+
 
     @database_sync_to_async
     def remove_user_from_queue(self, user):
-        # Remove user from matchmaking DB table
-        pass
+        existing_position =  PublicQueuePosition.objects.filter(user=user).first()
+        if existing_position:
+            existing_position.delete()
+        else:
+            # User not in queue
+            return None
+
 
     # TODO: be aware of race conditions -> new users while executing the method
     @database_sync_to_async
     def matchmaking_logic(self):
         # Check if enough players in queue -> create game instance, return game ID and channels of matched players
-        pass 
+        # Avoid race conditions
+        with transaction.atomic():
+
+            number_of_players = PublicQueuePosition.objects.select_for_update.count()
+            
+            if number_of_players < NUM_PUBLIC_GAME_PLAYERS: 
+                return None
+            
+            players = list(PublicQueuePosition.objects.select_for_update().order_by('date_time')[:NUM_PUBLIC_GAME_PLAYERS])
+            player_channels = [player.channel for player in players]
+            users = [player.user for player in players]
+            game = Game.objects.create(datetime=timezone.now())
+
+            for user in users:
+                user.active_game = game
+                user.played_games.add(game)
+                user.save()
+            
+            # Remove players from queue
+            PublicQueuePosition.objects.filter(d__in=[p.id for p in players]).delete()
+            
+            return (game.id, player_channels)
+
+
+            
+
+
+        
 
 
 
@@ -293,42 +340,98 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def check_room(self, room_code):
         # Check if room exists and if user can join (not full, not already in, etc). Create if doesn't exist and user is creating it.
-        pass
+        room  = PrivateRoom.objects.filter(room_code=room_code).first()
+        
+        if not room:
+            return False
+        
+        #Using relation players in users - private room
+        current_number_players =  room.players.count()
+
+        if current_number_players >= MAX_PRIVATE_GAME_PLAYERS:
+            return False
+        
+        if self.user.current_private_room == room:
+            return False
+        
+        return True
+
 
     @database_sync_to_async
     def join_room_group_db(self, room_code, user):
-        # Add user to room in DB, return current player list for lobby update and notifications
-        pass
+        current_user = CustomUser.objects.get(username=user.username)
+        current_user.current_private_room = PrivateRoom.objects.get(room_code=room_code)
+        current_user.ready_to_play = False
+        current_user.save()
 
     @database_sync_to_async
     def leave_room_and_update_host(self, room_code, user):
-        # Remove user from room in DB, rotate host if needed, return updated player list and new host for lobby update and notifications
-        pass
+        room = PrivateRoom.objects.get(room_code=room_code)
+        user_from_db = CustomUser.objects.get(username=user.username)
+
+        if user_from_db.current_private_room !=  room:
+            return False
+        
+        user_from_db.current_private_room = None
+        user_from_db.save()
+
+
+        
+        
+
 
     @database_sync_to_async
     def update_player_ready_status(self, room_code, user, is_ready):
-        # Update the player's ready status in the database
-        pass
+        user_from_db = CustomUser.objects.get(username=user.username)
+
+        if user_from_db.current_private_room.room_code != room_code:
+            return False
+    
+        user_from_db.ready_to_play = is_ready
+        user_from_db.save()
+
 
     @database_sync_to_async
     def get_num_players(self, room_code):
         # Return the current number of players in the room
-        pass
+        room = PrivateRoom.objects.get(room_code=room_code)
+        if not room:
+            return 0
+        return room.players.count()
+
 
     @database_sync_to_async
     def check_all_ready(self, room_code):
         # Check if all players in the room are ready
-        pass
+        room = PrivateRoom.objects.get(room_code=room_code)
+        if not room:
+            return False
+        
+        for player in room.players.all():
+            if not player.ready_to_play:
+                return False
+        
+        return True
+
 
     @database_sync_to_async
     def is_owner(self, user, room_code):
         # Check if the user is the host of the room
-        pass
+        room = PrivateRoom.objects.get(room_code=room_code)
+        if not room:
+            return False
+        
+        return room.owner == user
 
     @database_sync_to_async
     def get_room_owner(self, room_code):
         # Return the username of the room's owner
-        pass
+        room = PrivateRoom.objects.get(room_code=room_code)
+        if not room:
+            return False
+        
+        return room.owner.username
+
 
     async def send_error(self, message):
         await self.send(text_data=json.dumps({

@@ -39,13 +39,12 @@ class Game(models.Model):
     # TODO: What happens if a user has deleted his account
 
 #------ Models for Public Matchmaking Queue ------#
-class QueueMetadata(models.Model):
-    # Waiting users in the queue
-    # TODO: create single row at the start of the application
-    users = models.IntegerField(default=0)
-
 class PublicQueuePosition(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    # TODO: check this max length
+    channel = models.CharField(max_length=300) 
+    date_time = models.DateTimeField()
+
     # TODO: implement skill based matchmaking / start with timestamps ¿?
 
 #------ Models for Private Management ------#
@@ -55,4 +54,5 @@ class PrivateRoom(models.Model):
     # TODO: set max_length
     # Players will be linked from CustomUser.current_private_room
     room_code = models.CharField(max_length=10, unique=True)
+    
     

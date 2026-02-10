@@ -6,6 +6,10 @@ class CustomUser(AbstractUser):
     # TODO: Max length ?
     username = models.CharField(max_length=40, unique=True)
     # TODO: Needed ?
+    current_private_room = models.ForeignKey( 'PrivateRoom', on_delete=models.SET_NULL,  null=True,  blank=True,related_name='players')
+    ready_to_play = models.BooleanField(default=False) # depending of the current private room could be interpreted as  ready or looking for a public game
+
+
     class Roles(models.TextChoices):
         regular = 'regular'
         admin = 'admin'
@@ -99,13 +103,22 @@ class JailSquare(BaseSquare):
 
 ###############################################################################
 
+#------ Models for Public Matchmaking Queue ------#
 class QueueMetadata(models.Model):
     # Waiting users in the queue
     # TODO: create single row at the start of the application
     users = models.IntegerField(default=0)
 
-class QueuePosition(models.Model):
+class PublicQueuePosition(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    # TODO: implement skill based matchmaking
+    date_time = models.DateTimeField() # fifo matchmaking at the start
+    # TODO: implement skill based matchmaking / start with timestamps ¿?
 
-
+#------ Models for Private Management ------#
+class PrivateRoom(models.Model):
+    #The one who starts the room and later the game
+    owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='hosted_rooms')
+    # TODO: set max_length
+    # Players will be linked from CustomUser.current_private_room
+    room_code = models.CharField(max_length=10, unique=True)
+    

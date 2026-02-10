@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,11 +20,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(-@^*pd=dky4jrqzmr(d%-j35rn#joio6op6x(4cr%7vccgqej'
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+
+#Move mode and secret key to .env file
+
+# Source - https://stackoverflow.com/a/69816330
+# Posted by Johnny Pereira
+# Retrieved 2026-02-02, License - CC BY-SA 4.0
+DEBUG = config('DEBUG', default=False, cast=bool)
+SECRET_KEY = config('SECRET_KEY')
 
 ALLOWED_HOSTS = []
 

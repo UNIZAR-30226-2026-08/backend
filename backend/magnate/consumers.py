@@ -385,6 +385,7 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def receive(self, text_data):
         # Triggered when user sends a move -> broadcast to room group.
         # Also manages game over conditions triggering disconnects.
+        # Manages DB interactions over purchases, rents etc
         pass
 
 # --------------------- Handlers ---------------------- #

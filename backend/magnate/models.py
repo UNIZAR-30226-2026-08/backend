@@ -123,3 +123,30 @@ class PrivateRoom(models.Model):
     # Players will be linked from CustomUser.current_private_room
     room_code = models.CharField(max_length=10, unique=True)
     
+class FantasyEvent(models.Model):
+    class FantasyType(models.TextChoices):
+        winPlainMoney = 'winPlainMoney',
+        winRatioMoney = 'winRatioMoney',
+        losePlainMoney = 'losePlainMoney',
+        loseRatioMoney = 'loseRatioMoney',
+        breakOpponentHouse = 'breakOpponentHouse',
+        breakOwnHouse = 'breakOwnHouse',
+        shufflePositions = 'shufflePositions',
+        moveAnywhereRandom = 'moveAnywhereRandom',
+        moveOpponentAnywhereRandom = 'moveOpponentAnywhereRandom',
+        shareMoneyAll = 'shareMoneyAll',
+        dontPayNextTurnRent = 'dontPayNextTurnRent',
+        allYourRentsX2OneTurn = 'allYourRentsX2OneTurn',
+        freeHouse = 'freeHouse',
+        outOfJailCard = 'outOfJailCard',
+        goToJail = 'goToJail',
+        sendToJail = 'sendToJail',
+        everybodyToJail = 'everybodyToJail',
+        doubleOrNothing = 'doubleOrNothing',
+        getParkingMoney = 'getParkingMoney'
+    
+
+    fantasy_type = models.CharField(choices=FantasyType, max_length=10)
+    values = models.JSONField(null=True)
+    card_cost = models.IntegerField(default=0)
+

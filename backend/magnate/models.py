@@ -4,6 +4,7 @@ from django.contrib.auth.models import AbstractUser
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
     # TODO: Max length ?
+    # TODO: Needed ?
     username = models.CharField(max_length=40, unique=True)
     # TODO: Needed ?
     current_private_room = models.ForeignKey( 'PrivateRoom', on_delete=models.SET_NULL,  null=True,  blank=True,related_name='players')

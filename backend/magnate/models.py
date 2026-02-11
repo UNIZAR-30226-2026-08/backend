@@ -141,7 +141,12 @@ class FantasyEvent(models.Model):
         sendToJail = 'sendToJail',
         everybodyToJail = 'everybodyToJail',
         doubleOrNothing = 'doubleOrNothing',
-        getParkingMoney = 'getParkingMoney'
+        getParkingMoney = 'getParkingMoney',
+        reviveProperty = 'reviveProperty',
+        earthquake = 'earthquake',
+        everybodySendsYouMoney = 'everybodySendsYouMoney',
+        magnetism = 'magnetism',
+        goToStart = 'goToStart'
     
 
     fantasy_type = models.CharField(choices=FantasyType, max_length=10)

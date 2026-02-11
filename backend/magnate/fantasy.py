@@ -115,6 +115,28 @@ class FantasyEventFactory:
         elif fantasy_type == 'getParkingMoney':
             card_cost = 500
 
+        elif fantasy_type == 'reviveProperty':
+            card_cost = 100
+
+        elif fantasy_type == 'earthquake':
+            card_cost = 200
+
+        elif fantasy_type == 'everybodySendsYouMoney':
+            card_cost = 120
+            rand = random.randrange(3)
+            if(rand == 0):
+                values = {'money': 20}
+            elif(rand == 1):
+                values = {'money': 30}
+            elif(rand == 2):
+                values = {'money': 50}
+
+        elif fantasy_type == 'magnetism':
+            card_cost = 100
+
+        elif fantasy_type == 'goToStart':
+            card_cost = 90
+
         return FantasyEvent(
                 event_type = fantasy_type,
                 values = values,

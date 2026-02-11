@@ -80,6 +80,30 @@
     {
         "type":"get_parking_money",
         "cost":500
+    },
+    {
+        "type":"reviveProperty",
+        "cost":"100",
+        "explanation": "deshipotecas gratis"
+    },
+    {
+        "type":"earthquake",
+        "cost":"200",
+        "explanation": "todas las calles pierden una casa"
+    },
+    {
+        "type":"everybodySendsYouMoney",
+        "values":[20,30,50],
+        "cost":"120"
+    },
+    {
+        "type":"magnetism",
+        "cost":"100",
+        "explanation": "todo el mundo va a ti"
+    },
+    {
+        "type":"goToStart",
+        "cost":"90"
     }
 
     ]

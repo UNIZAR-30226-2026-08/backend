@@ -153,3 +153,61 @@ class FantasyEvent(models.Model):
     values = models.JSONField(null=True)
     card_cost = models.IntegerField(default=0)
 
+###############################################################################
+
+class Game(models.Model):
+    positions = models.JSONField(default=list, blank=True)
+    money = models.JSONField(default=list, blank=True)
+    turn = models.IntegerField(default=0)
+    class GamePhase(models.TextChoices):
+        moving = 'moving',
+        management = 'management',
+        liquidation = 'liquidation',
+    phase = models.CharField(choices=GamePhase, max_length=10)
+    active_player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='active_playing')
+    # TODO: How to store property group ownership?
+
+class PropertyRelationship(models.Model):
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='in_game')
+    owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by')
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='owned_square')
+
+    houses = models.IntegerField(default=0)
+    hotels = models.IntegerField(default=0)
+
+class Movement(models.Model):
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='in_game')
+    player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='made_by')
+
+class MovementThrowDarts(Movement):
+    dart1 = models.IntegerField(default=0)
+    dart2 = models.IntegerField(default=0)
+    # One of them is bus
+    dart3 = models.IntegerField(default=0)
+
+class MovementMoveTo(Movement):
+    # Custom ID or real ID ?
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='moved_to')
+
+class MovementTakeBus(Movement):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='moved_to')
+
+# Buyer and seller?
+class MovementBuySqyare(Movement):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bought')
+
+class MovementSellSquare(Movement):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bought')
+
+class MovementGoToJail(Movement):
+    pass
+
+class MovementBuild(Movement):
+    houses = models.IntegerField(default=0)
+    hotels = models.IntegerField(default=0)
+
+class MovementDemolish(Movement):
+    houses = models.IntegerField(default=0)
+    hotels = models.IntegerField(default=0)
+
+# TODO: Add more movements

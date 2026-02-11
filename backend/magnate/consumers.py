@@ -18,8 +18,11 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
     
     async def connect(self):
         # Triggered when user opens the matchmaking page or "Join Game". Accept connection & auth.
-        self.user = self.scope['user']
-
+        self.user = self.scope.get('user')
+        if self.user is None:
+            await self.close(code=4002)
+            return
+        
         # Security 
         if self.user.is_anonymous:
             await self.close(code=4002)  
@@ -117,7 +120,7 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
         # Avoid race conditions
         with transaction.atomic():
 
-            number_of_players = PublicQueuePosition.objects.select_for_update.count()
+            number_of_players = PublicQueuePosition.objects.select_for_update().count()
             
             if number_of_players < NUM_PUBLIC_GAME_PLAYERS: 
                 return None
@@ -128,14 +131,17 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             game = Game.objects.create(datetime=timezone.now())
 
             for user in users:
+                if game is None:
+                    return None
+                
                 user.active_game = game
                 user.played_games.add(game)
                 user.save()
             
             # Remove players from queue
-            PublicQueuePosition.objects.filter(d__in=[p.id for p in players]).delete()
+            PublicQueuePosition.objects.filter(pk__in=[p.pk for p in players]).delete()
             
-            return (game.id, player_channels)
+            return (game.pk, player_channels)
 
 
             
@@ -148,13 +154,23 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
 class PrivateRoomConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         # Triggered when user opens a new private room or joins an existing one.
-        self.user = self.scope['user']
+        self.user = self.scope.get('user')
+        if self.user is None:
+            await self.close(code=4002)
+            return
+
         # Security
         if self.user.is_anonymous:
             await self.close(code=4002)  
             return
         
-        self.room_code = self.scope['url_route']['kwargs']['room_code']
+        self.url = self.scope.get('url_route')
+        if self.url is None:
+            await self.close(code=4002)
+            return
+        
+        self.room_code = self.url.get('kwargs').get('room_code')
+        
         self.room_group_name = f"lobby_{self.room_code}"
 
         can_join, message = await self.check_room(self.room_code)
@@ -175,6 +191,9 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         players = await self.join_room_group_db(self.room_code, self.user)
+        if not players:
+            await self.close(code=4003)
+            return
 
         # Notify lobby members of new player and update player list
         await self.channel_layer.group_send(
@@ -203,6 +222,13 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         # DB operations -> if needed, rotate host, remove room if empty, etc. Return updated player list and new host if needed.
         room_data = await self.leave_room_and_update_host(self.room_code, self.user)
 
+        if not room_data:
+            return
+        
+        if self.user is None:
+            return
+        
+
         if room_data:
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -210,7 +236,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                     'type': 'lobby_update',
                     'action': 'player_left',
                     'user_left': self.user.username,
-                    'owner': room_data['owner'], 
+                    'owner': room_data["owner"],
                     'players': room_data['players'] 
                 }
             )       
@@ -218,6 +244,9 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
     
     async def receive(self, text_data):
         # Chat messages or 'start_game' command /'ready' status updates.
+        if self.user is None:
+            return
+        
         try:
             data = json.loads(text_data)
             command = data.get('command')
@@ -234,8 +263,8 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                         return
                 num_players = await self.get_num_players(self.room_code)
 
-                if num_players < MIN_PLAYERS:
-                    await self.send_error(f"Se necesitan {MIN_PLAYERS} jugadores para iniciar la partida.")
+                if num_players < MIN_PRIVATE_GAME_PLAYERS:
+                    await self.send_error(f"Se necesitan {MIN_PRIVATE_GAME_PLAYERS} jugadores para iniciar la partida.")
                     return
             
                 all_ready = await self.check_all_ready(self.room_code)
@@ -291,6 +320,9 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
 # -------------------- Handlers  -------------------- #
     async def lobby_update(self, event):
+        if self.user is None:
+            return
+        
         # Send lobby updates to frontend (new player joined, player left)
         if event['action'] == 'joined':
             await self.send(text_data=json.dumps({
@@ -339,22 +371,31 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 # ------------------- DB access methos -------------------- #
     @database_sync_to_async
     def check_room(self, room_code):
+        if self.user is None:
+            return False, None
+        
         # Check if room exists and if user can join (not full, not already in, etc). Create if doesn't exist and user is creating it.
         room  = PrivateRoom.objects.filter(room_code=room_code).first()
         
         if not room:
-            return False
+            return False, "Sala no encontrada."
+        
+        
         
         #Using relation players in users - private room
         current_number_players =  room.players.count()
 
         if current_number_players >= MAX_PRIVATE_GAME_PLAYERS:
-            return False
+            return False, "Sala llena."
         
-        if self.user.current_private_room == room:
-            return False
+        user = CustomUser.objects.get(username=self.user.username)
+        current_private_room = user.current_private_room
+
+        if current_private_room== room:
+            return False, "Ya estás en esta sala."
         
-        return True
+        return True, None
+
 
 
     @database_sync_to_async
@@ -369,11 +410,15 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         room = PrivateRoom.objects.get(room_code=room_code)
         user_from_db = CustomUser.objects.get(username=user.username)
 
-        if user_from_db.current_private_room !=  room:
-            return False
         
         user_from_db.current_private_room = None
         user_from_db.save()
+
+        room.owner = room.players.first()
+        room.save()
+
+        return {'owner': room.owner.username, 'players': room.players.all()}
+
 
 
         
@@ -445,14 +490,23 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         # Triggered when user joins a specific match ID (game really begins) -> add to Redis room group.
-        self.user = self.scope['user']
+        self.user = self.scope.get('user')
+        if self.user is None:
+            await self.close(code=4002)
+            return
+        
 
         # Security
         if self.user.is_anonymous:
             await self.close(code=4002)
             return
         
-        self.game_id = self.scope['url_route']['kwargs']['game_id']
+        self.url = self.scope.get('url_route')
+        if self.url is None:
+            await self.close(code=4002)
+            return
+        self.game_id = self.url.get('kwargs').get('room_id')
+
         self.game_group_name = f"game_{self.game_id}"
 
         player_is_in_game = await self.is_player_in_game(self.user, self.game_id)

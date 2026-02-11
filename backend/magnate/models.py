@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from typing import Union, TYPE_CHECKING
+
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
@@ -24,6 +26,7 @@ class CustomUser(AbstractUser):
                                     null=True,
                                     blank=True,
                                     related_name='active_players')
+    
 
     # Big ?
     points = models.PositiveIntegerField(default=0)
@@ -120,6 +123,7 @@ class PrivateRoom(models.Model):
     # TODO: set max_length
     # Players will be linked from CustomUser.current_private_room
     room_code = models.CharField(max_length=10, unique=True)
+    players: models.QuerySet['CustomUser']
     
 class FantasyEvent(models.Model):
     class FantasyType(models.TextChoices):

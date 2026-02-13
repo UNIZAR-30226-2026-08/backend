@@ -36,9 +36,10 @@ class Item(models.Model):
         iconos = 'iconos'
     itemType = models.CharField(choices=ItemType, max_length=10, default='ficha')
 
-class Game(models.Model):
-    datetime = models.DateTimeField()
-    # TODO: What happens if a user has deleted his account
+#defined below
+#class Game(models.Model):
+#    datetime = models.DateTimeField()
+#    # TODO: What happens if a user has deleted his account
 
 ###############################################################################
 
@@ -156,6 +157,7 @@ class FantasyEvent(models.Model):
 ###############################################################################
 
 class Game(models.Model):
+    datetime = models.DateTimeField()
     positions = models.JSONField(default=list, blank=True)
     money = models.JSONField(default=list, blank=True)
     turn = models.IntegerField(default=0)
@@ -172,42 +174,74 @@ class PropertyRelationship(models.Model):
     owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by')
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='owned_square')
 
-    houses = models.IntegerField(default=0)
-    hotels = models.IntegerField(default=0)
+    houses = models.IntegerField(default=-1)#-1: incomplete group, 0: complete group,
+                                            #1-4: houses, #5: hotel
 
-class Movement(models.Model):
+class Action(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='in_game')
     player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='made_by')
 
-class MovementThrowDarts(Movement):
-    dart1 = models.IntegerField(default=0)
-    dart2 = models.IntegerField(default=0)
+class ActionThrowDices(Action):
+    dice1 = models.IntegerField(default=0)
+    dice2 = models.IntegerField(default=0)
     # One of them is bus
-    dart3 = models.IntegerField(default=0)
+    dice_bus = models.IntegerField(default=0)
 
-class MovementMoveTo(Movement):
-    # Custom ID or real ID ?
+class ActionMoveTo(Action):
+    # Custom ID or real ID ? Mario opina que custom ID
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='moved_to')
 
-class MovementTakeBus(Movement):
+class ActionTakeBus(Action):
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='moved_to')
 
-# Buyer and seller?
-class MovementBuySqyare(Movement):
+class ActionBuySquare(Action):
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bought')
 
-class MovementSellSquare(Movement):
-    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bought')
+class ActionSellSquare(Action):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='sold')
 
-class MovementGoToJail(Movement):
+class ActionGoToJail(Action):
     pass
 
-class MovementBuild(Movement):
+class ActionBuild(Action):
     houses = models.IntegerField(default=0)
-    hotels = models.IntegerField(default=0)
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='build_square')
 
-class MovementDemolish(Movement):
+class ActionDemolish(Action):
     houses = models.IntegerField(default=0)
-    hotels = models.IntegerField(default=0)
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='demolish_square')
 
-# TODO: Add more movements
+class ActionChooseCard(Action):
+    chosen_card = models.IntegerField(default=0)
+
+class ActionSurrender(Action):
+    pass
+
+
+#TODO: hablar tradeo completo, los del frontend casi me pegan. tengo miedo.
+#TODO: Pensar si hacer esto en una sola clase
+class ActionTradeProposalSquareForMoney(Action):
+    #TODO: Sell out of jail card
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='square')
+    money = models.IntegerField(default=0)
+
+class ActionTradeProposalMoneyForSquare(Action):
+    #TODO: Buy out of jail card
+    money = models.IntegerField(default=0)
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='square')
+
+class ActionTradeAnswer(Action):
+    choose = models.IntegerField(default=0) # yes or no, TODO: boolean?
+
+class ActionMortgageSet(Action):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='square')
+
+class ActionMortgageUnset(Action):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='square')
+
+class ActionPayBail(Action):
+    pass
+
+
+
+# TODO: Add more Actions

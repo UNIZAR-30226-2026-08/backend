@@ -9,7 +9,7 @@ class CustomUser(AbstractUser):
     # TODO: Needed ?
     username = models.CharField(max_length=40, unique=True)
     # TODO: Needed ?
-    current_private_room = models.ForeignKey( 'PrivateRoom', on_delete=models.SET_NULL,  null=True,  blank=True,related_name='players')
+    current_private_room: "PrivateRoom | None" = models.ForeignKey( 'PrivateRoom', on_delete=models.SET_NULL,  null=True,  blank=True,related_name='players') # type: ignore
     ready_to_play = models.BooleanField(default=False) # depending of the current private room could be interpreted as  ready or looking for a public game
 
 
@@ -21,11 +21,11 @@ class CustomUser(AbstractUser):
     owned_items = models.ManyToManyField('Item', blank=True, related_name='owners')
     played_games = models.ManyToManyField('Game', blank=True, related_name='played_by')
 
-    active_game = models.ForeignKey('Game', 
+    active_game: "Game | None" = models.ForeignKey('Game', 
                                     on_delete=models.SET_NULL,
                                     null=True,
                                     blank=True,
-                                    related_name='active_players')
+                                    related_name='active_players') # type: ignore
     
 
     # Big ?
@@ -119,10 +119,10 @@ class PublicQueuePosition(models.Model):
 #------ Models for Private Management ------#
 class PrivateRoom(models.Model):
     #The one who starts the room and later the game
-    owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='hosted_rooms')
+    owner:"CustomUser | None" = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='hosted_rooms')# type: ignore
     # TODO: set max_length
     # Players will be linked from CustomUser.current_private_room
-    room_code = models.CharField(max_length=10, unique=True)
+    room_code: str = models.CharField(max_length=10, unique=True) #type: ignore
     players: models.QuerySet['CustomUser']
     
 class FantasyEvent(models.Model):

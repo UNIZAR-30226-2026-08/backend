@@ -415,6 +415,12 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         user_from_db.save()
 
         room.owner = room.players.first()
+
+        if room is None:
+            return None
+        if room.owner is None:
+            return None
+
         room.save()
 
         return {'owner': room.owner.username, 'players': room.players.all()}
@@ -428,6 +434,9 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def update_player_ready_status(self, room_code, user, is_ready):
         user_from_db = CustomUser.objects.get(username=user.username)
+
+        if user_from_db.current_private_room is None:
+            return None
 
         if user_from_db.current_private_room.room_code != room_code:
             return False
@@ -474,6 +483,9 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         room = PrivateRoom.objects.get(room_code=room_code)
         if not room:
             return False
+        
+        if room.owner is None:
+            return None
         
         return room.owner.username
 

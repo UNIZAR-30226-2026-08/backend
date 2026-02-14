@@ -4,15 +4,21 @@ from channels.db import database_sync_to_async
 from django.utils import timezone
 from django.db import transaction
 from .models import  PublicQueuePosition, PrivateRoom, Game, CustomUser
+from .games import *
 
-# TODO: check how to implement DB access form async context -> database_sync_to_async in doc
+try:
+    with open('config.json') as f:
+        CONFIG = json.load(f)
+except FileNotFoundError:
+    print("Error: The file 'data.json' was not found.")
 
-# TODO: temporarily here, should be in json config file o smth like that
-
-MIN_PRIVATE_GAME_PLAYERS = 2
-MAX_PRIVATE_GAME_PLAYERS = 4
-NUM_PUBLIC_GAME_PLAYERS = 4
-
+# TODO: put every global in their correspondent local
+MIN_PRIVATE_GAME_PLAYERS = CONFIG["MIN_PRIVATE_GAME_PLAYERS"]
+MAX_PRIVATE_GAME_PLAYERS = CONFIG["MAX_PRIVATE_GAME_PLAYERS"]
+NUM_PUBLIC_GAME_PLAYERS = CONFIG["NUM_PUBLIC_GAME_PLAYERS"]
+PHASE_MOVEMENT =CONFIG["PHASE_MOVEMENT"]
+PHASE_BUSINESS = CONFIG["PHASE_BUSINESS"]
+PHASE_LIQUIDATION = CONFIG["PHASE_LIQUIDATION"]
 
 class PublicQueueConsumer(AsyncWebsocketConsumer):
     
@@ -555,14 +561,71 @@ class GameConsumer(AsyncWebsocketConsumer):
         # Triggered when user sends a move -> broadcast to room group.
         # Also manages game over conditions triggering disconnects.
         # Manages DB interactions over purchases, rents etc
-        pass
+        if self.user is None:
+            return
+        
+        try:
+            data = json.loads(text_data)
+            action = data.get('action')
+
+            game = await self.get_game_state(self.game_id, self.user)
+
+            if game.turn != self.user:
+                await self.send_error("No es tu turno.")
+                return
+            
+            if game.phase == PHASE_MOVEMENT:
+                await self.movement_phase(game, action)
+            
+            elif game.phase == PHASE_BUSINESS:
+                await self.business_phase(game, action, data)
+            
+            elif game.phase == PHASE_LIQUIDATION:
+                await self.liquidation_phase(game, action, data)
+
+        except:
+            await self.send_error("Datos invalidos.")
+            return
+        
+
+            
+
+
 
 # --------------------- Handlers ---------------------- #
+
+    possible_chosen_squares = []
+    doubles_streak = 0
+    async def movement_phase(self, game, action):
+        # Onlu option is to roll the dices. It has to returnnext state, 
+        # where he lands, info bout where he lands, or in case of triples or bus 
+        # options about where to go.
+        if action == 'roll_dices':
+            data = roll_dices(action, self.user, game, self.doubles_streak)
+
+        elif action == 'choose_next_sqaure':
+            pass
+        
+
+    async def business_phase(self, game, action, data):
+        pass
+
+    async def liquidation_phase(self, game, action, data):
+        pass
+
     async def game_state(self, event):
         await self.send(text_data=json.dumps({
             'action': 'game_state',
             'game_state': event['game_state']
         }))
+
+    async def send_error(self, message):
+        await self.send(text_data=json.dumps({
+            'action': 'error',
+            'message': message
+        }))
+
+    
 
 # --------------------- DB access methods ---------------------- #
     @database_sync_to_async

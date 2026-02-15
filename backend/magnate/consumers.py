@@ -575,7 +575,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 return
             
             if game.phase == PHASE_MOVEMENT:
-                await self.movement_phase(game, action)
+                await self.movement_phase(game, action, data)
             
             elif game.phase == PHASE_BUSINESS:
                 await self.business_phase(game, action, data)
@@ -596,15 +596,38 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     possible_chosen_squares = []
     doubles_streak = 0
-    async def movement_phase(self, game, action):
+    async def movement_phase(self, game, action, data):
         # Onlu option is to roll the dices. It has to returnnext state, 
         # where he lands, info bout where he lands, or in case of triples or bus 
         # options about where to go.
         if action == 'roll_dices':
-            data = roll_dices(action, self.user, game, self.doubles_streak)
+            data = roll_dices(self.user, game, self.doubles_streak)
+            await self.update_game_state_dices(data, game, self.user)
+
+            business = None
+            if data["next_state"] == "PHASE_MOVEMENT":
+                business = await self.square_info(game, data["posible_moves"])
+
+            #Join data and business
+            data["business"] = business
+                
+
+            # TODO: Send this data to frontend and others 
+            
 
         elif action == 'choose_next_sqaure':
-            pass
+            data = square_chosen(self.user, game, self.possible_chosen_squares, data)
+            await self.update_game_state_square_chosen(data, game, self.user)
+
+            business = None
+            if data is not None:
+                if data["next_state"] == "PHASE_MOVEMENT":
+                    business = await self.square_info(game, data["posible_moves"])
+
+                #Join data and business
+                data["business"] = business
+
+                # TODO: Send this data to frontend and others 
         
 
     async def business_phase(self, game, action, data):
@@ -636,4 +659,19 @@ class GameConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_game_state(self, game_id, user):
         # Retrieve the current state of the game from the database
+        pass
+
+    @database_sync_to_async
+    def update_game_state_dices(self, data, game, user):
+        # Update the game state in the database
+        pass
+
+    @database_sync_to_async
+    def update_game_state_square_chosen(self, data, game, user):
+        # Update the game state in the database
+        pass
+
+    @database_sync_to_async
+    def square_info(self, game, square):
+        #Got to return the information about what we can do with it -> rent, buy etc
         pass

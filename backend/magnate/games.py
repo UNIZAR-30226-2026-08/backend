@@ -5,8 +5,8 @@ from .consumers import GameConsumer
 from django.db import transaction
 
 
+# ------------------- ROLL THE DICES IN MOVEMENT PHASE ------------------------------#
 
-import json
 
 # El Gemini me ha hecho esto pidiendole que hiciese una función de cargar el json
 def load_board_map(board_json):
@@ -85,7 +85,7 @@ def get_possible_destinations_ids(user, game, step_options, board_map):
     return sorted(list(set(destination_ids)))
 
 
-def roll_dices(action, user, game, streak):
+def roll_dices(user, game, streak):
     # Check the 
     try:
         with open('../boards/board1.json') as f:
@@ -115,7 +115,7 @@ def roll_dices(action, user, game, streak):
             "type": "CHOOSE_MOVE",
             "dice": dice_results,
             "next_state": "PHASE_MOVEMENT", 
-            "posible_moves": "all_board_squares", 
+            "posible_moves": "all_board_squares",  #TODO: put this in a vecctor instead
             "new_streak": 0
         
         }
@@ -209,3 +209,28 @@ def land_in_jail(game, total, user, board):
     return  info["final_id"] == "020", info["path"]
 
 
+# ------------------- CHOOSE SQUARE LOGIC IN MOVEMENT PHASE ------------------------------#
+def square_chosen(user, game, possible_chosen_squares, data):
+    # Logic of movement when the user direcctly chooses a square due to a bus or triples
+    square = data.get('square')
+
+    if square not in possible_chosen_squares:
+        return None
+    
+    in_jail = square == "020"
+
+    if in_jail:
+        return {
+            "type": "GO_TO", 
+            "next_state": "PHASE_LIQUIDATION",
+            "posible_moves": "104",
+            "path": ["020", "104"]
+        }
+    else:
+        return {
+            "type": "GO_TO", 
+            "next_state": "PHASE_LIQUIDATION",
+            "posible_moves": square, 
+            "path": [square]
+        }
+    

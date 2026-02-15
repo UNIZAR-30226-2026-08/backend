@@ -35,3 +35,4 @@ txaio
 typing_extensions
 ujson
 zope.interface
+django-polymorphic

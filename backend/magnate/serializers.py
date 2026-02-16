@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import BaseSquare, PropertySquare, FantasySquare, BridgeSquare, TramSquare, ParkingSquare, ServerSquare, ExitSquare, GoToJailSquare, JailSquare
-
+from .models import Action, ActionThrowDices, ActionMoveTo, ActionTakeBus, ActionBuySquare, ActionSellSquare, ActionGoToJail, ActionBuild, ActionDemolish, ActionChooseCard, ActionSurrender, ActionTradeProposal, ActionTradeAnswer, ActionMortgageSet, ActionMortgageUnset, ActionPayBail
 
 ####################### Square serializers
 class BaseSquareSerializer(serializers.ModelSerializer):
@@ -24,7 +24,7 @@ class FantasySquareSerializer(BaseSquareSerializer):
 class BridgeSquareSerializer(BaseSquareSerializer):
     class Meta(BaseSquareSerializer.Meta):
         model = BridgeSquare
-        fields = BaseSquareSerializer.Meta.fields + ['buy_price','build_price','rent_prices','out_successor']
+        fields = BaseSquareSerializer.Meta.fields + ['buy_price','rent_prices']
 
 class TramSquareSerializer(BaseSquareSerializer):
     class Meta(BaseSquareSerializer.Meta):
@@ -84,4 +84,131 @@ class GeneralSquareSerializer(serializers.ModelSerializer):
         model = BaseSquare
         fields = '__all__'
 
-###############################################
+############################################### Action Serializers
+class ActionSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+    class Meta:
+        model = Action
+        fields = ['type','game','player']#game?????? creo que sobra TODO
+    def get_type(self, obj):
+        return obj.__class__.__name__
+
+class ActionThrowDicesSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionThrowDices
+        fields = ActionSerializer.Meta.fields + ['dice1','dice2','dice_bus','destinations','triple','path']
+        extra_kwargs = {
+            'dice1': {'min_value': 1, 'max_value': 6},
+            'dice2': {'min_value': 1, 'max_value': 6},
+            'dice_bus': {'min_value': 1, 'max_value': 6},
+        }
+
+class ActionMoveToSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionMoveTo
+        fields = ActionSerializer.Meta.fields + ['square']
+
+class ActionTakeBusSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionTakeBus
+        fields = ActionSerializer.Meta.fields + ['square']
+
+class ActionBuySquareSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionBuySquare
+        fields = ActionSerializer.Meta.fields + ['square']
+
+class ActionSellSquareSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionSellSquare
+        fields = ActionSerializer.Meta.fields + ['square']
+
+class ActionGoToJailSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionGoToJail
+        fields = ActionSerializer.Meta.fields
+
+class ActionBuildSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionBuild
+        fields = ActionSerializer.Meta.fields + ['houses','square']
+
+class ActionDemolishSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionDemolish
+        fields = ActionSerializer.Meta.fields + ['houses','square']
+
+class ActionChooseCardSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionChooseCard
+        fields = ActionSerializer.Meta.fields + ['chosen_card']
+
+class ActionSurrenderSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionSurrender
+        fields = ActionSerializer.Meta.fields
+
+class ActionTradeProposalSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionTradeProposal
+        fields = ActionSerializer.Meta.fields + ['destination_user','offered_money','asked_money','offered_properties','asked_properties']
+
+class ActionTradeAnswerSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionTradeAnswer
+        fields = ActionSerializer.Meta.fields + ['choose','proposal']
+
+class ActionMortgageSetSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionMortgageSet
+        fields = ActionSerializer.Meta.fields + ['square']
+
+class ActionMortgageUnsetSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionMortgageUnset
+        fields = ActionSerializer.Meta.fields + ['square']
+
+class ActionPayBailSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionPayBail
+        fields = ActionSerializer.Meta.fields
+
+class GeneralActionSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        if isinstance(instance, ActionThrowDices):
+            return ActionThrowDicesSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionMoveTo):
+            return ActionMoveToSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionTakeBus):
+            return ActionTakeBusSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionBuySquare):
+            return ActionBuySquareSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionSellSquare):
+            return ActionSellSquareSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionGoToJail):
+            return ActionGoToJailSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionBuild):
+            return ActionBuildSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionDemolish):
+            return ActionDemolishSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionChooseCard):
+            return ActionChooseCardSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionSurrender):
+            return ActionSurrenderSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionTradeProposal):
+            return ActionTradeProposalSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionTradeAnswer):
+            return ActionTradeAnswerSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionMortgageSet):
+            return ActionMortgageSetSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionMortgageUnset):
+            return ActionMortgageUnsetSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionPayBail):
+            return ActionPayBailSerializer(instance, context=self.context).data
+        
+        #TODO: excepcion
+        return ActionSerializer(instance, context=self.context).data
+
+    class Meta:
+        model = Action
+        fields = '__all__'

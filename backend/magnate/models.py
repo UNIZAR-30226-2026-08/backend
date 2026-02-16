@@ -71,8 +71,6 @@ class FantasySquare(BaseSquare):
 
 class BridgeSquare(BaseSquare):
     buy_price = models.PositiveIntegerField(default=0)
-    build_price = models.PositiveIntegerField(default=0)
-    # An int[2] array
     rent_prices = models.JSONField(null=True)
     out_successor = models.ForeignKey('BaseSquare',
                               on_delete=models.SET_NULL,
@@ -179,10 +177,14 @@ class Action(models.Model):
     player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='made_by')
 
 class ActionThrowDices(Action):
-    dice1 = models.IntegerField(default=0)
-    dice2 = models.IntegerField(default=0)
+    dice1 = models.PositiveIntegerField(default=0)
+    dice2 = models.PositiveIntegerField(default=0)
     # One of them is bus
-    dice_bus = models.IntegerField(default=0)
+    dice_bus = models.PositiveIntegerField(default=0)
+    destinations = models.JSONField(default=list, blank=True)
+    triple = models.BooleanField(default=False)
+    path = models.JSONField(default=list,blank=True)#TODO lista de listas? si hay varios destinos hay varios paths?
+                                                    #o se puede usar el mismo path usando un trozo?
 
 class ActionMoveTo(Action):
     # Custom ID or real ID ? Mario opina que custom ID
@@ -237,4 +239,4 @@ class ActionPayBail(Action):
 
 
 
-# TODO: Add more Actions
+# TODO: Think more Actions

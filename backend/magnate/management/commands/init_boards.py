@@ -51,6 +51,7 @@ class Command(BaseCommand):
                         successors_out[item['id']] = item['out_successor']
 
                 if 'rent_prices' in item: fields['rent_prices'] = item['rent_prices']
+                if 'buy_price' in item: fields['buy_price'] = item['buy_price']
                 instance = BridgeSquare.objects.create(**fields)
                 instances_dict[item['id']] = instance
 

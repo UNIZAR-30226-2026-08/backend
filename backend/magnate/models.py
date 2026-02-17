@@ -216,7 +216,6 @@ class ActionChooseCard(Action):
 class ActionSurrender(Action):
     pass
 
-#TODO: habrá que serializar con el custom id
 class ActionTradeProposal(Action):
     destination_user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='destination_user')
     offered_money = models.PositiveIntegerField(default=0)

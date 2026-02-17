@@ -1,6 +1,10 @@
 from rest_framework import serializers
-from .models import BaseSquare, PropertySquare, FantasySquare, BridgeSquare, TramSquare, ParkingSquare, ServerSquare, ExitSquare, GoToJailSquare, JailSquare
-from .models import Action, ActionThrowDices, ActionMoveTo, ActionTakeBus, ActionBuySquare, ActionSellSquare, ActionGoToJail, ActionBuild, ActionDemolish, ActionChooseCard, ActionSurrender, ActionTradeProposal, ActionTradeAnswer, ActionMortgageSet, ActionMortgageUnset, ActionPayBail
+from .models import *
+
+# handling baseSquare by custom_id
+class SquareCustomIdField(serializers.SlugRelatedField):
+    def __init__(self, **kwargs):
+        super().__init__(slug_field='custom_id', queryset=BaseSquare.objects.all(), **kwargs)
 
 ####################### Square serializers
 class BaseSquareSerializer(serializers.ModelSerializer):
@@ -104,21 +108,25 @@ class ActionThrowDicesSerializer(ActionSerializer):
         }
 
 class ActionMoveToSerializer(ActionSerializer):
+    square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionMoveTo
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionTakeBusSerializer(ActionSerializer):
+    square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionTakeBus
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionBuySquareSerializer(ActionSerializer):
+    square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionBuySquare
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionSellSquareSerializer(ActionSerializer):
+    square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionSellSquare
         fields = ActionSerializer.Meta.fields + ['square']
@@ -129,11 +137,13 @@ class ActionGoToJailSerializer(ActionSerializer):
         fields = ActionSerializer.Meta.fields
 
 class ActionBuildSerializer(ActionSerializer):
+    square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionBuild
         fields = ActionSerializer.Meta.fields + ['houses','square']
 
 class ActionDemolishSerializer(ActionSerializer):
+    square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionDemolish
         fields = ActionSerializer.Meta.fields + ['houses','square']
@@ -149,9 +159,29 @@ class ActionSurrenderSerializer(ActionSerializer):
         fields = ActionSerializer.Meta.fields
 
 class ActionTradeProposalSerializer(ActionSerializer):
+    offered_properties = serializers.PrimaryKeyRelatedField(
+        many=True, 
+        queryset=PropertyRelationship.objects.all(),
+        required=False
+    )
+    asked_properties = serializers.PrimaryKeyRelatedField(
+        many=True, 
+        queryset=PropertyRelationship.objects.all(),
+        required=False
+    )
     class Meta(ActionSerializer.Meta):
         model = ActionTradeProposal
         fields = ActionSerializer.Meta.fields + ['destination_user','offered_money','asked_money','offered_properties','asked_properties']
+    def create(self, validated_data):
+        offered_ids = validated_data.pop('offered_properties', [])
+        asked_ids = validated_data.pop('asked_properties', [])
+        instance = ActionTradeProposal.objects.create(**validated_data)
+        if offered_ids:
+            instance.offered_properties.set(offered_ids)
+        if asked_ids:
+            instance.asked_properties.set(asked_ids)
+        return instance
+    
 
 class ActionTradeAnswerSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
@@ -159,11 +189,13 @@ class ActionTradeAnswerSerializer(ActionSerializer):
         fields = ActionSerializer.Meta.fields + ['choose','proposal']
 
 class ActionMortgageSetSerializer(ActionSerializer):
+    square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionMortgageSet
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionMortgageUnsetSerializer(ActionSerializer):
+    square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionMortgageUnset
         fields = ActionSerializer.Meta.fields + ['square']
@@ -212,3 +244,37 @@ class GeneralActionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Action
         fields = '__all__'
+
+
+def action_from_json(data, context=None):
+    mapping = {
+        'ActionThrowDices': ActionThrowDicesSerializer,
+        'ActionMoveTo': ActionMoveToSerializer,
+        'ActionTakeBus': ActionTakeBusSerializer,
+        'ActionBuySquare': ActionBuySquareSerializer,
+        'ActionSellSquare': ActionSellSquareSerializer,
+        'ActionGoToJail': ActionGoToJailSerializer,
+        'ActionBuild': ActionBuildSerializer,
+        'ActionDemolish': ActionDemolishSerializer,
+        'ActionChooseCard': ActionChooseCardSerializer,
+        'ActionSurrender': ActionSurrenderSerializer,
+        'ActionTradeProposal': ActionTradeProposalSerializer,
+        'ActionTradeAnswer': ActionTradeAnswerSerializer,
+        'ActionMortgageSet': ActionMortgageSetSerializer,
+        'ActionMortgageUnset': ActionMortgageUnsetSerializer,
+        'ActionPayBail': ActionPayBailSerializer,
+    }
+    type_name = data.get('type')
+    if not type_name:
+        raise serializers.ValidationError('Missing type field in action json')
+    serializer_cls = mapping.get(type_name)
+    if serializer_cls is None:
+        raise serializers.ValidationError(f'Unknown action type: {type_name}')
+    serializer = serializer_cls(data=data, context=context)
+    serializer.is_valid(raise_exception=True)
+    
+    #model_class = serializer.Meta.model
+    #instance = model_class(**serializer.validated_data)
+    #return instance
+
+    return serializer.save()

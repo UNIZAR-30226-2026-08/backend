@@ -110,22 +110,79 @@ class GameManager:
             return result
             
         elif action == 'choose_next_square':
-            possible_squares = data.get("possible_chosen_squares", [])
-            result = cls._square_chosen_logic(user, game, possible_squares, data)
+            # TODO: use user and game to interact with DB
+            streak = data.get("doubles_streak", 0)
+            possible_squares = data.get("possible_chosen_squares", []) #method to DB to check the possible squares stored in previous move
+            choson_square = data.get("square")
+            result = cls._square_chosen_logic( possible_squares, choson_square, streak)
             if result:
                 await cls.update_game_state_square_chosen(result, game, user)
             return result
         
         #TODO: change what returns and check real phases
 
+###### BUSINESS PHASE METHODS ####################
+
+    @classmethod
+    async def _buy_square(cls, user, game, data):
+        #Check game state so that user can buy the square and change DB
+        # Returns success and the next phase -> depends on streak
+        pass
+
+    @classmethod
+    async def _pay_rent(cls, user, game, data):
+        #Check game state so that user can pay the rent
+        pass 
+
+    @classmethod
+    async def _initiate_auction(cls, user, game, data):
+        #Check game state so that user can initiate the auction
+        # and return success. Change turns so that everyone can bid
+        pass
+
+    @classmethod
+    async def _bid(cls, user, game, data):
+        #Check game state so that user can bid
+        #return success
+        pass
+
+    @classmethod
+    async def _end_auction(cls, user, game, data):
+        #Ends the acution and returns who wins
+        # returning to "turn-game"
+        pass
+
+
+
+
+
+    @classmethod
+    async def _business_phase(cls, user, game, action, data):
+        # business -> compra alquilar, poner a subasta etc
+        if action == "buy_square":
+            result = await cls._buy_square(user, game, data)
+            return result
+        elif action == "pay_rent":
+            result = await cls._pay_rent(user, game, data)
+            return result
+        elif action == "initiate_auction":
+            result = await cls._initiate_auction(user, game, data)
+            return result
+        elif action == "bid":
+            result = await cls._bid(user, game, data)
+            return result
+        elif action == "end_auction":
+            result = await cls._end_auction(user, game, data)
+            return result
+        
+        
+        
+        
     @classmethod
     async def _management_phase(cls, user, game, action, data):
         pass
 
-    @classmethod
-    async def _business_phase(cls, user, game, action, data):
-        # gestion -> hay que cambiar todo a management
-        pass
+    
 
     @classmethod
     async def _liquidation_phase(cls, user, game, action, data):
@@ -183,7 +240,7 @@ class GameManager:
                     return {
                         "type": "NORMAL_MOVE",
                         "dice": dice_results,
-                        "next_state": "PHASE_LIQUIDATION" if in_jail else "PHASE_MOVEMENT",
+                        "next_state": "PHASE_LIQUIDATION" if in_jail else "PHASE_BUSINESS",
                         "posible_moves": "104" if in_jail else path[-1],
                         "new_streak": 0 if in_jail else new_streak,
                         "path": path
@@ -223,9 +280,9 @@ class GameManager:
 
     # ------------------- CHOOSE SQUARE LOGIC IN MOVEMENT PHASE ------------------------------#
     @staticmethod
-    def _square_chosen_logic(user, game, possible_chosen_squares, data):
+    def _square_chosen_logic(possible_chosen_squares, square, streak):
         # Logic of movement when the user direcctly chooses a square due to a bus or triples
-        square = data.get('square')
+
         
         if square not in possible_chosen_squares:
             return None
@@ -234,7 +291,7 @@ class GameManager:
         
         return {
             "type": "GO_TO", 
-            "next_state": "PHASE_LIQUIDATION",
+            "next_state": "PHASE_LIQUIDATION" if in_jail else "PHASE_BUSINESS",
             "posible_moves": "104" if in_jail else square,
             "path": ["020", "104"] if in_jail else [square]
         }

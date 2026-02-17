@@ -153,11 +153,10 @@ class GameManager:
         d3 = random.randint(1,6) # 4-6 are the bus faces
 
         bus_is_numeric = d3 <= 3
-        d3_val = d3 if bus_is_numeric else "BUS"
-        dice_results = [d1, d2, d3_val]
+        dice_results = [d1, d2, d3]
 
         # Triples
-        if bus_is_numeric and (d1 == d2 == d3_val):
+        if bus_is_numeric and (d1 == d2 == d3):
             return {
                 "type": "CHOOSE_MOVE",
                 "dice": dice_results,
@@ -179,7 +178,7 @@ class GameManager:
             else:
                 new_streak = streak + 1
                 if bus_is_numeric:
-                    total = d1 + d2 + d3_val
+                    total = d1 + d2 + d3
                     in_jail, path = land_in_jail(game, total, user, BOARD_MAP)
                     return {
                         "type": "NORMAL_MOVE",
@@ -202,7 +201,7 @@ class GameManager:
         # Normal
         else:
             if bus_is_numeric:
-                total = d1 + d2 + d3_val
+                total = d1 + d2 + d3
                 in_jail, path = land_in_jail(game, total, user, BOARD_MAP)
                 return {
                     "type": "NORMAL_MOVE",

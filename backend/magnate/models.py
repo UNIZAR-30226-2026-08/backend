@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from typing import Union, TYPE_CHECKING
-
+from polymorphic.models import PolymorphicModel
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
@@ -39,9 +38,6 @@ class Item(models.Model):
         iconos = 'iconos'
     itemType = models.CharField(choices=ItemType, max_length=10, default='ficha')
 
-class Game(models.Model):
-    datetime = models.DateTimeField()
-    # TODO: What happens if a user has deleted his account
 
 ###############################################################################
 
@@ -50,7 +46,7 @@ class Board(models.Model):
     custom_id = models.PositiveIntegerField(default=0)
     pass
 
-class BaseSquare(models.Model):
+class BaseSquare(PolymorphicModel):
     custom_id = models.PositiveIntegerField(default=0)
     board = models.ForeignKey('Board',
                               on_delete=models.SET_NULL,
@@ -76,8 +72,6 @@ class FantasySquare(BaseSquare):
 
 class BridgeSquare(BaseSquare):
     buy_price = models.PositiveIntegerField(default=0)
-    build_price = models.PositiveIntegerField(default=0)
-    # An int[2] array
     rent_prices = models.JSONField(null=True)
     out_successor = models.ForeignKey('BaseSquare',
                               on_delete=models.SET_NULL,
@@ -89,7 +83,7 @@ class TramSquare(BaseSquare):
     buy_price = models.PositiveIntegerField(default=0)
 
 class ParkingSquare(BaseSquare):
-    price = models.PositiveIntegerField(default=0)
+    money = models.PositiveIntegerField(default=0)
 
 class ServerSquare(BaseSquare):
     buy_price = models.PositiveIntegerField(default=0)
@@ -153,7 +147,97 @@ class FantasyEvent(models.Model):
         goToStart = 'goToStart'
     
 
-    fantasy_type = models.CharField(choices=FantasyType, max_length=10)
+    fantasy_type = models.CharField(choices=FantasyType, max_length=40)
     values = models.JSONField(null=True)
     card_cost = models.IntegerField(default=0)
 
+###############################################################################
+
+class Game(models.Model):
+    datetime = models.DateTimeField()
+    positions = models.JSONField(default=list, blank=True)
+    money = models.JSONField(default=list, blank=True)
+    turn = models.IntegerField(default=0)
+    class GamePhase(models.TextChoices):
+        moving = 'moving',
+        management = 'management',
+        liquidation = 'liquidation',
+    phase = models.CharField(choices=GamePhase, max_length=15)
+    active_player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='active_playing')
+    # TODO: How to store property group ownership?
+
+class PropertyRelationship(models.Model):
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='PropertyRelationship_in_game')
+    owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by')
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='owned_square')
+
+    houses = models.IntegerField(default=-1)#-1: incomplete group, 0: complete group,
+                                            #1-4: houses, #5: hotel
+
+class Action(models.Model):
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='in_game')
+    player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='made_by')
+
+class ActionThrowDices(Action):
+    dice1 = models.PositiveIntegerField(default=0)
+    dice2 = models.PositiveIntegerField(default=0)
+    # One of them is bus
+    dice_bus = models.PositiveIntegerField(default=0)
+    destinations = models.JSONField(default=list, blank=True)
+    triple = models.BooleanField(default=False)
+    path = models.JSONField(default=list,blank=True)#TODO lista de listas? si hay varios destinos hay varios paths?
+                                                    #o se puede usar el mismo path usando un trozo?
+
+class ActionMoveTo(Action):
+    # Custom ID or real ID ? Mario opina que custom ID
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='move_to')
+
+class ActionTakeBus(Action):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bus_move_to')
+
+class ActionBuySquare(Action):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bought')
+
+class ActionSellSquare(Action):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='sold')
+
+class ActionGoToJail(Action):
+    pass
+
+class ActionBuild(Action):
+    houses = models.IntegerField(default=0)
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='build_square')
+
+class ActionDemolish(Action):
+    houses = models.IntegerField(default=0)
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='demolish_square')
+
+class ActionChooseCard(Action):
+    chosen_card = models.BooleanField(default=False)
+
+class ActionSurrender(Action):
+    pass
+
+class ActionTradeProposal(Action):
+    destination_user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='destination_user')
+    offered_money = models.PositiveIntegerField(default=0)
+    asked_money = models.PositiveIntegerField(default=0)
+    offered_properties = models.ManyToManyField('PropertyRelationship', related_name='offered_properties')
+    asked_properties = models.ManyToManyField('PropertyRelationship', related_name='asked_properties')
+
+class ActionTradeAnswer(Action):
+    choose = models.BooleanField(default=False)
+    proposal = models.OneToOneField('ActionTradeProposal', on_delete=models.CASCADE, related_name='proposal')
+
+class ActionMortgageSet(Action):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='mortgage_set_square')
+
+class ActionMortgageUnset(Action):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='mortgage_unset_square')
+
+class ActionPayBail(Action):
+    pass
+
+
+
+# TODO: Think more Actions

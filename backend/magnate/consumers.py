@@ -561,9 +561,6 @@ class GameConsumer(AsyncWebsocketConsumer):
         # Triggered when user sends a move -> broadcast to room group.
         # Also manages game over conditions triggering disconnects.
         # Manages DB interactions over purchases, rents etc
-        if self.user is None:
-            return
-        
         try:
             data = json.loads(text_data)
             action = data.get('action')
@@ -573,18 +570,23 @@ class GameConsumer(AsyncWebsocketConsumer):
             if game.turn != self.user:
                 await self.send_error("No es tu turno.")
                 return
-            
-            if game.phase == PHASE_MOVEMENT:
-                await self.movement_phase(game, action, data)
-            
-            elif game.phase == PHASE_BUSINESS:
-                await self.business_phase(game, action, data)
-            
-            elif game.phase == PHASE_LIQUIDATION:
-                await self.liquidation_phase(game, action, data)
 
-        except:
-            await self.send_error("Datos invalidos.")
+            response = await GameManager.process_action(self.user, game, action, data)
+
+            if response["status"] == "error":
+                await self.send_error(response["message"])
+                return
+            
+            result_data = response["data"]
+
+            #TODO: send to all
+
+        except json.JSONDecodeError:
+            await self.send_error("Datos inválidos.")
+            return
+        except Exception as e:
+            print(f"Error  procesando turno: {e}")
+            await self.send_error("Error interno procesando tu movimiento.")
             return
         
 
@@ -593,48 +595,6 @@ class GameConsumer(AsyncWebsocketConsumer):
 
 
 # --------------------- Handlers ---------------------- #
-
-    possible_chosen_squares = []
-    doubles_streak = 0
-    async def movement_phase(self, game, action, data):
-        # Onlu option is to roll the dices. It has to returnnext state, 
-        # where he lands, info bout where he lands, or in case of triples or bus 
-        # options about where to go.
-        if action == 'roll_dices':
-            data = roll_dices(self.user, game, self.doubles_streak)
-            await self.update_game_state_dices(data, game, self.user)
-
-            business = None
-            if data["next_state"] == "PHASE_MOVEMENT":
-                business = await self.square_info(game, data["posible_moves"])
-
-            #Join data and business
-            data["business"] = business
-                
-
-            # TODO: Send this data to frontend and others 
-            
-
-        elif action == 'choose_next_sqaure':
-            data = square_chosen(self.user, game, self.possible_chosen_squares, data)
-            await self.update_game_state_square_chosen(data, game, self.user)
-
-            business = None
-            if data is not None:
-                if data["next_state"] == "PHASE_MOVEMENT":
-                    business = await self.square_info(game, data["posible_moves"])
-
-                #Join data and business
-                data["business"] = business
-
-                # TODO: Send this data to frontend and others 
-        
-
-    async def business_phase(self, game, action, data):
-        pass
-
-    async def liquidation_phase(self, game, action, data):
-        pass
 
     async def game_state(self, event):
         await self.send(text_data=json.dumps({
@@ -648,30 +608,16 @@ class GameConsumer(AsyncWebsocketConsumer):
             'message': message
         }))
 
-    
 
-# --------------------- DB access methods ---------------------- #
+#----------------------- DB access --------------------#
     @database_sync_to_async
     def is_player_in_game(self, user, game_id):
-        # Verify if the user is part of the active players for this game
         pass
 
     @database_sync_to_async
     def get_game_state(self, game_id, user):
-        # Retrieve the current state of the game from the database
+        # retrieve current state 
         pass
 
-    @database_sync_to_async
-    def update_game_state_dices(self, data, game, user):
-        # Update the game state in the database
-        pass
 
-    @database_sync_to_async
-    def update_game_state_square_chosen(self, data, game, user):
-        # Update the game state in the database
-        pass
 
-    @database_sync_to_async
-    def square_info(self, game, square):
-        #Got to return the information about what we can do with it -> rent, buy etc
-        pass

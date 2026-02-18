@@ -102,19 +102,20 @@ class GameManager:
 
     @classmethod
     async def _movement_phase(cls, user, game, action, data):
-        if action == 'roll_dices':
+        if isinstance(action, ActionThrowDices):
             # TODO: Reread logic to fix this
             streak = data.get("doubles_streak", 0)
             result = await cls._roll_dices_logic(user, game, streak)
             await cls.update_game_state_dices(result, game, user)
             return result
             
-        elif action == 'choose_next_square':
+        elif isinstance(action, ActionMoveTo):
             # TODO: use user and game to interact with DB
             streak = data.get("doubles_streak", 0)
             possible_squares = data.get("possible_chosen_squares", []) #method to DB to check the possible squares stored in previous move
-            choson_square = data.get("square")
-            result = cls._square_chosen_logic( possible_squares, choson_square, streak)
+            chosen_square_id = str(action.square.custom_id)
+            
+            result = cls._square_chosen_logic( possible_squares, chosen_square_id, streak, game, user)
             if result:
                 await cls.update_game_state_square_chosen(result, game, user)
             return result
@@ -205,6 +206,7 @@ class GameManager:
     # ------------------- ROLL THE DICES IN MOVEMENT PHASE ------------------------------#
     @staticmethod
     async def _roll_dices_logic(user, game, streak):
+        #TODO: add the logic if the user is in jail. 
         d1 = random.randint(1,6)
         d2 = random.randint(1,6)
         d3 = random.randint(1,6) # 4-6 are the bus faces
@@ -212,86 +214,76 @@ class GameManager:
         bus_is_numeric = d3 <= 3
         dice_results = [d1, d2, d3]
 
+        action = ActionThrowDices(game=game, player=user)
+        
+        action.dice1 = d1
+        action.dice2 = d2
+        action.dice_bus = d3
         # Triples
         if bus_is_numeric and (d1 == d2 == d3):
-            return {
-                "type": "CHOOSE_MOVE",
-                "dice": dice_results,
-                "next_state": "PHASE_MOVEMENT", 
-                "posible_moves": "all_board_squares", # TODO: Pasar a vector
-                "new_streak": 0
-            }
+            action.triple = True
+            action.path = []
+            action.destinations = []
+            action.streak = 0
 
+            return action
+
+        
         # Dobles
         elif d1 == d2:
+            action.triple = False
             if streak >= 2:
-                return {
-                    "type": "GO_TO_JAIL_STREAK",
-                    "dice": dice_results,
-                    "next_state": "PHASE_LIQUIDATION",
-                    "posible_moves": "104",
-                    "new_streak": 0
-                }
+                action.path = []
+                action.destinations = ["104"]
+                action.streak = 3
+
+                return action
+            
             else:
-                new_streak = streak + 1
+                action.streak= streak + 1
                 if bus_is_numeric:
-                    total = d1 + d2 + d3
-                    in_jail, path = land_in_jail(game, total, user, BOARD_MAP)
-                    return {
-                        "type": "NORMAL_MOVE",
-                        "dice": dice_results,
-                        "next_state": "PHASE_LIQUIDATION" if in_jail else "PHASE_BUSINESS",
-                        "posible_moves": "104" if in_jail else path[-1],
-                        "new_streak": 0 if in_jail else new_streak,
-                        "path": path
-                    }
+                    
+                    in_jail, action.path = land_in_jail(game, total, user, BOARD_MAP)
+                    action.destinations = action.path[-1] if not in_jail else ["104"]
+                    action.streak = 0 if in_jail else action.streak
+
+                    return action
                 else:
                     options = await get_possible_destinations_ids(user, game, [d1, d2, d1+d2], BOARD_MAP)
-                    return {
-                        "type": "CHOOSE_MOVE",
-                        "dice": dice_results,
-                        "next_state": "PHASE_MOVEMENT",
-                        "posible_moves": options,
-                        "new_streak": new_streak,
-                    }
+                    action.path = []
+                    action.destinations = options
+                    action.streak = 0
+
+                    return action
 
         # Normal
         else:
+            action.triple = False
+            action.streak = 0
             if bus_is_numeric:
-                total = d1 + d2 + d3
-                in_jail, path = land_in_jail(game, total, user, BOARD_MAP)
-                return {
-                    "type": "NORMAL_MOVE",
-                    "dice": dice_results,
-                    "next_state": "PHASE_LIQUIDATION" if in_jail else "PHASE_BUSINESS",
-                    "posible_moves": "104" if in_jail else path[-1],
-                    "new_streak": 0,
-                    "path": path
-                }
+                
+                in_jail, action.path = land_in_jail(game, d1+d2+d3, user, BOARD_MAP)
+                action.destinations = action.path[-1] if not in_jail else ["104"]
+                
+                return action
             else:
                 options = await get_possible_destinations_ids(user, game, [d1, d2, d1+d2], BOARD_MAP)
-                return {
-                    "type": "CHOOSE_MOVE",
-                    "dice": dice_results,
-                    "next_state": "PHASE_MOVEMENT",
-                    "posible_moves": options,
-                    "new_streak": 0,
-                }
+                action.path = []
+                action.destinations = options
+
+                return action
 
     # ------------------- CHOOSE SQUARE LOGIC IN MOVEMENT PHASE ------------------------------#
     @staticmethod
-    def _square_chosen_logic(possible_chosen_squares, square, streak):
+    def _square_chosen_logic(possible_chosen_squares, square, streak, game, user):
         # Logic of movement when the user direcctly chooses a square due to a bus or triples
 
+        action = ActionMoveTo(game = game, player = user)
         
         if square not in possible_chosen_squares:
             return None
         
-        in_jail = square == "020"
         
-        return {
-            "type": "GO_TO", 
-            "next_state": "PHASE_LIQUIDATION" if in_jail else "PHASE_BUSINESS",
-            "posible_moves": "104" if in_jail else square,
-            "path": ["020", "104"] if in_jail else [square]
-        }
+        action .square = square
+
+        return action

@@ -1,6 +1,8 @@
 import random 
 import json
 from django.db import transaction
+
+from backend.magnate.serializers import *
 from .models import *
 from channels.db import database_sync_to_async
 
@@ -193,13 +195,47 @@ class GameManager:
 
     @classmethod
     @database_sync_to_async
-    def update_game_state_dices(cls, result, game, user):
-        pass 
+    def update_game_state_dices(cls, action, game, user):
+        """
+        Persiste la ActionThrowDices en BD usando su serializer y actualiza
+        el estado de la partida (destinos posibles almacenados en el JSON del juego).
+        La instancia ya fue creada por action_from_json, así que sólo la actualizamos.
+        """
+        serializer = ActionThrowDicesSerializer(
+            action,
+            data={
+                'game': game.pk,
+                'player': user.pk,
+                'dice1': action.dice1,
+                'dice2': action.dice2,
+                'dice_bus': action.dice_bus,
+                'destinations': action.destinations,
+                'triple': action.triple,
+                'path': action.path,
+            },
+            partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
 
     @classmethod
     @database_sync_to_async
-    def update_game_state_square_chosen(cls, result, game, user):
-        pass
+    def update_game_state_square_chosen(cls, action, game, user):
+        """
+        Persiste la ActionMoveTo en BD usando su serializer y actualiza
+        la posición del jugador en la partida.
+        """
+        serializer = ActionMoveToSerializer(
+            action,
+            data={
+                'game': game.pk,
+                'player': user.pk,
+                'square': action.square.custom_id,
+            },
+            partial=True
+        )
+        if serializer.is_valid():
+            serializer.save()
 
  ############################################
 

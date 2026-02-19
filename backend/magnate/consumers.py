@@ -565,19 +565,39 @@ class GameConsumer(AsyncWebsocketConsumer):
             data = json.loads(text_data)
             action = data.get('action')
 
-            game = await self.get_game_state(self.game_id, self.user)
+            game = await self.get_game(self.game_id)
 
-            if game.turn != self.user:
+            if game is None:
+                await self.send_error("Partida no encontrada.")
+                return
+            
+
+            if game.active_player != self.user:
                 await self.send_error("No es tu turno.")
                 return
 
-            response = await GameManager.process_action(self.user, game, action, data)
-
-            if response["status"] == "error":
-                await self.send_error(response["message"])
+            context = {'game': game, 'player': self.user}
+            try:
+                action = await database_sync_to_async(action_from_json)(data, context=context)
+            except Exception as e:
+                await self.send_error(f"Acción inválida: {e}")
                 return
             
-            result_data = response["data"]
+            response = await GameManager.process_action(self.user, game, action, data)
+
+            if response is None:
+                await self.send_error("Acción no válida en la fase actual.")
+                return
+            
+            response_data = await database_sync_to_async(lambda: GeneralActionSerializer(response).data)()
+            
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'game_action_event',
+                    'action_data': response_data
+                }
+            )
 
             #TODO: send to all
 
@@ -602,6 +622,12 @@ class GameConsumer(AsyncWebsocketConsumer):
             'game_state': event['game_state']
         }))
 
+    async def game_action_event(self, event):
+        await self.send(text_data=json.dumps({
+            'action': 'game_action',
+            'data': event['action_data']
+        }))
+
     async def send_error(self, message):
         await self.send(text_data=json.dumps({
             'action': 'error',
@@ -619,5 +645,11 @@ class GameConsumer(AsyncWebsocketConsumer):
         # retrieve current state 
         pass
 
+    @database_sync_to_async
+    def get_game(self, game_id):
+        try:
+            return Game.objects.get(pk=game_id)
+        except Game.DoesNotExist:
+            return None
 
 

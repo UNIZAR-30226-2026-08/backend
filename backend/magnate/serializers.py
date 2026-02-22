@@ -120,10 +120,9 @@ class ActionTakeTramSerializer(ActionSerializer):
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionDoNotTakeTramSerializer(ActionSerializer):
-    square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionDoNotTakeTram
-        fields = ActionSerializer.Meta.fields + ['square']
+        fields = ActionSerializer.Meta.fields
 
 class ActionBuySquareSerializer(ActionSerializer):
     square = SquareCustomIdField()

@@ -164,6 +164,8 @@ class Game(models.Model):
         liquidation = 'liquidation',
     phase = models.CharField(choices=GamePhase, max_length=15)
     active_player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='active_playing')
+    streak = models.IntegerField(default=0)
+    possible_destinations = models.JSONField(default=list, blank=True)
     # TODO: How to store property group ownership?
 
 class PropertyRelationship(models.Model):
@@ -187,10 +189,12 @@ class ActionThrowDices(Action):
     triple = models.BooleanField(default=False)
     path = models.JSONField(default=list,blank=True)#TODO lista de listas? si hay varios destinos hay varios paths?
                                                     #o se puede usar el mismo path usando un trozo?
+    streak = models.IntegerField(default=0)
 
 class ActionMoveTo(Action):
     # Custom ID or real ID ? Mario opina que custom ID
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='move_to')
+
 
 class ActionTakeBus(Action):
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bus_move_to')

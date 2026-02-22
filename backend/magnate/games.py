@@ -93,36 +93,32 @@ class GameManager:
     
     @classmethod
     async def process_action(cls, user, game, action, data):
-        if game.phase == "PHASE_MOVEMENT":
-            return await cls._movement_phase(user, game, action, data)
-        elif game.phase == "PHASE_BUSINESS":
-            return await cls._business_phase(user, game, action, data)
-        elif game.phase == "PHASE_MANAGEMENT":
-            return await cls._management_phase(user, game, action, data)
-        elif game.phase == "PHASE_LIQUIDATION":
-            return await cls._liquidation_phase(user, game, action, data)
+        if game.phase == "roll_the_dices":
+            return await cls._roll_dices_logic(user, game, streak=game.streak)
+        elif game.phase == "choose_square":
+            return await cls._square_chosen_logic(game.possible_destinations, user, game, action)
+
 
     @classmethod
     async def _movement_phase(cls, user, game, action, data):
         if isinstance(action, ActionThrowDices):
             # TODO: Reread logic to fix this
-            streak = data.get("doubles_streak", 0)
+            streak = game.streak
             result = await cls._roll_dices_logic(user, game, streak)
             await cls.update_game_state_dices(result, game, user)
             return result
             
         elif isinstance(action, ActionMoveTo):
             # TODO: use user and game to interact with DB
-            streak = data.get("doubles_streak", 0)
+            streak = game.streak
             possible_squares = data.get("possible_chosen_squares", []) #method to DB to check the possible squares stored in previous move
             chosen_square_id = str(action.square.custom_id)
             
-            result = cls._square_chosen_logic( possible_squares, chosen_square_id, streak, game, user)
+            result = cls._square_chosen_logic( possible_squares, chosen_square_id, game, user)
             if result:
                 await cls.update_game_state_square_chosen(result, game, user)
             return result
         
-        #TODO: change what returns and check real phases
 
 ###### BUSINESS PHASE METHODS ####################
 
@@ -159,43 +155,13 @@ class GameManager:
 
 
 
-    @classmethod
-    async def _business_phase(cls, user, game, action, data):
-        # business -> compra alquilar, poner a subasta etc
-        if action == "buy_square":
-            result = await cls._buy_square(user, game, data)
-            return result
-        elif action == "pay_rent":
-            result = await cls._pay_rent(user, game, data)
-            return result
-        elif action == "initiate_auction":
-            result = await cls._initiate_auction(user, game, data)
-            return result
-        elif action == "bid":
-            result = await cls._bid(user, game, data)
-            return result
-        elif action == "end_auction":
-            result = await cls._end_auction(user, game, data)
-            return result
         
-        
-        
-        
-    @classmethod
-    async def _management_phase(cls, user, game, action, data):
-        pass
 
-    
-
-    @classmethod
-    async def _liquidation_phase(cls, user, game, action, data):
-        pass
-            
  ############################################
 
     @classmethod
     @database_sync_to_async
-    def update_game_state_dices(cls, action, game, user):
+    async def update_game_state_dices(cls, action, game, user):
         """
         Persiste la ActionThrowDices en BD usando su serializer y actualiza
         el estado de la partida (destinos posibles almacenados en el JSON del juego).
@@ -218,9 +184,21 @@ class GameManager:
         if serializer.is_valid():
             serializer.save()
 
+        game.current_square[user] = action.destinations if action.path != [] else game.current_square[user]
+        game.possible_destinations = action.destinations if len(action.destinations) > 1 else []
+        game.streak = action.streak
+
+        if len(action.destinations) >1:
+            game.phase = "choose_square"
+        elif action.destinations == ["104"]:
+            game.phase = "liquidation"
+        else:
+            game.phase = "management" #pay bills or buy if possible
+        game.save()
+
     @classmethod
     @database_sync_to_async
-    def update_game_state_square_chosen(cls, action, game, user):
+    async def update_game_state_square_chosen(cls, action, game, user):
         """
         Persiste la ActionMoveTo en BD usando su serializer y actualiza
         la posición del jugador en la partida.
@@ -236,6 +214,14 @@ class GameManager:
         )
         if serializer.is_valid():
             serializer.save()
+
+        game.current_square[user] = action.square.custom_id
+        game.possible_destinations = []
+        if game.streak > 0:
+            game.phase = "roll_the_dices"
+        else:
+            game.phase = "management" #pay bills or buy if possible
+        game.save()
 
  ############################################
 
@@ -255,6 +241,17 @@ class GameManager:
         action.dice1 = d1
         action.dice2 = d2
         action.dice_bus = d3
+
+        doubles = d1 == d2 or (bus_is_numeric and (d1 == d3 or d2 == d3))
+
+        #first -> if in jail and normal
+        if game.positions[user] == "104" and not doubles:
+            action.triple = False
+            action.path = []
+            action.destinations = ["104"]
+            action.streak = 0
+            await GameManager.update_game_state_dices(action, game, user)
+        
         # Triples
         if bus_is_numeric and (d1 == d2 == d3):
             action.triple = True
@@ -262,34 +259,37 @@ class GameManager:
             action.destinations = []
             action.streak = 0
 
+            await GameManager.update_game_state_dices(action, game, user)
+
             return action
 
         
         # Dobles
-        elif d1 == d2:
+        elif doubles:
             action.triple = False
+            # doubles and jail -> liquidation
             if streak >= 2:
                 action.path = []
                 action.destinations = ["104"]
                 action.streak = 3
-
+                await GameManager.update_game_state_dices(action, game, user)
                 return action
             
             else:
                 action.streak= streak + 1
                 if bus_is_numeric:
                     
-                    in_jail, action.path = land_in_jail(game, total, user, BOARD_MAP)
+                    in_jail, action.path = land_in_jail(game, d1+d2, user, BOARD_MAP)
                     action.destinations = action.path[-1] if not in_jail else ["104"]
                     action.streak = 0 if in_jail else action.streak
-
+                    await GameManager.update_game_state_dices(action, game, user)
                     return action
                 else:
                     options = await get_possible_destinations_ids(user, game, [d1, d2, d1+d2], BOARD_MAP)
                     action.path = []
                     action.destinations = options
                     action.streak = 0
-
+                    await GameManager.update_game_state_dices(action, game, user)
                     return action
 
         # Normal
@@ -300,18 +300,19 @@ class GameManager:
                 
                 in_jail, action.path = land_in_jail(game, d1+d2+d3, user, BOARD_MAP)
                 action.destinations = action.path[-1] if not in_jail else ["104"]
+                await GameManager.update_game_state_dices(action, game, user)
                 
                 return action
             else:
                 options = await get_possible_destinations_ids(user, game, [d1, d2, d1+d2], BOARD_MAP)
                 action.path = []
                 action.destinations = options
-
+                await GameManager.update_game_state_dices(action, game, user)
                 return action
 
     # ------------------- CHOOSE SQUARE LOGIC IN MOVEMENT PHASE ------------------------------#
     @staticmethod
-    def _square_chosen_logic(possible_chosen_squares, square, streak, game, user):
+    async def _square_chosen_logic(possible_chosen_squares, square,game, user):
         # Logic of movement when the user direcctly chooses a square due to a bus or triples
 
         action = ActionMoveTo(game = game, player = user)
@@ -322,4 +323,5 @@ class GameManager:
         
         action .square = square
 
+        await GameManager.update_game_state_square_chosen(action, game, user)
         return action

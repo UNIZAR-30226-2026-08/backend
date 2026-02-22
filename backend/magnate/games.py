@@ -1,3 +1,4 @@
+from asyncio import Server
 import random 
 import json
 from django.db import transaction
@@ -34,9 +35,9 @@ def move_player_logic(curr, total_steps):
                 curr = curr.in_successor
         elif isinstance(curr, ExitSquare):
             passed_go = True
-            curr = square.in_successor
+            curr = curr.in_successor
         else:
-            curr = square.in_successor
+            curr = curr.in_successor
         
         path_log.append(curr.custom_id)
 
@@ -70,62 +71,8 @@ class GameManager:
             return await cls._roll_dices_logic(user, game, streak=game.streak)
         elif game.phase == "choose_square":
             return await cls._square_chosen_logic(game.possible_destinations, user, game, action)
-
-
-    @classmethod
-    async def _movement_phase(cls, user, game, action, data):
-        if isinstance(action, ActionThrowDices):
-            # TODO: Reread logic to fix this
-            streak = game.streak
-            result = await cls._roll_dices_logic(user, game, streak)
-            await cls.update_game_state_dices(result, game, user)
-            return result
-            
-        elif isinstance(action, ActionMoveTo):
-            # TODO: use user and game to interact with DB
-            streak = game.streak
-            possible_squares = data.get("possible_chosen_squares", []) #method to DB to check the possible squares stored in previous move
-            chosen_square_id = str(action.square.custom_id)
-            
-            result = cls._square_chosen_logic( possible_squares, chosen_square_id, game, user)
-            if result:
-                await cls.update_game_state_square_chosen(result, game, user)
-            return result
-        
-
-###### BUSINESS PHASE METHODS ####################
-
-    @classmethod
-    async def _buy_square(cls, user, game, data):
-        #Check game state so that user can buy the square and change DB
-        # Returns success and the next phase -> depends on streak
-        pass
-
-    @classmethod
-    async def _pay_rent(cls, user, game, data):
-        #Check game state so that user can pay the rent
-        pass 
-
-    @classmethod
-    async def _initiate_auction(cls, user, game, data):
-        #Check game state so that user can initiate the auction
-        # and return success. Change turns so that everyone can bid
-        pass
-
-    @classmethod
-    async def _bid(cls, user, game, data):
-        #Check game state so that user can bid
-        #return success
-        pass
-
-    @classmethod
-    async def _end_auction(cls, user, game, data):
-        #Ends the acution and returns who wins
-        # returning to "turn-game"
-        pass
-
-
-
+        elif game.phase == "management":
+            return await cls._management_logic(user, game, action, data)
 
 
         
@@ -197,6 +144,8 @@ class GameManager:
         else:
             game.phase = "management" #pay bills or buy if possible
         game.save()
+
+
 
  ############################################
 
@@ -302,3 +251,124 @@ class GameManager:
 
         await GameManager.update_game_state_square_chosen(action, game, user)
         return action
+    
+    @staticmethod
+    def get_rent_price(square: PropertySquare, property):
+        houses = property.houses
+        if houses == -1:
+            return square.rent[0]
+        elif houses == 0:
+            return square.rent[1]
+        elif houses == 1:
+            return square.rent[2]
+        elif houses == 2:
+            return square.rent[3]
+        elif houses == 3:
+            return square.rent[4]
+        elif houses == 4:
+            return square.rent[5]
+        
+    @staticmethod
+    @database_sync_to_async
+    async def _management_logic(user, game, action, data):
+        # Logic of management phase, where the user can buy properties, pay bills etc
+
+        #first -> what is the action? -> chekc internally its current square and data associated. Then check user info
+        # to update the game state accordingly and return next state
+        current_square = get_square(game.current_square[user])
+
+        if isinstance(current_square, ExitSquare):
+            #done in move logic
+            pass
+
+        elif isinstance(current_square, PropertySquare):
+            property = PropertyRelationship.objects.filter(game=game, square=current_square)
+            if property.exists(): #  pay rent -> chekc houses
+                to_pay = GameManager.get_rent_price(current_square, property.first())
+                property_owner = property.first().owner
+                game.money[user] -= to_pay
+                game.money[property_owner] += to_pay
+                game.phase = "business"
+                game.save()
+            else: #buy option -> look at data to see if the user wants to buy and if he can afford it
+                if isinstance(action, ActionBuySquare):
+                    game.money[user] -= current_square.price
+                    game.phase = "business"
+                    new_property = PropertyRelationship(game=game, square=current_square, owner=user)
+                    user_properties = PropertyRelationship.objects.filter(game=game, owner=user)
+                    user_same_group_properties = user_properties.filter(square__group=current_square.group)
+
+                    if user_same_group_properties.count() == current_square.group_squares - 1:
+                        new_property.houses = 0
+                        user_same_group_properties.update(houses=0)
+                    else: 
+                        new_property.houses = -1
+                    new_property.save()
+
+                    game.save()
+                elif isinstance(action, ActionDropPurchase):
+                    game.phase = "auction"
+                    pass
+
+        elif isinstance(current_square, FantasySquare):
+            pass # -> other phase
+        elif isinstance(current_square, BridgeSquare):
+            pass
+        elif isinstance(current_square, TramSquare):
+            if isinstance(action, ActionTakeTram):
+                square = action.square
+                #check if user can afford it and if that square is a possible destination
+                tram_squares = TramSquare.objects.filter()
+                tram_squares_ids = [s.custom_id for s in tram_squares]
+
+                if square.custom_id in tram_squares_ids: # confirms its valid
+                    game.money[user] -= square.buy_price
+                    game.current_square[user] = square.custom_id
+                    game.phase = "management"
+                    game.save()
+
+            elif isinstance(action, ActionDoNotTakeTram):
+                game.phase = "management"
+                game.save()
+
+
+        elif isinstance(current_square, ParkingSquare):
+            pass
+        
+        elif isinstance(current_square, ServerSquare):
+            property = PropertyRelationship.objects.filter(game=game, square=current_square)
+            if property.exists(): #  pay rent
+                #Check whether the user owns the other ServerSquare 
+                property_owner = property.first().owner
+                squares = PropertyRelationship.objects.filter(game=game, square__type='server_squares', owner=property_owner)
+                if squares.count() == 2:
+                    to_pay = current_square.rent [1]
+                else:
+                    to_pay = current_square.rent [0]
+
+                game.money[user] -= to_pay
+                game.money[property_owner] += to_pay
+                game.phase = "business"
+                game.save()
+
+            else: #buy option -> look at data to see if the user wants to buy and if he can afford it
+                if isinstance(action, ActionBuySquare):
+                    game.money[user] -= current_square.price
+                    game.phase = "business"
+                    new_property = PropertyRelationship(game=game, square=current_square, owner=user)
+                    new_property.save()
+                    game.save()
+                elif isinstance(action, ActionDropPurchase):
+                    game.phase = "auction"
+                    # TODO: logic of auction
+                    pass
+            
+            return {"next_phase": game.phase}
+                    
+            
+                
+        elif isinstance(current_square, JailSquare):
+            pass
+        
+        
+        

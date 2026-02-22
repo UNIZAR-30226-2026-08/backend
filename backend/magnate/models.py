@@ -155,7 +155,7 @@ class FantasyEvent(models.Model):
 
 class Game(models.Model):
     datetime = models.DateTimeField()
-    positions = models.JSONField(default=list, blank=True)
+    positions = models.JSONField(default=dict, blank=True)
     money = models.JSONField(default=list, blank=True)
     turn = models.IntegerField(default=0)
     class GamePhase(models.TextChoices):
@@ -163,7 +163,7 @@ class Game(models.Model):
         management = 'management',
         liquidation = 'liquidation',
     phase = models.CharField(choices=GamePhase, max_length=15)
-    active_player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='active_playing')
+    active_players = models.ManyToManyField('CustomUser', related_name='active_playing')
     streak = models.IntegerField(default=0)
     possible_destinations = models.JSONField(default=list, blank=True)
     # TODO: How to store property group ownership?
@@ -198,6 +198,9 @@ class ActionMoveTo(Action):
 
 class ActionTakeBus(Action):
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bus_move_to')
+
+class ActionDropPurchase(Action):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='dropped')
 
 class ActionBuySquare(Action):
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bought')

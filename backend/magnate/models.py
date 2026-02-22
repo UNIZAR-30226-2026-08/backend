@@ -4,10 +4,7 @@ from polymorphic.models import PolymorphicModel
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique=True)
-    # TODO: Max length ?
-    # TODO: Needed ?
     username = models.CharField(max_length=40, unique=True)
-    # TODO: Needed ?
     current_private_room: "PrivateRoom | None" = models.ForeignKey( 'PrivateRoom', on_delete=models.SET_NULL,  null=True,  blank=True,related_name='players') # type: ignore
     ready_to_play = models.BooleanField(default=False) # depending of the current private room could be interpreted as  ready or looking for a public game
 
@@ -82,7 +79,7 @@ class BridgeSquare(BaseSquare):
 class TramSquare(BaseSquare):
     buy_price = models.PositiveIntegerField(default=0)
 
-class ParkingSquare(BaseSquare):
+class ParkingSquare(BaseSquare): #hendrix renting
     money = models.PositiveIntegerField(default=0)
 
 class ServerSquare(BaseSquare):
@@ -104,17 +101,13 @@ class JailSquare(BaseSquare):
 #------ Models for Public Matchmaking Queue ------#
 class PublicQueuePosition(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    # TODO: check this max length
     channel = models.CharField(max_length=300) 
     date_time = models.DateTimeField()
-
-    # TODO: implement skill based matchmaking / start with timestamps ¿?
 
 #------ Models for Private Management ------#
 class PrivateRoom(models.Model):
     #The one who starts the room and later the game
     owner:"CustomUser | None" = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='hosted_rooms')# type: ignore
-    # TODO: set max_length
     # Players will be linked from CustomUser.current_private_room
     room_code: str = models.CharField(max_length=10, unique=True) #type: ignore
     players: models.QuerySet['CustomUser']
@@ -155,22 +148,31 @@ class FantasyEvent(models.Model):
 
 class Game(models.Model):
     datetime = models.DateTimeField()
+    # Maps user_id -> square_custom_id
     positions = models.JSONField(default=dict, blank=True)
-    money = models.JSONField(default=list, blank=True)
+    # Maps user_id -> square_custom_id (used for movement phase tracking)
+    current_square = models.JSONField(default=dict, blank=True)
+    # Maps user_id -> amount
+    money = models.JSONField(default=dict, blank=True)
     turn = models.IntegerField(default=0)
+    active_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='turns_to_play')
+
     class GamePhase(models.TextChoices):
-        moving = 'moving',
-        management = 'management',
-        liquidation = 'liquidation',
-    phase = models.CharField(choices=GamePhase, max_length=15)
+        roll_the_dices = 'roll_the_dices'
+        choose_square = 'choose_square'
+        management = 'management'
+        liquidation = 'liquidation'
+        business = 'business'
+        auction = 'auction'
+
+    phase = models.CharField(choices=GamePhase, max_length=20, default='roll_the_dices')
     players = models.ManyToManyField('CustomUser', related_name='active_playing')
     streak = models.IntegerField(default=0)
     possible_destinations = models.JSONField(default=list, blank=True)
-    # TODO: How to store property group ownership?
 
 class PropertyRelationship(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='PropertyRelationship_in_game')
-    owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by')
+    owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by') # type: ignore
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='owned_square')
 
     houses = models.IntegerField(default=-1)#-1: incomplete group, 0: complete group,
@@ -187,8 +189,7 @@ class ActionThrowDices(Action):
     dice_bus = models.PositiveIntegerField(default=0)
     destinations = models.JSONField(default=list, blank=True)
     triple = models.BooleanField(default=False)
-    path = models.JSONField(default=list,blank=True)#TODO lista de listas? si hay varios destinos hay varios paths?
-                                                    #o se puede usar el mismo path usando un trozo?
+    path = models.JSONField(default=list, blank=True)
     streak = models.IntegerField(default=0)
 
 class ActionMoveTo(Action):

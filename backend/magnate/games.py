@@ -12,70 +12,43 @@ try:
 except FileNotFoundError:
     BOARD_JSON = {}
 
-# El Gemini me ha hecho esto pidiendole que hiciese una función de cargar el json
-def load_board_map(board_json):
-    board_map = {}
-    
-    lists = ["property_squares", "bridge_squares", "tram_squares", 
-             "server_squares", "fantasy_squares"]
-    for key in lists:
-        if key in board_json:
-            for item in board_json[key]:
-                item['type'] = key
-                board_map[item['id']] = item
+def get_square(custom_id: int):
+    square = BaseSquare.objects.filter(custom_id=custom_id)
+    if square.count() > 1:
+        raise ValueError("Too many squares found!")
+    return square.first()
 
-    singles = ["exit_square", "go_to_jail_square", "jail_square", "parking_square"]
-    for key in singles:
-        if key in board_json:
-            item = board_json[key]
-            item['type'] = key
-            board_map[item['id']] = item
-            
-    return board_map
-
-BOARD_MAP = load_board_map(BOARD_JSON)
-
-
-def move_player_logic(current_id, total_steps, board_map):
-    curr = current_id
+def move_player_logic(curr, total_steps):
     path_log = [curr]
     passed_go = False
 
     for i in range(total_steps):
-        if curr not in board_map:
-            raise ValueError(f"Casilla {curr} no encontrada")
-
-        square = board_map[curr]
         next_id = None
         
-        if square.get('type') == 'bridge_squares':
+        # TODO: dinero al pasar por la casilla de salida
+        if isinstance(curr, BridgeSquare):
             # depending on steps 
             if total_steps % 2 == 0:
-                next_id = square['out_successor']
+                curr = curr.out_successor
             else:
-                next_id = square['in_successor']
-        else:
-            next_id = square.get('id_successor')
-
-        if next_id == "000":
+                curr = curr.in_successor
+        elif isinstance(curr, ExitSquare):
             passed_go = True
+            curr = square.in_successor
+        else:
+            curr = square.in_successor
         
-        curr = next_id
-        path_log.append(curr)
+        path_log.append(curr.custom_id)
 
-    if curr == "020":
-        curr = "140"
+    if isinstance(curr, GoToJailSquare):
+        curr = JailSquare.objects.first()
 
-    return {"final_id": curr, "path": path_log, "passed_go": passed_go}
+    return {"final_id": curr.custom_id, 
+            "path": path_log, "passed_go": passed_go}
 
-
-async def get_possible_destinations_ids(user, game, step_options, board_map):
+async def get_possible_destinations_ids(user, game, step_options):
     destination_ids = []
-    try:
-        player_state = await game.game_players.aget(user=user)
-        current_pos = str(player_state.position.custom_id)
-    except:
-        current_pos = "000"
+    current_pos = game.positions[user]
         
     for steps in step_options:
         result = move_player_logic(current_pos, steps, board_map)
@@ -83,7 +56,7 @@ async def get_possible_destinations_ids(user, game, step_options, board_map):
 
     return sorted(list(set(destination_ids)))
 
-
+# TODO: Remove
 def land_in_jail(game, total, user, board):
     info = move_player_logic(game.current_square[user], total, board)
     return info["final_id"] == "020", info["path"]
@@ -190,10 +163,12 @@ class GameManager:
 
         if len(action.destinations) >1:
             game.phase = "choose_square"
-        elif action.destinations == ["104"]:
-            game.phase = "liquidation"
         else:
-            game.phase = "management" #pay bills or buy if possible
+            square = BaseSquare.objects.filter(custom_id=action.destinations[0])
+            if isinstance(square, JailSquare):
+                game.phase = "liquidation"
+            else:
+                game.phase = "management" #pay bills or buy if possible
         game.save()
 
     @classmethod
@@ -279,6 +254,7 @@ class GameManager:
                 action.streak= streak + 1
                 if bus_is_numeric:
                     
+                    # TODO: Fix land_in_jail
                     in_jail, action.path = land_in_jail(game, d1+d2, user, BOARD_MAP)
                     action.destinations = action.path[-1] if not in_jail else ["104"]
                     action.streak = 0 if in_jail else action.streak
@@ -298,6 +274,7 @@ class GameManager:
             action.streak = 0
             if bus_is_numeric:
                 
+                # TODO: Fix land_in_jail
                 in_jail, action.path = land_in_jail(game, d1+d2+d3, user, BOARD_MAP)
                 action.destinations = action.path[-1] if not in_jail else ["104"]
                 await GameManager.update_game_state_dices(action, game, user)

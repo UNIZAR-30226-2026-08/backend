@@ -82,7 +82,7 @@ class BridgeSquare(BaseSquare):
 class TramSquare(BaseSquare):
     buy_price = models.PositiveIntegerField(default=0)
 
-class ParkingSquare(BaseSquare):
+class ParkingSquare(BaseSquare): #hendrix renting
     money = models.PositiveIntegerField(default=0)
 
 class ServerSquare(BaseSquare):
@@ -170,7 +170,7 @@ class Game(models.Model):
 
 class PropertyRelationship(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='PropertyRelationship_in_game')
-    owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by')
+    owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by') # type: ignore
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='owned_square')
 
     houses = models.IntegerField(default=-1)#-1: incomplete group, 0: complete group,

@@ -113,10 +113,16 @@ class ActionMoveToSerializer(ActionSerializer):
         model = ActionMoveTo
         fields = ActionSerializer.Meta.fields + ['square']
 
-class ActionTakeBusSerializer(ActionSerializer):
+class ActionTakeTramSerializer(ActionSerializer):
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
-        model = ActionTakeBus
+        model = ActionTakeTram
+        fields = ActionSerializer.Meta.fields + ['square']
+
+class ActionDoNotTakeTramSerializer(ActionSerializer):
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionDoNotTakeTram
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionBuySquareSerializer(ActionSerializer):
@@ -211,8 +217,10 @@ class GeneralActionSerializer(serializers.ModelSerializer):
             return ActionThrowDicesSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionMoveTo):
             return ActionMoveToSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionTakeBus):
-            return ActionTakeBusSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionTakeTram):
+            return ActionTakeTramSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionDoNotTakeTram):
+            return ActionDoNotTakeTramSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionBuySquare):
             return ActionBuySquareSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionSellSquare):
@@ -250,7 +258,8 @@ def action_from_json(data, context=None):
     mapping = {
         'ActionThrowDices': ActionThrowDicesSerializer,
         'ActionMoveTo': ActionMoveToSerializer,
-        'ActionTakeBus': ActionTakeBusSerializer,
+        'ActionTakeTram': ActionTakeTramSerializer,
+        'ActionDoNotTakeTram': ActionDoNotTakeTramSerializer,
         'ActionBuySquare': ActionBuySquareSerializer,
         'ActionSellSquare': ActionSellSquareSerializer,
         'ActionGoToJail': ActionGoToJailSerializer,

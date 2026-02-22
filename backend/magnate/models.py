@@ -163,7 +163,7 @@ class Game(models.Model):
         management = 'management',
         liquidation = 'liquidation',
     phase = models.CharField(choices=GamePhase, max_length=15)
-    active_players = models.ManyToManyField('CustomUser', related_name='active_playing')
+    players = models.ManyToManyField('CustomUser', related_name='active_playing')
     streak = models.IntegerField(default=0)
     possible_destinations = models.JSONField(default=list, blank=True)
     # TODO: How to store property group ownership?
@@ -195,9 +195,11 @@ class ActionMoveTo(Action):
     # Custom ID or real ID ? Mario opina que custom ID
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='move_to')
 
+class ActionTakeTram(Action):
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='tram_move_to')
 
-class ActionTakeBus(Action):
-    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bus_move_to')
+class ActionDoNotTakeTram(Action):
+    pass
 
 class ActionDropPurchase(Action):
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='dropped')

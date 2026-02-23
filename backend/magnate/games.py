@@ -37,12 +37,19 @@ def move_player_logic(curr, total_steps):
             passed_go = True
             curr = curr.in_successor
         else:
+            if curr is None:
+                return None #TODO: Excepcion
             curr = curr.in_successor
+        
+        if curr is None:
+            return None #TODO: Excepcion
         
         path_log.append(curr.custom_id)
 
     if isinstance(curr, GoToJailSquare):
         curr = JailSquare.objects.first()
+        if curr is None:
+            return None #TODO: Excepcion
 
     return {"final_id": curr.custom_id, 
             "path": path_log, "passed_go": passed_go}
@@ -52,14 +59,18 @@ async def get_possible_destinations_ids(user, game, step_options):
     current_pos = game.positions[user]
         
     for steps in step_options:
-        result = move_player_logic(current_pos, steps, board_map)
+        result = move_player_logic(current_pos, steps)
+        if result is None:
+            return None #TODO: excepcion
         destination_ids.append(result["final_id"])
 
     return sorted(list(set(destination_ids)))
 
 # TODO: Remove
-def land_in_jail(game, total, user, board):
-    info = move_player_logic(game.current_square[user], total, board)
+def land_in_jail(game, total, user):
+    info = move_player_logic(game.current_square[user], total)
+    if info is None:
+            return None #TODO: excepcion
     return info["final_id"] == "020", info["path"]
 
 
@@ -244,10 +255,9 @@ class GameManager:
         action = ActionMoveTo(game = game, player = user)
         
         if square not in possible_chosen_squares:
-            return None
+            return None #TODO excepcion
         
-        
-        action .square = square
+        action.square = square
 
         await GameManager.update_game_state_square_chosen(action, game, user)
         return action
@@ -285,16 +295,19 @@ class GameManager:
 
         elif isinstance(current_square, PropertySquare):
             property = PropertyRelationship.objects.filter(game=game, square=current_square)
-            if property.exists(): #  pay rent -> chekc houses
+            if property.exists(): #  pay rent -> check houses
                 to_pay = GameManager.get_rent_price(current_square, property.first())
-                property_owner = property.first().owner
+                first = property.first()
+                if first is None:
+                    return None #TODO: Excepcion 
+                property_owner = first.owner
                 game.money[user] -= to_pay
                 game.money[property_owner] += to_pay
                 game.phase = "business"
                 game.save()
             else: #buy option -> look at data to see if the user wants to buy and if he can afford it
                 if isinstance(action, ActionBuySquare):
-                    game.money[user] -= current_square.price
+                    game.money[user] -= current_square.buy_price
                     game.phase = "business"
                     new_property = PropertyRelationship(game=game, square=current_square, owner=user)
                     user_properties = PropertyRelationship.objects.filter(game=game, owner=user)
@@ -341,12 +354,17 @@ class GameManager:
             property = PropertyRelationship.objects.filter(game=game, square=current_square)
             if property.exists(): #  pay rent
                 #Check whether the user owns the other ServerSquare 
-                property_owner = property.first().owner
+                first = property.first()
+                if first is None:
+                    return None#TODO: expecion
+                property_owner = first.owner
                 squares = PropertyRelationship.objects.filter(game=game, square__type='server_squares', owner=property_owner)
+                if current_square.rent_prices is None:
+                    return None #TODO: excepcion
                 if squares.count() == 2:
-                    to_pay = current_square.rent [1]
+                    to_pay = current_square.rent_prices[1]
                 else:
-                    to_pay = current_square.rent [0]
+                    to_pay = current_square.rent_prices[0]
 
                 game.money[user] -= to_pay
                 game.money[property_owner] += to_pay
@@ -355,7 +373,7 @@ class GameManager:
 
             else: #buy option -> look at data to see if the user wants to buy and if he can afford it
                 if isinstance(action, ActionBuySquare):
-                    game.money[user] -= current_square.price
+                    game.money[user] -= current_square.buy_price
                     game.phase = "business"
                     new_property = PropertyRelationship(game=game, square=current_square, owner=user)
                     new_property.save()

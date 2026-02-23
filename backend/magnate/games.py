@@ -255,18 +255,20 @@ class GameManager:
     @staticmethod
     def get_rent_price(square: PropertySquare, property):
         houses = property.houses
+        if square.rent_prices is None:
+            return None #TODO excepcion
         if houses == -1:
-            return square.rent[0]
+            return square.rent_prices[0]
         elif houses == 0:
-            return square.rent[1]
+            return square.rent_prices[1]
         elif houses == 1:
-            return square.rent[2]
+            return square.rent_prices[2]
         elif houses == 2:
-            return square.rent[3]
+            return square.rent_prices[3]
         elif houses == 3:
-            return square.rent[4]
+            return square.rent_prices[4]
         elif houses == 4:
-            return square.rent[5]
+            return square.rent_prices[5]
         
     @staticmethod
     @database_sync_to_async

@@ -1,7 +1,9 @@
 from asyncio import Server
 import random 
 import json
+from tokenize import group
 from django.db import transaction
+from numpy import square
 
 from backend.magnate.serializers import *
 from .models import *
@@ -84,6 +86,14 @@ class GameManager:
             return await cls._square_chosen_logic(game.possible_destinations, user, game, action)
         elif game.phase == "management":
             return await cls._management_logic(user, game, action, data)
+        elif game.phase == "bussiness":
+            return await cls._bussiness_logic(user, game, action, data)
+        elif game.phase == "answer_trade_proposal":
+            return await cls._answer_trade_proposal_logic(user, game, action, data)
+        elif game.phase == "liquidation":
+            return await cls._liquidation_logic(user, game, action, data)
+
+
 
 
         
@@ -384,11 +394,345 @@ class GameManager:
                     pass
             
             return {"next_phase": game.phase}
-                    
-            
-                
+           
         elif isinstance(current_square, JailSquare):
             pass
+
+    @staticmethod
+    async def _bussiness_logic(user, game, action, data):
+        # Logic for the business phase where players can build houses, trade, etc.
+        if isinstance(action, ActionBuild):
+            # Check if squares are from user and if he has the complete group -> check limitations
+            # Check if there's no difference of 2 built houeses between group squares
+
+            #Check owner 
+            building_square = action.square
+            relationship = PropertyRelationship.objects.get(game=game, square=building_square)
+
+            #Check if it's  a property and take its group
+            if not isinstance(building_square, PropertySquare):
+                return None #TODO: excepcion
+
+            square_group = building_square.group
+    
+            owner = relationship.owner
+            actual_houses = relationship.houses
+
+            if owner != user:
+                return None #TODO: excepcion
+            
+            # Check if user has every square in the group and if its a property
+            total_squares_in_group = PropertySquare.objects.filter(
+                board=building_square.board, 
+                group=square_group
+            ).count()
+            
+
+            group_relationships = PropertyRelationship.objects.filter(
+                game=game, 
+                owner=user, 
+                square__propertysquare__group=square_group
+            ).select_related('square')
+
+            if group_relationships.count() != total_squares_in_group:
+                return None # TODO: you dont hae all th egroup
+
+            for rel in group_relationships:
+                if rel.houses < 0: 
+                    return None # TODO:#no tiene sentido en principiio
+
+                if actual_houses + action.houses -1 > rel.houses:
+                    return None # TODO: no se puede construir debido a que ya tiene mas que otra
+
+            if actual_houses == 5:
+                return None # TODO: no hay na mas que construir
+
+            relationship.houses += action.houses
+            relationship.save()
+            
+            coste = building_square.build_price
+
+            user_id_str = str(user.id)
+            
+            
+            #update game state -> we continue in the same phase
+            game.money[user_id_str] -= coste
+            game.save()
+
+
+            
+            return relationship  #ack
+
+            
+        elif isinstance(action, ActionDemolish):
+            # Similiar to build
+            demolition_square = action.square
+            number_demolished = action.houses
+            relationship = PropertyRelationship.objects.get(game=game, square=demolition_square)
+
+            #Check if it's  a property
+            if not isinstance(demolition_square, PropertySquare):
+                return None #TODO: excepcion
+    
+            owner = relationship.owner
+            actual_houses = relationship.houses
+
+            if actual_houses < number_demolished:
+                return None #TODO: excepcion
+            
+
+            if owner != user:
+                return None #TODO: excepcion
+            #Check if you
+
+            
+
+            square_group = demolition_square.group
+    
+            
+            group_relationships = PropertyRelationship.objects.filter(
+                game=game, 
+                owner=user, 
+                square__propertysquare__group=square_group
+            ).select_related('square')
+
+        # Check if we can demolish -> respect rule
+            for rel in group_relationships:
+                if actual_houses - number_demolished < rel.houses - 1:
+                    return None # TODO: no se puede demoler ya que habria diferencia de 2
+
+            relationship.houses -= number_demolished
+            relationship.save()
+            
+            coste  = demolition_square.build_price
+
+            user_id_str = str(user.id)
+            
+            
+            #update game state -> we continue in the same phase
+            game.money[user_id_str] += coste//2
+            game.save()
+
+
+            
+            return relationship  #ack
+
+
+        
+        elif isinstance(action, ActionTradeProposal):
+            # Check if every number /property makes sense, then sned to frond a waiting message and to all players the action
+            # Th destination players must decide whether or not to accept -> think of a way to do that -> front messages 
+            offering = action.offering_user
+            destination = action.destination_user
+            offered_money = action.offered_money
+            asked_money = action.asked_money
+            offered_properties = action.offered_properties
+            asked_properties = action.asked_properties
+
+            if offering != user or offered_money < 0 or asked_money < 0:
+                return None #TODO: error
+
+
+            asked_properties_list = asked_properties.all()
+            asked_count = PropertyRelationship.objects.filter(
+                game=game, 
+                owner=destination, 
+                id__in=asked_properties_list
+            ).count()
+
+            if asked_count != asked_properties_list.count():
+                return None # TODO: detination aint got all of em
+
+            offered_properties_list = offered_properties.all()
+            offered_count = PropertyRelationship.objects.filter(
+                game=game, 
+                owner=offering, 
+                id__in=offered_properties_list
+            ).count()
+
+            if offered_count != offered_properties_list.count():
+                return None # u aint got all of em
+            
+            #update the game phase to proposal acceptance and change turn
+            game.phase = "proposal_acceptance"
+            game.active_player = destination
+            game.save()
+
+        elif isinstance(action, ActionMortgageSet):
+            target_square = action.square
+            
+            try:
+                relationship = PropertyRelationship.objects.get(
+                    game=game, 
+                    square=target_square, 
+                    owner=user
+                )
+            except PropertyRelationship.DoesNotExist:
+                return None # TODO: u tricking
+
+            if not isinstance(target_square, PropertySquare):
+                return None 
+
+            if relationship.houses == -2:
+                return None # already mortgage set
+
+            group_relationships = PropertyRelationship.objects.filter(
+                game=game,
+                square__propertysquare__group=target_square.group
+            ).select_related('square')
+
+            total_refund = 0
+            user_id_str = str(user.id)
+
+            for rel in group_relationships:
+                # demolish if necessary
+                if rel.houses > 0:
+                    houses_to_sell = rel.houses
+                    build_price = rel.square.propertysquare.build_price
+                    
+                    refund = (houses_to_sell * build_price) // 2
+                    total_refund += refund
+                    
+                    # reset to -1
+                    rel.houses = -1
+                    rel.save()
+
+            mortgage_value = target_square.buy_price // 2
+            total_gain = total_refund + mortgage_value
+
+            relationship.houses = -2 
+            relationship.save()
+
+            game.money[user_id_str] = game.money.get(user_id_str, 0) + total_gain
+            game.save()
+
+            return action
+        
+
+        elif isinstance(action, ActionMortgageUnset):
+            target_square = action.square
+            user_id_str = str(user.id)
+            
+            try:
+                relationship = PropertyRelationship.objects.get(
+                    game=game, 
+                    square=target_square, 
+                    owner=user
+                )
+            except PropertyRelationship.DoesNotExist:
+                return None # not urs
+
+            if relationship.houses != -2:
+                return None # not mortgaged
+
+            mortgage_value = target_square.buy_price // 2
+            total_cost = mortgage_value
+
+            game.money[user_id_str] -= total_cost
+            relationship.houses = -1 # incomplete
+            relationship.save()
+
+            total_in_group = PropertySquare.objects.filter(
+                board=target_square.board, 
+                group=target_square.group
+            ).count()
+
+            owned_active_in_group = PropertyRelationship.objects.filter(
+                game=game,
+                owner=user,
+                square__propertysquare__group=target_square.group
+            ).exclude(houses=-2)
+
+            if owned_active_in_group.count() == total_in_group:
+                owned_active_in_group.update(houses=0)
+            
+            game.save()
+            return action
+
+            
+
+        else: #next phase -> depends on the money user has
+            if game.money[str(user.id)] < 0:
+                game.phase = "liquidation"
+            
+            game.phase = "roll_the_dices"
+            all_players = game.players
+            players_list = list(game.players.all().order_by('id')) 
+            num_players = len(players_list)
+            current_index = -1
+            for i, p in enumerate(players_list):
+                if p == game.active_player:
+                    current_index = i
+                    break
+            
+            next_index = (current_index + 1) % num_players
+            game.active_player = players_list[next_index]
+            game.save()
+
+        
+            
+        return action
+
+
+                    
+    @staticmethod
+    async def _answer_trade_proposal_logic(user, game, action, data):
+        if isinstance(action, ActionTradeAnswer):
+            #check if the action is the same as it was offered and check the boolean
+            accept = action.choose
+            offer = action.proposal
+
+            offering = offer.offering_user
+            destination = offer.destination_user
+
+            proposal_previous_phase = game.proposal
+
+            offered_money = offer.offered_money
+            asked_money = offer.asked_money
+            offered_properties = offer.offered_properties
+            asked_properties = offer.asked_properties
+
+            if user != destination:
+                return None #TODO: error -> proposal is not for u mate
+            
+
+            if offer != proposal_previous_phase:
+                return None #TODO: you tricking me
+            
+            if accept:
+                for relationship in offered_properties.all():
+                    relationship.owner = destination
+                    relationship.houses = -1 # reset houses
+                    relationship.save()
+                    
+                for relationship in asked_properties.all():
+                    relationship.owner = offering
+                    relationship.houses = -1
+                    relationship.save()
+                game.money[str(offering.id)] -= offered_money
+                game.money[str(offering.id)] += asked_money
+                
+                game.money[str(destination.id)] -= asked_money
+                game.money[str(destination.id)] += offered_money
+
+                game.save()
+                
+
+            game.phase = "bussiness"
+            game.active_player = offering
+            game.save()
+
+
+            return action
+        
+    @staticmethod
+    async def _liquidation_logic(user, game, action, data):
+        # Force the user to make moves to make money 
+
+
+
+
+             
         
         
         

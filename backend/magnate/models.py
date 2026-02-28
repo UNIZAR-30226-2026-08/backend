@@ -154,7 +154,6 @@ class Game(models.Model):
     current_square = models.JSONField(default=dict, blank=True)
     # Maps user_id -> amount
     money = models.JSONField(default=dict, blank=True)
-    turn = models.IntegerField(default=0)
     active_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='turns_to_play')
 
     class GamePhase(models.TextChoices):
@@ -164,18 +163,21 @@ class Game(models.Model):
         liquidation = 'liquidation'
         business = 'business'
         auction = 'auction'
+        proposal_acceptance = 'proposal_acceptance'
+
 
     phase = models.CharField(choices=GamePhase, max_length=20, default='roll_the_dices')
     players = models.ManyToManyField('CustomUser', related_name='active_playing')
     streak = models.IntegerField(default=0)
     possible_destinations = models.JSONField(default=list, blank=True)
+    proposal = models.OneToOneField('ActionTradeProposal', on_delete=models.CASCADE, related_name='proposal') #trade proposal now on the table
 
 class PropertyRelationship(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='PropertyRelationship_in_game')
     owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by') # type: ignore
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='owned_square')
 
-    houses = models.IntegerField(default=-1)#-1: incomplete group, 0: complete group,
+    houses = models.IntegerField(default=-1)#-2: mortgage set, -1: incomplete group, 0: complete group,
                                             #1-4: houses, #5: hotel
 
 class Action(models.Model):
@@ -215,7 +217,7 @@ class ActionGoToJail(Action):
     pass
 
 class ActionBuild(Action):
-    houses = models.IntegerField(default=0)
+    houses = models.IntegerField(default=1)
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='build_square')
 
 class ActionDemolish(Action):
@@ -229,6 +231,7 @@ class ActionSurrender(Action):
     pass
 
 class ActionTradeProposal(Action):
+    offering_user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='offering_user')
     destination_user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='destination_user')
     offered_money = models.PositiveIntegerField(default=0)
     asked_money = models.PositiveIntegerField(default=0)

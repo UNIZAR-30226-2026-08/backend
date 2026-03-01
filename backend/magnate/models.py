@@ -127,7 +127,6 @@ class FantasyEvent(models.Model):
         dontPayNextTurnRent = 'dontPayNextTurnRent',
         allYourRentsX2OneTurn = 'allYourRentsX2OneTurn',
         freeHouse = 'freeHouse',
-        outOfJailCard = 'outOfJailCard',
         goToJail = 'goToJail',
         sendToJail = 'sendToJail',
         everybodyToJail = 'everybodyToJail',
@@ -143,6 +142,10 @@ class FantasyEvent(models.Model):
     fantasy_type = models.CharField(choices=FantasyType, max_length=40)
     values = models.JSONField(null=True)
     card_cost = models.IntegerField(default=0)
+
+class FantasyResult(models.Model):
+    fantasy_type = models.CharField(choices=FantasyEvent.FantasyType, max_length=40)
+    values = models.JSONField(null=True)
 
 ###############################################################################
 
@@ -170,7 +173,7 @@ class Game(models.Model):
     players = models.ManyToManyField('CustomUser', related_name='active_playing')
     streak = models.IntegerField(default=0)
     possible_destinations = models.JSONField(default=list, blank=True)
-    proposal = models.OneToOneField('ActionTradeProposal', on_delete=models.CASCADE, related_name='proposal') #trade proposal now on the table
+    parking_money = models.PositiveIntegerField(default=0)
 
 class PropertyRelationship(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='PropertyRelationship_in_game')
@@ -231,7 +234,6 @@ class ActionSurrender(Action):
     pass
 
 class ActionTradeProposal(Action):
-    offering_user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='offering_user')
     destination_user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='destination_user')
     offered_money = models.PositiveIntegerField(default=0)
     asked_money = models.PositiveIntegerField(default=0)

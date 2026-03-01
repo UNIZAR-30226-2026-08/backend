@@ -132,7 +132,7 @@ class GameManager:
         if len(action.destinations) >1:
             game.phase = "choose_square"
         else:
-            square = BaseSquare.objects.filter(custom_id=action.destinations[0])
+            square = BaseSquare.objects.filter(custom_id=action.destinations[0]) #TODO: posible bug, esto devuelve lista y el is instance no tirará
             if isinstance(square, JailSquare):
                 game.phase = "liquidation"
             else:

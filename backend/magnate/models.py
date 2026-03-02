@@ -143,6 +143,11 @@ class FantasyEvent(models.Model):
     values = models.JSONField(null=True)
     card_cost = models.IntegerField(default=0)
 
+    def __init__(self, fantasy_type, values, card_cost):
+        self.fantasy_type = fantasy_type
+        self.values = values
+        self.card_cost = card_cost
+
 class FantasyResult(models.Model):
     fantasy_type = models.CharField(choices=FantasyEvent.FantasyType, max_length=40)
     values = models.JSONField(null=True)

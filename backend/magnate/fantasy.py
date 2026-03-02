@@ -4,7 +4,8 @@ from collections import defaultdict
 import random
 
 class FantasyEventFactory:
-    def generate(self) -> FantasyEvent:
+    @staticmethod
+    def generate() -> FantasyEvent:
         fantasy_type = random.choice(FantasyEvent.FantasyType.values)
 
         values = None
@@ -340,12 +341,6 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             fantasy_type = fantasy_event.fantasy_type,
             values = None # que mire otra vez el estado y ya
             )
-
-    elif fantasy_event.fantasy_type == 'dontPayNextTurnRent':
-        raise NotImplementedError('fantasy type not implemented')
-    
-    elif fantasy_event.fantasy_type == 'allYourRentsX2OneTurn':
-        raise NotImplementedError('fantasy type not implemented')
     
     elif fantasy_event.fantasy_type == 'freeHouse':
         properties = PropertyRelationship.objects.filter(
@@ -438,8 +433,6 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             fantasy_type=fantasy_event.fantasy_type,
             values={'squares': demolished_houses}
         )
-
-        
     
     elif fantasy_event.fantasy_type == 'everybodySendsYouMoney':
         if fantasy_event.values is None:

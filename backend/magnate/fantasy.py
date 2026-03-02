@@ -341,12 +341,6 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             fantasy_type = fantasy_event.fantasy_type,
             values = None # que mire otra vez el estado y ya
             )
-
-    elif fantasy_event.fantasy_type == 'dontPayNextTurnRent':
-        raise NotImplementedError('fantasy type not implemented')
-    
-    elif fantasy_event.fantasy_type == 'allYourRentsX2OneTurn':
-        raise NotImplementedError('fantasy type not implemented')
     
     elif fantasy_event.fantasy_type == 'freeHouse':
         properties = PropertyRelationship.objects.filter(

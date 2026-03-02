@@ -46,20 +46,8 @@
         "cost":5
     },
     {
-        "type":"dont_pay_next_turn_rent",
-        "cost":35
-    },
-    {
-        "type":"all_your_rents_x2_one_turn",
-        "cost":100
-    },
-    {
         "type":"free_house",
         "cost":80
-    },
-    {
-        "type":"out_of_jail_card",
-        "cost":40
     },
     {
         "type":"go_to_jail",

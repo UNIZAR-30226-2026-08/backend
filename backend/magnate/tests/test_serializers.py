@@ -1,14 +1,17 @@
 from django.test import TestCase
 from django.core.management import call_command
 from magnate.models import BaseSquare
-from magnate.serializers import GeneralSquareSerializer, GeneralActionSerializer, action_from_json
+from magnate.serializers import GeneralSquareSerializer, GeneralActionSerializer, action_from_json, FantasyEventSerializer
 from magnate.models import *
 from django.utils import timezone
+from magnate.fantasy import FantasyEventFactory
 
-class PropertySquareSerializerTest(TestCase):
+class SerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         call_command('init_boards')
+
+        ############################# actions
         cls.player = CustomUser.objects.create(username="aaa",email="aaa@gmail.com")
         cls.player2 = CustomUser.objects.create(username="bbb",email="bbb@gmail.com")
         cls.game = Game.objects.create(datetime=timezone.now())
@@ -438,3 +441,23 @@ class PropertySquareSerializerTest(TestCase):
         self.assertEqual(instance.player,self.player)
         self.assertEqual(instance.game,self.game)
         
+
+##############################################################################fantsy serializers
+    def test_fantasy_event(self):
+        fantasyEvent1 = FantasyEvent(fantasy_type='winPlainMoney',
+                                         values={'money':1}, card_cost=2)
+        fantasyEvent2 = FantasyEventFactory.generate()
+
+        data = FantasyEventSerializer(fantasyEvent1).data
+        assert isinstance(data,dict)
+
+        self.assertEqual(data['fantasy_type'],'winPlainMoney')
+        self.assertEqual(data['values']['money'],1)
+        self.assertEqual(data['card_cost'],2)
+
+        data2 = FantasyEventSerializer(fantasyEvent2).data
+        assert isinstance(data2,dict)
+
+        self.assertEqual(data2['fantasy_type'],fantasyEvent2.fantasy_type)
+        self.assertEqual(data2['values'],fantasyEvent2.values)
+        self.assertEqual(data2['card_cost'],fantasyEvent2.card_cost)

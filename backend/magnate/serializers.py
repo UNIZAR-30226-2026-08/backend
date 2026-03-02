@@ -286,3 +286,15 @@ def action_from_json(data, context=None):
     #return instance
 
     return serializer.save()
+
+
+#########################################################################Fantasy stuff
+class FantasyEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FantasyEvent
+        fields = ['fantasy_type','values','card_cost']
+
+class FantasyResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FantasyResult
+        fields = ['fantasy_type','values']

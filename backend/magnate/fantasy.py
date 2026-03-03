@@ -405,10 +405,35 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         
     
     elif fantasy_event.fantasy_type == 'getParkingMoney':
-        raise NotImplementedError('fantasy type not implemented')
+        game.money[user.pk] += game.parking_money
+        game.parking_money = 0
+        game.save()
+
+        return FantasyResult(
+            fantasy_type=fantasy_event.fantasy_type,
+            values=None
+        )
     
     elif fantasy_event.fantasy_type == 'reviveProperty':
-        raise NotImplementedError('fantasy type not implemented')
+        properties = PropertyRelationship.objects.filter(
+            game=game, owner=user, mortgage=True
+        )
+
+        if not properties.exists():
+            return FantasyResult(
+            fantasy_type=fantasy_event.fantasy_type,
+            values={'squares': None}
+            )
+
+        target = random.choice(properties)
+        target.mortgage = False
+        target.save()
+
+        return FantasyResult(
+            fantasy_type=fantasy_event.fantasy_type,
+            values={'squares': target.square.custom_id}
+            )
+
     
     elif fantasy_event.fantasy_type == 'earthquake':
         properties = PropertyRelationship.objects.filter(

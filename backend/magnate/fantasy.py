@@ -144,7 +144,7 @@ class FantasyEventFactory:
                 )
 
 @database_sync_to_async
-def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent):
+def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent) -> FantasyResult:
 
     if fantasy_event.fantasy_type == 'winPlainMoney':
         if fantasy_event.values is None:
@@ -507,5 +507,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             fantasy_type = fantasy_event.fantasy_type,
             values = None # que mire otra vez el estado y ya
             )
-
+    else: # caso imposible presuntamente
+        return FantasyResult(
+            fantasy_type = None,
+            values = None
+            )
 

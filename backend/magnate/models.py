@@ -185,8 +185,9 @@ class PropertyRelationship(models.Model):
     owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by') # type: ignore
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='owned_square')
 
-    houses = models.IntegerField(default=-1)#-2: mortgage set, -1: incomplete group, 0: complete group,
+    houses = models.IntegerField(default=-1)# -1: incomplete group, 0: complete group,
                                             #1-4: houses, #5: hotel
+    mortgage = models.BooleanField(default=False)
 
 class Action(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='in_game')

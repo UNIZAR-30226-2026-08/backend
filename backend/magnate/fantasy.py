@@ -299,7 +299,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     elif fantasy_event.fantasy_type == 'moveAnywhereRandom':
         ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
         rand_square_id = random.choice([n for n in ids if n != game.positions[user.pk]])
-        game.current_square[user.pk] = rand_square_id
+        game.positions[user.pk] = rand_square_id
         game.save()
 
         return FantasyResult(
@@ -315,7 +315,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         target_player = random.choice(list(opponents)) #con un order by ? tambien rularia
         ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
         rand_square_id = random.choice([n for n in ids if n != game.positions[target_player.pk]])
-        game.current_square[target_player.pk] = rand_square_id
+        game.positions[target_player.pk] = rand_square_id
         game.save()
 
         return FantasyResult(
@@ -487,7 +487,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     elif fantasy_event.fantasy_type == 'magnetism': #TODO: tener en cuenta carcel
         target_id = game.positions[user.pk]
         for player in game.players: #no caso especial para el que lanza, se moverá al mismo sitio
-            game.current_square[player.pk] = target_id
+            game.positions[player.pk] = target_id
 
         game.save()
 
@@ -501,7 +501,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         if start_square is None:
             raise Exception('No encuentra casilla de salida')
         
-        game.current_square[user.pk] = start_square.custom_id
+        game.positions[user.pk] = start_square.custom_id
         game.money[user.pk] += start_square.init_money
 
         game.save()

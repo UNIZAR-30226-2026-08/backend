@@ -283,7 +283,7 @@ class FantasyTest(TestCase):
         else:
             self.assertTrue(False, 'else')
 
-    def test_suffle_positions(self): #TODO: test con carcel cuando esté
+    def test_shuffle_positions(self): #TODO: test con carcel cuando esté
                                      #TODO: no sé que más probar la verdad
         event = FantasyEvent(fantasy_type='shufflePositions',
                              values=None,
@@ -294,7 +294,17 @@ class FantasyTest(TestCase):
                                                                     event)
         self.assertEqual(result.fantasy_type,'shufflePositions')
         self.assertEqual(result.values,None)
-        for player in self.players:
-            print(self.game.positions[player.pk])
+        #for player in self.players:
+            #print(self.game.positions[player.pk])
 
-    
+    def test_move_anywhere_random(self):
+        event = FantasyEvent(fantasy_type='moveAnywhereRandom',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,
+                                                                    self.player1,
+                                                                    event)
+        self.assertEqual(result.fantasy_type,'moveAnywhereRandom')
+        self.assertEqual(result.values,None)
+        print(self.game.positions[self.player1.pk])
+

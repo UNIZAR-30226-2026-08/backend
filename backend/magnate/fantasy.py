@@ -487,7 +487,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     elif fantasy_event.fantasy_type == 'magnetism': #TODO: tener en cuenta carcel
         target_id = game.positions[user.pk]
         for player in game.players: #no caso especial para el que lanza, se moverá al mismo sitio
-            game.current_square[player.pk] = target_id #TODO: positions???
+            game.current_square[player.pk] = target_id
 
         game.save()
 

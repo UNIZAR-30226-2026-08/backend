@@ -114,6 +114,15 @@ class Command(BaseCommand):
                 instance = JailSquare.objects.create(**fields)
                 instances_dict[item['id']] = instance
 
+            item = data.get('jail_visit_square', [])
+            if item:
+                fields = {'board': board}
+                if 'id' in item and 'id_successor' in item: 
+                    successors_in[item['id']] = item['id_successor']
+
+                instance = JailVisitSquare.objects.create(**fields)
+                instances_dict[item['id']] = instance
+
             item = data.get('parking_square', [])
             if item:
                 fields = {'board': board}

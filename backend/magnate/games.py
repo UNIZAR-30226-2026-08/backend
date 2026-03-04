@@ -9,6 +9,8 @@ from backend.magnate.serializers import *
 from .models import *
 from channels.db import database_sync_to_async
 
+from backend.magnate.exceptions import *
+
 def _get_square_by_custom_id(custom_id: int) -> BaseSquare:
     square = BaseSquare.objects.filter(custom_id=custom_id)
     if len(square) < 1:
@@ -16,9 +18,9 @@ def _get_square_by_custom_id(custom_id: int) -> BaseSquare:
     return square.first()
 
 def _get_user_square(user: CustomUser) -> BaseSquare:
-    if user not in game.current_square:
+    if user not in game.positions:#TODO revisar
         raise GameLogicError(f"user {user} not in the game")
-    return _get_square_by_custom_id(game.current_square[user])
+    return _get_square_by_custom_id(game.positions[user])
 
 def _get_relationship(game: Game, square: BaseSquare) -> PropertyRelationship:
     relationship = PropertyRelationship.objects.get(game=game, square=square)
@@ -136,7 +138,7 @@ class GameManager:
         if serializer.is_valid():
             serializer.save()
 
-        game.current_square[user] = action.destinations if action.path != [] else game.current_square[user]
+        game.positions[user] = action.destinations if action.path != [] else game.positions[user]
         game.possible_destinations = action.destinations if len(action.destinations) > 1 else []
         game.streak = action.streak
 
@@ -175,7 +177,7 @@ class GameManager:
         if serializer.is_valid():
             serializer.save()
 
-        game.current_square[user] = action.square.custom_id
+        game.positions[user] = action.square.custom_id
         game.possible_destinations = []
         if game.streak > 0:
             game.phase = "roll_the_dices"
@@ -346,7 +348,7 @@ class GameManager:
 
                 if square.custom_id in tram_squares_ids: # confirms its valid
                     game.money[user] -= square.buy_price
-                    game.current_square[user] = square.custom_id
+                    game.positions[user] = square.custom_id
                     game.phase = "management"
                     game.save()
 

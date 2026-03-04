@@ -96,6 +96,9 @@ class GoToJailSquare(BaseSquare):
 class JailSquare(BaseSquare):
     bail_price = models.PositiveIntegerField(default=0)
 
+class JailVisitSquare(BaseSquare):
+    pass
+
 ###############################################################################
 
 #------ Models for Public Matchmaking Queue ------#
@@ -158,8 +161,6 @@ class Game(models.Model):
     datetime = models.DateTimeField()
     # Maps user_id -> square_custom_id
     positions = models.JSONField(default=dict, blank=True)
-    # Maps user_id -> square_custom_id (used for movement phase tracking)
-    current_square = models.JSONField(default=dict, blank=True)
     # Maps user_id -> amount
     money = models.JSONField(default=dict, blank=True)
     active_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='turns_to_play')
@@ -179,6 +180,8 @@ class Game(models.Model):
     streak = models.IntegerField(default=0)
     possible_destinations = models.JSONField(default=list, blank=True)
     parking_money = models.PositiveIntegerField(default=0)
+    # Maps user_id -> uint
+    jail_remaining_turns = models.JSONField(default=dict, blank=True)
 
 class PropertyRelationship(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='PropertyRelationship_in_game')

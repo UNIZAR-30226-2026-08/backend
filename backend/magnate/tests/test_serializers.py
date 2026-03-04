@@ -143,13 +143,15 @@ class SerializerTest(TestCase):
         self.assertEqual(data["custom_id"],20)
         
     def test_jail_square(self):
-        casilla = BaseSquare.objects.get(custom_id=104)
+        casilla = BaseSquare.objects.get(custom_id=201)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
 
         self.assertEqual(data["type"],'JailSquare')
-        self.assertEqual(data["custom_id"],104)
+        self.assertEqual(data["custom_id"],201)
         self.assertEqual(data["bail_price"],40)
+
+    #TODO: visit jail
 
     def test_parking_square(self):
         casilla = BaseSquare.objects.get(custom_id=111)

@@ -27,7 +27,7 @@ class FantasyEventFactory:
                 
             
         elif fantasy_type == 'winRatioMoney':
-            card_cost = 500
+            card_cost = 500 #TODO: carisimo, no?
             rand = random.randrange(4)
             if(rand == 0):
                 values = {'money': 1}
@@ -190,7 +190,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             raise Exception('FantasyEvent values is None')
 
         ratio_to_sub = fantasy_event.values['money']
-        game.money[user.pk] = int(game.money[user.pk] * (1 + ratio_to_sub/100))
+        game.money[user.pk] = int(game.money[user.pk] * (1 - ratio_to_sub/100))
         game.save()
 
         return FantasyResult(
@@ -202,10 +202,12 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         #random opponent, random house
         properties = PropertyRelationship.objects.filter(
             game=game,
-            houses__gte=1 # at least 1 house
+            houses__gte=1, # at least 1 house
+            square__propertysquare__isnull=False # look for properties
+                                                 # that support houses
         ).exclude(
             owner=user
-        ).select_related('square','owner')
+        ).select_related('square__propertysquare','owner')
 
         if not properties.exists():
             return FantasyResult(
@@ -215,7 +217,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         
         groups = defaultdict(list)
         for prop in properties:
-            key = (prop.owner, prop.square.color_group)
+            key = (prop.owner, prop.square.get_real_instance().group)
             groups[key].append(prop)
 
         valid_candidates = []
@@ -231,7 +233,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         else:
             raise Exception("esto no deberia pasar")
         
-        target_prop.houses -= 1
+        target_prop.houses -= 1 #TODO, check grupo completo
         target_prop.save(update_fields=['houses'])
 
         return FantasyResult(
@@ -244,7 +246,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         properties = PropertyRelationship.objects.filter(
             game=game,
             houses__gte=1, # at least 1 house
-            owner=user
+            owner=user,
+            square__propertysquare__isnull=False
         ).select_related('square')
 
         if not properties.exists():
@@ -255,11 +258,11 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         
         groups = defaultdict(list)
         for prop in properties:
-            key = prop.square.color_group
+            key = prop.square.get_real_instance().group
             groups[key].append(prop)
 
         valid_candidates = []
-        for color_group, props_in_group in groups.items():
+        for group, props_in_group in groups.items():
             max_houses = max(prop.houses for prop in props_in_group)
             if max_houses > 0:
                 for prop in props_in_group:
@@ -282,9 +285,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     elif fantasy_event.fantasy_type == 'shufflePositions': #TODO: tener en cuenta carcel
         #move everybody to random square
         ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
-        for player in game.players:
-            rand_square_id = random.choice(ids)
-            game.current_square[player.pk] = rand_square_id #TODO: positions???
+        for player in game.players.all():
+            rand_square_id = random.choice([n for n in ids if n != game.positions[player.pk]])
+            game.positions[player.pk] = rand_square_id #TODO: current_square???
 
         game.save()
 
@@ -295,7 +298,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     
     elif fantasy_event.fantasy_type == 'moveAnywhereRandom':
         ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
-        rand_square_id = random.choice(ids)
+        rand_square_id = random.choice([n for n in ids if n != game.positions[user.pk]])
         game.current_square[user.pk] = rand_square_id
         game.save()
 
@@ -311,7 +314,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         target_player = random.choice(list(opponents)) #con un order by ? tambien rularia
         ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
-        rand_square_id = random.choice(ids)
+        rand_square_id = random.choice([n for n in ids if n != game.positions[target_player.pk]])
         game.current_square[target_player.pk] = rand_square_id
         game.save()
 

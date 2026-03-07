@@ -163,7 +163,9 @@ class Game(models.Model):
     positions = models.JSONField(default=dict, blank=True)
     # Maps user_id -> amount
     money = models.JSONField(default=dict, blank=True)
-    active_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='turns_to_play')
+    # TODO: Look for better names
+    active_phase_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='phase_to_play')
+    active_turn_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='turns_to_play')
 
     class GamePhase(models.TextChoices):
         roll_the_dices = 'roll_the_dices'
@@ -191,6 +193,8 @@ class PropertyRelationship(models.Model):
     houses = models.IntegerField(default=-1)# -1: incomplete group, 0: complete group,
                                             #1-4: houses, #5: hotel
     mortgage = models.BooleanField(default=False)
+
+###############################################################################
 
 class Action(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='in_game')
@@ -262,4 +266,11 @@ class ActionMortgageUnset(Action):
 class ActionPayBail(Action):
     pass
 
+class ActionNextPhase(Action):
+    pass
 
+###############################################################################
+
+class Response(models.Model):
+    # TODO: Complete
+    pass

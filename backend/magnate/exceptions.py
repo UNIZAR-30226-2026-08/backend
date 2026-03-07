@@ -18,7 +18,7 @@ class MaliciousUserInput(Exception):
         self.message = f"[{user.id}] Potentially malicious input: " + message
         super().__init__(self.message)
 
-class MaliciousUserInputAction(Exception):
+class MaliciousUserInputAction(MaliciousUserInput):
     def __init__(self, game: Game, user: CustomUser, action: Action):
         self.message = f"cannot perform action {action} in phase {game.phase}"
         super().__init__(user, self.message)

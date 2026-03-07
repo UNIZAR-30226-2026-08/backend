@@ -583,7 +583,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 await self.send_error(f"Acción inválida: {e}")
                 return
             
-            response = await GameManager.process_action(self.user, game, action, data)
+            response = await GameManager.process_action(game, self.user, action)
 
             if response is None:
                 await self.send_error("Acción no válida en la fase actual.")
@@ -599,11 +599,20 @@ class GameConsumer(AsyncWebsocketConsumer):
                 }
             )
 
-            #TODO: send to all
+            # TODO: send to all
 
         except json.JSONDecodeError:
             await self.send_error("Datos inválidos.")
             return
+        except MaliciousUserInput:
+            # TODO: Reply user, ban, etc.
+            pass
+        except GameLogicError:
+            # TODO
+            pass
+        except GameDesignError:
+            # TODO
+            pass
         except Exception as e:
             print(f"Error  procesando turno: {e}")
             await self.send_error("Error interno procesando tu movimiento.")

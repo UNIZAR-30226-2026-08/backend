@@ -3,6 +3,8 @@ from channels.db import database_sync_to_async
 from collections import defaultdict
 import random
 
+from magnate.games import _build_square, _demolish_square, _get_jail_square, _unset_mortgage
+
 class FantasyEventFactory:
     @staticmethod
     def generate() -> FantasyEvent:
@@ -144,7 +146,7 @@ class FantasyEventFactory:
                 )
 
 @database_sync_to_async
-def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent) -> FantasyResult:
+async def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent) -> FantasyResult:
 
     if fantasy_event.fantasy_type == 'winPlainMoney':
         if fantasy_event.values is None:
@@ -233,12 +235,12 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         else:
             raise Exception("esto no deberia pasar")
         
-        target_prop.houses -= 1 #TODO, check grupo completo
-        target_prop.save(update_fields=['houses'])
+        result_property = await _demolish_square(game=game, user=target_prop.owner, demolition_square=target_prop.square,
+                         number_demolished=1, free_demolish=True)
 
         return FantasyResult(
             fantasy_type = fantasy_event.fantasy_type,
-            values = {'square': target_prop.square.custom_id}
+            values = {'square': result_property.square.custom_id}
             )
     
     elif fantasy_event.fantasy_type == 'breakOwnHouse':
@@ -274,20 +276,23 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         else:
             raise Exception("esto no deberia pasar")
         
-        target_prop.houses -= 1
-        target_prop.save(update_fields=['houses'])
+        result_property = await _demolish_square(game=game, user=target_prop.owner, demolition_square=target_prop.square,
+                         number_demolished=1, free_demolish=True)
 
         return FantasyResult(
             fantasy_type = fantasy_event.fantasy_type,
-            values = {'square': target_prop.square.custom_id}
+            values = {'square': result_property.square.custom_id}
             )
 
-    elif fantasy_event.fantasy_type == 'shufflePositions': #TODO: tener en cuenta carcel
+    elif fantasy_event.fantasy_type == 'shufflePositions':
+        id_jail = _get_jail_square().custom_id
         #move everybody to random square
         ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
+        ids.remove(id_jail)
         for player in game.players.all():
-            rand_square_id = random.choice([n for n in ids if n != game.positions[player.pk]])
-            game.positions[player.pk] = rand_square_id #TODO: current_square???
+            if game.positions[player.pk] != id_jail:
+                rand_square_id = random.choice([n for n in ids if n != game.positions[player.pk]])
+                game.positions[player.pk] = rand_square_id
 
         game.save()
 
@@ -297,10 +302,13 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             )
     
     elif fantasy_event.fantasy_type == 'moveAnywhereRandom':
-        ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
-        rand_square_id = random.choice([n for n in ids if n != game.positions[user.pk]])
-        game.positions[user.pk] = rand_square_id
-        game.save()
+        id_jail = _get_jail_square().custom_id
+        if(game.positions[user.pk] != id_jail):
+            ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
+            ids.remove(id_jail)
+            rand_square_id = random.choice([n for n in ids if n != game.positions[user.pk]])
+            game.positions[user.pk] = rand_square_id
+            game.save()
 
         return FantasyResult(
             fantasy_type = fantasy_event.fantasy_type,
@@ -311,12 +319,15 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         opponents = game.players.exclude(pk=user.pk)
         if not opponents.exists():
             raise Exception('Catatrofe no deberias estar aqui')
-
         target_player = random.choice(list(opponents)) #con un order by ? tambien rularia
-        ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
-        rand_square_id = random.choice([n for n in ids if n != game.positions[target_player.pk]])
-        game.positions[target_player.pk] = rand_square_id
-        game.save()
+
+        id_jail = _get_jail_square().custom_id
+        if(game.positions[target_player.pk] != id_jail):
+            ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
+            ids.remove(id_jail)
+            rand_square_id = random.choice([n for n in ids if n != game.positions[target_player.pk]])
+            game.positions[target_player.pk] = rand_square_id
+            game.save()
 
         return FantasyResult(
             fantasy_type = fantasy_event.fantasy_type,
@@ -376,12 +387,12 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         else:
             raise Exception('creo que esto no puede ocurrir')
         
-        target_prop.houses += 1
-        target_prop.save(update_fields=['houses'])
+        result_property = await _build_square(game=game, user=target_prop.owner, building_square=target_prop.square,
+                         number_built=1, free_build=True)
 
         return FantasyResult(
             fantasy_type=fantasy_event.fantasy_type,
-            values={'square': target_prop.square.custom_id}
+            values={'square': result_property.square.custom_id}
         )
     
     elif fantasy_event.fantasy_type == 'goToJail':
@@ -429,12 +440,12 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             )
 
         target = random.choice(properties)
-        target.mortgage = False
-        target.save()
+
+        result = await _unset_mortgage(user=user,game=game,target_square=target.square,free_unset_mortgage=True)
 
         return FantasyResult(
             fantasy_type=fantasy_event.fantasy_type,
-            values={'squares': target.square.custom_id}
+            values={'squares': result.square.custom_id}
             )
 
     
@@ -453,9 +464,11 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         demolished_houses = []
 
         for prop in properties:
-            prop.houses -= 1 #python no tiene --, tocate los *******
-            prop.save(update_fields=['houses'])
-            demolished_houses.append(prop.square.custom_id)
+            #prop.houses -= 1 #python no tiene --, tocate los *******
+            #prop.save(update_fields=['houses'])
+            result_property = await _demolish_square(game=game, user=prop.owner, demolition_square=prop.square,
+                         number_demolished=1, free_demolish=True)
+            demolished_houses.append(result_property.square.custom_id)
 
         return FantasyResult(
             fantasy_type=fantasy_event.fantasy_type,
@@ -484,10 +497,12 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             values = None # que mire otra vez el estado el frontend
             )
     
-    elif fantasy_event.fantasy_type == 'magnetism': #TODO: tener en cuenta carcel
+    elif fantasy_event.fantasy_type == 'magnetism':
+        id_jail = _get_jail_square().custom_id
         target_id = game.positions[user.pk]
         for player in game.players: #no caso especial para el que lanza, se moverá al mismo sitio
-            game.positions[player.pk] = target_id
+            if(game.positions[player.pk] != id_jail):
+                game.positions[player.pk] = target_id
 
         game.save()
 
@@ -497,14 +512,15 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             )
 
     elif fantasy_event.fantasy_type == 'goToStart':
+        id_jail = _get_jail_square().custom_id
         start_square = ExitSquare.objects.first()
         if start_square is None:
             raise Exception('No encuentra casilla de salida')
         
-        game.positions[user.pk] = start_square.custom_id
-        game.money[user.pk] += start_square.init_money
-
-        game.save()
+        if(game.positions[user.pk] != id_jail):
+            game.positions[user.pk] = start_square.custom_id
+            game.money[user.pk] += start_square.init_money
+            game.save()
 
         return FantasyResult(
             fantasy_type = fantasy_event.fantasy_type,

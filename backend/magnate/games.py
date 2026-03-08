@@ -4,11 +4,11 @@ import json
 from tokenize import group
 from django.db import transaction
 
-from backend.magnate.serializers import *
+from magnate.serializers import *
 from .models import *
 from channels.db import database_sync_to_async
 
-from backend.magnate.exceptions import *
+from magnate.exceptions import *
 
 from typing import Optional
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist

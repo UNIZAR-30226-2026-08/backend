@@ -3,7 +3,6 @@ import random
 import json
 from tokenize import group
 from django.db import transaction
-from numpy import square
 
 from backend.magnate.serializers import *
 from .models import *
@@ -11,28 +10,27 @@ from channels.db import database_sync_to_async
 
 from backend.magnate.exceptions import *
 
+from typing import Optional
+from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
+
 def _get_square_by_custom_id(custom_id: int) -> BaseSquare:
-    square = BaseSquare.objects.filter(custom_id=custom_id)
-    if len(square) < 1:
+    square = BaseSquare.objects.filter(custom_id=custom_id).first()
+    if square is None:
         raise GameLogicError(f"no square with id {custom_id}")
-    return square.first()
+    return square
 
 def _get_user_square(game: Game, user: CustomUser) -> BaseSquare:
     if user not in game.positions:#TODO revisar
         raise GameLogicError(f"user {user} not in the game")
     return _get_square_by_custom_id(game.positions[user])
 
-def _get_relationship(game: Game, square: BaseSquare) -> PropertyRelationship:
-    relationship = PropertyRelationship.objects.get(game=game, square=square)
-
-    if not relationship.exists():
+def _get_relationship(game: Game, square: BaseSquare) -> Optional[PropertyRelationship]:
+    try:
+        return PropertyRelationship.objects.get(game=game, square=square)
+    except PropertyRelationship.DoesNotExist:
         return None
-    elif len(relationship) > 1:
-        raise GameLogicError(f"more than one owners for the same square")
-    else:
-        relationship = relationship.first()
-
-    return relationship
+    except MultipleObjectsReturned:
+        raise GameLogicError("more than one owners for the same square")
 
 def _get_jail_square() -> BaseSquare:
     jail_square = JailSquare.objects.get()

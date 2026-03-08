@@ -572,7 +572,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 return
             
 
-            if game.active_player != self.user:
+            if game.active_turn_player != self.user:
                 await self.send_error("No es tu turno.")
                 return
 

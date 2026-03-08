@@ -33,15 +33,12 @@ def _get_relationship(game: Game, square: BaseSquare) -> Optional[PropertyRelati
         raise GameLogicError("more than one owners for the same square")
 
 def _get_jail_square() -> BaseSquare:
-    jail_square = JailSquare.objects.get()
-    if not jail_square.exists():
-        raise GameDesignError(f"there are no jail squares in the game")
-    elif len(jail_square) > 1:
-        raise GameDesignError(f"there are too many jail squares")
-    else:
-        jail_square = jail_square.first()
-
-    return jail_square
+    try:
+        return JailSquare.objects.get()
+    except JailSquare.DoesNotExist:
+        raise GameDesignError("there are no jail squares in the game")
+    except MultipleObjectsReturned:
+        raise GameDesignError("there are too many jail squares")
 
 def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -> int:
     # If it is not owned or is owned by the same user, no rent is paid
@@ -90,24 +87,17 @@ def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -> i
 def _demolish_square(game: Game, 
                      user: CustomUser, 
                      demolition_square: BaseSquare, 
-                     number_demolished: int) -> PropertyRelationship:
+                     number_demolished: int,
+                     free_demolish: bool) -> PropertyRelationship:
     # Check if it's a property
     if not isinstance(demolition_square, PropertySquare):
         raise MaliciousUserInput(user, "tried to demolish in a non property square")
-
-    relationships = PropertyRelationship.objects.filter(game=game, square=demolition_square)
     
-    if not relationships.exists():
-        raise MaliciousUserInput(user, "no user owns this square")
-    elif relationships.count() > 1:
-        raise GameLogicError(f"more than one owners for the same square")
-    
-    relationship = relationships.first()
+    relationship = _get_relationship(game, demolition_square)
 
     if relationship is None:
         raise MaliciousUserInput(user, "no user owns this square")
     
-
     if relationship.owner != user:
         raise MaliciousUserInput(user, "tried to demolish an unowned property")
 
@@ -133,12 +123,11 @@ def _demolish_square(game: Game,
     relationship.houses -= number_demolished
     relationship.save()
     
-    coste = demolition_square.build_price
-
-    user_id_str = user.pk
-    
-    game.money[user_id_str] += coste // 2
-    game.save()
+    if not free_demolish:
+        coste = demolition_square.build_price
+        
+        game.money[user.pk] += coste // 2
+        game.save()
 
     return relationship
 
@@ -146,12 +135,16 @@ def _demolish_square(game: Game,
 def _build_square(game: Game, 
                   user: CustomUser, 
                   building_square: BaseSquare, 
-                  number_built: int) -> PropertyRelationship:
+                  number_built: int,
+                  free_build: bool) -> PropertyRelationship:
     # Check if it's  a property and take its group
     if not isinstance(building_square, PropertySquare):
         raise MaliciousUserInput(user, "tried to build in a non property square")
 
     relationship = _get_relationship(game, building_square)
+
+    if relationship is None:
+        raise MaliciousUserInput(user, "no user owns this square")
 
     if relationship.owner != user:
         raise MaliciousUserInput(user, "tried to build in an unowned property")
@@ -186,105 +179,76 @@ def _build_square(game: Game,
     relationship.houses += number_built
     relationship.save()
     
-    coste = building_square.build_price
+    if not free_build:
+        coste = building_square.build_price
 
-    game.money[user] -= coste
-    game.save()
+        game.money[user.pk] -= coste
+        game.save()
 
     return relationship  #ack
 
 
+#TODO: si hay hipotecada no se cuenta grupo completo?
 @database_sync_to_async
-def _set_mortgage(user: CustomUser, game: Game, target_square: BaseSquare) -> PropertyRelationship:
+def _set_mortgage(user: CustomUser, game: Game, target_square: BaseSquare, free_mortgage: bool) -> PropertyRelationship:
+    if not (isinstance(target_square, PropertySquare) or
+            isinstance(target_square, BridgeSquare) or
+            isinstance(target_square, ServerSquare)):
+        raise MaliciousUserInput(user, "tried to mortgage a non property/bridge/server square")
 
-    try:
-        relationship = PropertyRelationship.objects.get(
-            game=game, 
-            square=target_square, 
-            owner=user
-        )
-    except PropertyRelationship.DoesNotExist:
+    relationship = _get_relationship(game=game, square=target_square)
+
+    if relationship is None:
+        raise MaliciousUserInput(user, "no user owns this square")
+
+    if relationship.owner != user:
         raise MaliciousUserInput(user, "tried to mortgage an unowned property")
 
-    if not isinstance(target_square, PropertySquare):
-        raise MaliciousUserInput(user, "tried to mortgage a square that is not a property")
-
-    if relationship.houses == -2:
+    if relationship.mortgage:
         raise MaliciousUserInput(user, "tried to mortgage an already mortgaged property")
 
-    group_relationships = PropertyRelationship.objects.filter(
-        game=game,
-        square__propertysquare__group=target_square.group
-    ).select_related('square')
-
-    total_refund = 0
-    user_id_str = user.pk
-
-    for rel in group_relationships:
-        # demolish if necessary
-        if rel.houses > 0:
-            houses_to_sell = rel.houses
-            build_price = rel.square.propertysquare.build_price
-            
-            refund = (houses_to_sell * build_price) // 2
-            total_refund += refund
-            
-            # reset to -1
-            rel.houses = -1
-            rel.save()
-
-    mortgage_value = target_square.buy_price // 2
-    total_gain = total_refund + mortgage_value
-
-    relationship.houses = -2 
+    if isinstance(target_square, PropertySquare):
+        if relationship.houses > 0:
+            raise GameLogicError("tried to mortgage a property with houses")
+    
+    relationship.mortgage = True
     relationship.save()
 
-    game.money[user_id_str] += total_gain
-    game.save()
+    if not free_mortgage:
+        mortgage_value = target_square.buy_price // 2
+        game.money[user.pk] += mortgage_value
+        game.save()
 
     return relationship
 
+#TODO: si hay hipotecada no se cuenta grupo completo?
 @database_sync_to_async
-def _unset_mortgage(user: CustomUser, game: Game, target_square: BaseSquare) -> PropertyRelationship:
-    user_id_str = user.pk
+def _unset_mortgage(user: CustomUser, game: Game, target_square: BaseSquare, free_unset_mortgage: bool) -> PropertyRelationship:
+    if not (isinstance(target_square, PropertySquare) or
+            isinstance(target_square, BridgeSquare) or
+            isinstance(target_square, ServerSquare)):
+        raise MaliciousUserInput(user, "tried to unset mortgage a non property/bridge/server square")
     
-    try:
-        relationship = PropertyRelationship.objects.get(
-            game=game, 
-            square=target_square, 
-            owner=user
-        )
-    except PropertyRelationship.DoesNotExist:
-        raise MaliciousUserInput(user, "tried to unmortgage a square that is not a property")
+    relationship = _get_relationship(game=game, square=target_square)
 
-    if relationship.houses != -2:
-        raise MaliciousUserInput(user, "tried to unmortgage a square that is not mortgaged")
+    if relationship is None:
+        raise MaliciousUserInput(user, "no user owns this square")
 
-    mortgage_value = target_square.buy_price // 2
-    total_cost = mortgage_value
+    if relationship.owner != user:
+        raise MaliciousUserInput(user, "tried to unset mortgage an unowned property")
 
-    game.money[user_id_str] -= total_cost
-    relationship.houses = -1 # incomplete
+    if not relationship.mortgage:
+        raise MaliciousUserInput(user, "tried to unset mortgage a not mortgaged property")
+
+    relationship.mortgage = False
     relationship.save()
-
-    total_in_group = PropertySquare.objects.filter(
-        board=target_square.board, 
-        group=target_square.group
-    ).count()
-
-    owned_active_in_group = PropertyRelationship.objects.filter(
-        game=game,
-        owner=user,
-        square__propertysquare__group=target_square.group
-    ).exclude(houses=-2)
-
-    if owned_active_in_group.count() == total_in_group:
-        owned_active_in_group.update(houses=0)
     
-    game.save()
+    if not free_unset_mortgage:
+        mortgage_value = target_square.buy_price // 2
+        game.money[user.pk] -= mortgage_value
+        game.save()
 
     return relationship
-    
 
 
 def _move_player_logic(curr, total_steps) -> {}:

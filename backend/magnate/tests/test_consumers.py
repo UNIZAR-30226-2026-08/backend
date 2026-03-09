@@ -33,7 +33,7 @@ class ConsumersTest(TransactionTestCase):
         communicators = []
         users = []
 
-        # Primero conectar TODOS
+        # connect all
         for i in range(NUM_PUBLIC_GAME_PLAYERS):
             user = await database_sync_to_async(CustomUser.objects.create)(
                 username=f"pub_user_{i}", email=f"pub_{i}@example.com"
@@ -47,7 +47,7 @@ class ConsumersTest(TransactionTestCase):
             self.assertTrue(connected)
             communicators.append(comm)
 
-        # Luego recibir mensajes de todos
+        # after thar, receive messages
         for comm in communicators:
             response = await comm.receive_json_from(timeout=2.0)
             self.assertEqual(response['action'], 'match_found')

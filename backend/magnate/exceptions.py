@@ -15,7 +15,7 @@ class GameDesignError(Exception):
 
 class MaliciousUserInput(Exception):
     def __init__(self, user: CustomUser, message=''):
-        self.message = f"[{user.id}] Potentially malicious input: " + message
+        self.message = f"[{user.pk}] Potentially malicious input: " + message
         super().__init__(self.message)
 
 class MaliciousUserInputAction(MaliciousUserInput):

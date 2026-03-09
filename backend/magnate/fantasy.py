@@ -145,7 +145,7 @@ class FantasyEventFactory:
                 card_cost = card_cost
                 )
 
-@database_sync_to_async
+#@database_sync_to_async
 async def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent) -> FantasyResult:
 
     if fantasy_event.fantasy_type == 'winPlainMoney':

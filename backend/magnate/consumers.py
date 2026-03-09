@@ -571,6 +571,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 await self.send_error("Partida no encontrada.")
                 return
             
+            
 
             if game.active_turn_player != self.user:
                 await self.send_error("No es tu turno.")

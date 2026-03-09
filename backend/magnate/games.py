@@ -4,6 +4,7 @@ import json
 from tokenize import group
 from django.db import transaction
 
+
 from magnate.serializers import *
 from .models import *
 from channels.db import database_sync_to_async
@@ -17,6 +18,7 @@ def _get_square_by_custom_id(custom_id: int) -> BaseSquare:
     square = BaseSquare.objects.filter(custom_id=custom_id).first()
     if square is None:
         raise GameLogicError(f"no square with id {custom_id}")
+
     return square
 
 def _get_user_square(game: Game, user: CustomUser) -> BaseSquare:
@@ -89,7 +91,7 @@ def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -> i
     else:
         return 0
 
-@database_sync_to_async
+
 def _demolish_square(game: Game, 
                      user: CustomUser, 
                      demolition_square: BaseSquare, 
@@ -137,7 +139,7 @@ def _demolish_square(game: Game,
 
     return relationship
 
-@database_sync_to_async
+
 def _build_square(game: Game, 
                   user: CustomUser, 
                   building_square: BaseSquare, 
@@ -195,7 +197,7 @@ def _build_square(game: Game,
 
 
 #TODO: si hay hipotecada no se cuenta grupo completo?
-@database_sync_to_async
+
 def _set_mortgage( game: Game, user: CustomUser,target_square: BaseSquare, free_mortgage: bool) -> PropertyRelationship:
     if not (isinstance(target_square, PropertySquare) or
             isinstance(target_square, BridgeSquare) or
@@ -228,7 +230,7 @@ def _set_mortgage( game: Game, user: CustomUser,target_square: BaseSquare, free_
     return relationship
 
 #TODO: si hay hipotecada no se cuenta grupo completo?
-@database_sync_to_async
+
 def _unset_mortgage( game: Game, user: CustomUser,target_square: BaseSquare, free_unset_mortgage: bool) -> PropertyRelationship:
     if not (isinstance(target_square, PropertySquare) or
             isinstance(target_square, BridgeSquare) or
@@ -301,7 +303,7 @@ def _get_possible_destinations_ids(user, game, dice_combinations):
 
     return sorted(list(set(destination_ids)))
 
-@database_sync_to_async
+
 def _get_max_liquidation_value(game: Game, user: CustomUser) -> int:
     total_value = game.money[user.pk] 
     
@@ -338,7 +340,8 @@ class GameManager:
     PROPOSAL_ACCEPTANCE = Game.GamePhase.proposal_acceptance
 
     @classmethod
-    async def process_action(cls, game: Game, user: CustomUser, action: Action) -> Response:
+    @database_sync_to_async
+    def process_action(cls, game: Game, user: CustomUser, action: Action) -> Response:
         """
         The only public method exposed in the API. It processes each action
         in dedicated functions depending on the current phase and returns
@@ -348,27 +351,27 @@ class GameManager:
             # TODO
             pass
 
-        if user != game.active_phase_player:
+        if user != game.active_phase_player and not isinstance(action, ActionBid): # if aucction there are no turns
             raise MaliciousUserInput(user, "is not the active player")
 
         if game.phase == cls.ROLL_THE_DICES:
-            return await cls._roll_dices_logic(game, user, action) # type: ignore
+            return cls._roll_dices_logic(game, user, action) # type: ignore
         elif game.phase == cls.CHOOSE_SQUARE:
-            return await cls._square_chosen_logic(game, user, action) # type: ignore
+            return cls._square_chosen_logic(game, user, action) # type: ignore
         elif game.phase == cls.MANAGEMENT:
-            return await cls._management_logic(game, user, action) # type: ignore
+            return cls._management_logic(game, user, action) # type: ignore
         elif game.phase == cls.BUSSINESS or game.phase == cls.LIQUIDATION:
-            return await cls._bussiness_logic(game, user, action) # type: ignore
+            return cls._bussiness_logic(game, user, action) # type: ignore
         elif game.phase == cls.ANSWER_TRADE_PROPOSAL:
-            return await cls._answer_trade_proposal_logic(game, user, action)
+            return cls._answer_trade_proposal_logic(game, user, action)
         elif game.phase == cls.AUCTION:
-            return await cls._bid_property_auction_logic(game, user, action) # type: ignore
+            return cls._bid_property_auction_logic(game, user, action) # type: ignore
         
         raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
 
     @staticmethod
-    @database_sync_to_async
-    async def _roll_dices_logic(game: Game, user: CustomUser, action: Action) -> Response: # Sin 'async'
+    
+    def _roll_dices_logic(game: Game, user: CustomUser, action: Action) -> Response: # Sin 'async'
         # Throwing the dices 
         d1 = random.randint(1,6)
         d2 = random.randint(1,6)
@@ -398,7 +401,7 @@ class GameManager:
             all_squares = BaseSquare.objects.filter(board=square.board)
             action.destinations = [s.custom_id for s in all_squares]
             
-            await GameManager._update_game_state_dices(game, user, action)
+            GameManager._update_game_state_dices(game, user, action)
             # FIXME
             return Response()
 
@@ -411,7 +414,7 @@ class GameManager:
                 action.streak = 0
                 game.phase = GameManager.LIQUIDATION 
                 
-                await GameManager._update_game_state_dices(game, user, action)
+                GameManager._update_game_state_dices(game, user, action)
                 return Response()
             else:
                 action.streak = game.streak + 1
@@ -429,14 +432,14 @@ class GameManager:
         # TODO: Land in jail
         action.destinations = _get_possible_destinations_ids(user, game, dice_combinations)
         
-        await GameManager._update_game_state_dices(game, user, action) 
+        GameManager._update_game_state_dices(game, user, action) 
         # FIXME
         return Response()
 
 
     @staticmethod
-    @database_sync_to_async
-    async def _square_chosen_logic(game: Game, user: CustomUser, action: Action) -> Response:
+    
+    def _square_chosen_logic(game: Game, user: CustomUser, action: Action) -> Response:
         if not isinstance(action, ActionMoveTo):
             raise MaliciousUserInput(user, "made an unsynced action")
 
@@ -447,13 +450,13 @@ class GameManager:
         
         
 
-        await GameManager._update_game_state_square_chosen(game, user, action)
+        GameManager._update_game_state_square_chosen(game, user, action)
         # FIXME
         return Response()
        
     @staticmethod
-    @database_sync_to_async
-    async def _management_logic(game: Game, user: CustomUser, action: Action) -> Response:
+    
+    def _management_logic(game: Game, user: CustomUser, action: Action) -> Response:
         """
         Logic of management phase, where the user can buy properties, pay bills etc
 
@@ -491,7 +494,7 @@ class GameManager:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionDropPurchase):
             if isinstance(action.square, (PropertySquare, ServerSquare)):
-                await GameManager._initiate_auction(game, action.square)
+                GameManager._initiate_auction(game, action.square)
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionTakeTram):
@@ -523,8 +526,8 @@ class GameManager:
         return Response()
 
     @staticmethod
-    @database_sync_to_async
-    async def _bussiness_logic(game: Game, user: CustomUser, action: Action) -> Response:
+    
+    def _bussiness_logic(game: Game, user: CustomUser, action: Action) -> Response:
         """
         Unifies the business and liquidation phases
         TODO: Check that users money does not go to negative after:
@@ -543,13 +546,13 @@ class GameManager:
             # Check owner 
             building_square = action.square
 
-            relationship = await _build_square(game, user, building_square, action.houses, False)
+            relationship = _build_square(game, user, building_square, action.houses, False)
 
         elif isinstance(action, ActionDemolish):
             # Similiar to build
             demolition_square = action.square
 
-            relationship = await _demolish_square(game, user, demolition_square, action.houses, False)
+            relationship = _demolish_square(game, user, demolition_square, action.houses, False)
 
         elif isinstance(action, ActionTradeProposal):
             """
@@ -558,26 +561,26 @@ class GameManager:
             players must decide whether or not to accept -> think of a way to
             do that -> front messages 
             """
-            relationship = await GameManager._propose_trade(game, user, action)
+            relationship = GameManager._propose_trade(game, user, action)
 
         elif isinstance(action, ActionMortgageSet):
-            relationship = await _set_mortgage(game, user, action.square, False)
+            relationship = _set_mortgage(game, user, action.square, False)
 
         elif isinstance(action, ActionMortgageUnset):
-            relationship = await _unset_mortgage(game, user, action.square, False)        
+            relationship = _unset_mortgage(game, user, action.square, False)        
         elif isinstance(action, ActionNextPhase):
             current_money = game.money[str(user.pk)]
             
             if game.phase == GameManager.BUSSINESS:
                 if current_money >= 0:
-                    await GameManager._next_turn(game, user)
+                    GameManager._next_turn(game, user)
                 else:
                     game.phase = GameManager.LIQUIDATION
                     game.save()
 
             elif game.phase == GameManager.LIQUIDATION:
                 if current_money >= 0:
-                    await GameManager._next_turn(game, user)
+                    GameManager._next_turn(game, user)
                 else:
                     raise MaliciousUserInput(user, "Cannot end in NEGATIVE")
 
@@ -587,7 +590,7 @@ class GameManager:
         return Response()
                    
     @staticmethod
-    async def _answer_trade_proposal_logic(game: Game, user: CustomUser, action: Action) -> Response:
+    def _answer_trade_proposal_logic(game: Game, user: CustomUser, action: Action) -> Response:
         if isinstance(action, ActionTradeAnswer):
             offer = action.proposal
 
@@ -634,8 +637,8 @@ class GameManager:
             raise MaliciousUserInputAction(game, user, action)
         
     @staticmethod
-    @database_sync_to_async
-    async def _initiate_auction(game: Game, square: BaseSquare) -> Response:
+    
+    def _initiate_auction(game: Game, square: BaseSquare) -> Response:
         
         game.phase = GameManager.AUCTION
 
@@ -649,8 +652,8 @@ class GameManager:
         return Response()
         
     @staticmethod
-    @database_sync_to_async
-    async def _bid_property_auction_logic(game: Game, user: CustomUser, action: Action) -> Response:
+    
+    def _bid_property_auction_logic(game: Game, user: CustomUser, action: Action) -> Response:
 
         if not isinstance(action, ActionBid):
             raise MaliciousUserInputAction(game, user, action)
@@ -675,7 +678,7 @@ class GameManager:
     
     @staticmethod
     @database_sync_to_async
-    async def _end_auction(game: Game) -> dict:
+    def _end_auction(game: Game) -> dict:
         ## call this with a timer -> end of the auction
 
         if game.phase != GameManager.AUCTION:
@@ -740,8 +743,8 @@ class GameManager:
     ###########################################################################
 
     @classmethod
-    @database_sync_to_async
-    async def _update_game_state_dices(cls, game: Game, user: CustomUser, action: ActionThrowDices) -> None:
+    
+    def _update_game_state_dices(cls, game: Game, user: CustomUser, action: ActionThrowDices) -> None:
         """
         Persiste la ActionThrowDices en BD usando su serializer y actualiza el
         estado de la partida (destinos posibles almacenados en el JSON del
@@ -783,8 +786,8 @@ class GameManager:
         game.save()
 
     @classmethod
-    @database_sync_to_async
-    async def _update_game_state_square_chosen(cls, game: Game, user: CustomUser, action: ActionMoveTo) -> None:
+    
+    def _update_game_state_square_chosen(cls, game: Game, user: CustomUser, action: ActionMoveTo) -> None:
         """
         Persiste la ActionMoveTo en BD usando su serializer y actualiza
         la posición del jugador en la partida.
@@ -825,8 +828,8 @@ class GameManager:
         game.save()
 
     @classmethod
-    @database_sync_to_async
-    async def _next_turn(cls, game, user) -> None:
+    
+    def _next_turn(cls, game, user) -> None:
         all_players = game.players
         players_list = list(game.players.all().order_by('id')) 
         num_players = len(players_list)
@@ -845,7 +848,7 @@ class GameManager:
         game.save()
  
     @classmethod
-    @database_sync_to_async
+    
     def _propose_trade(cls, game: Game,  user: CustomUser,action: ActionTradeProposal) -> None:
         if action.player != user or action.offered_money < 0 or action.asked_money < 0:
             raise MaliciousUserInput(user, "cannot do operation")
@@ -879,7 +882,7 @@ class GameManager:
         game.save()
 
     @classmethod
-    @database_sync_to_async
+    
     def _bankrupt_player(cls, game: Game, user: CustomUser) -> None:
         properties = PropertyRelationship.objects.filter(game=game, owner=user)
         

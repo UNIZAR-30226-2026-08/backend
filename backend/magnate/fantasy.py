@@ -146,7 +146,7 @@ class FantasyEventFactory:
                 )
 
 #@database_sync_to_async
-async def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent) -> FantasyResult:
+def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent) -> FantasyResult:
 
     if fantasy_event.fantasy_type == 'winPlainMoney':
         if fantasy_event.values is None:
@@ -235,7 +235,7 @@ async def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: Fant
         else:
             raise Exception("esto no deberia pasar")
         
-        result_property = await _demolish_square(game=game, user=target_prop.owner, demolition_square=target_prop.square,
+        result_property = _demolish_square(game=game, user=target_prop.owner, demolition_square=target_prop.square,
                          number_demolished=1, free_demolish=True)
 
         return FantasyResult(
@@ -276,7 +276,7 @@ async def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: Fant
         else:
             raise Exception("esto no deberia pasar")
         
-        result_property = await _demolish_square(game=game, user=target_prop.owner, demolition_square=target_prop.square,
+        result_property = _demolish_square(game=game, user=target_prop.owner, demolition_square=target_prop.square,
                          number_demolished=1, free_demolish=True)
 
         return FantasyResult(
@@ -387,7 +387,7 @@ async def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: Fant
         else:
             raise Exception('creo que esto no puede ocurrir')
         
-        result_property = await _build_square(game=game, user=target_prop.owner, building_square=target_prop.square,
+        result_property = _build_square(game=game, user=target_prop.owner, building_square=target_prop.square,
                          number_built=1, free_build=True)
 
         return FantasyResult(
@@ -441,7 +441,7 @@ async def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: Fant
 
         target = random.choice(properties)
 
-        result = await _unset_mortgage(user=user,game=game,target_square=target.square,free_unset_mortgage=True)
+        result = _unset_mortgage(user=user,game=game,target_square=target.square,free_unset_mortgage=True)
 
         return FantasyResult(
             fantasy_type=fantasy_event.fantasy_type,
@@ -466,7 +466,7 @@ async def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: Fant
         for prop in properties:
             #prop.houses -= 1 #python no tiene --, tocate los *******
             #prop.save(update_fields=['houses'])
-            result_property = await _demolish_square(game=game, user=prop.owner, demolition_square=prop.square,
+            result_property = _demolish_square(game=game, user=prop.owner, demolition_square=prop.square,
                          number_demolished=1, free_demolish=True)
             demolished_houses.append(result_property.square.custom_id)
 

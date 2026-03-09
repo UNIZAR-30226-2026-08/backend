@@ -115,6 +115,8 @@ class FantasyTest(TestCase):
                              values=None,
                              card_cost=500)
         
+        previous_money = self.game.money
+        
         result : FantasyResult = apply_fantasy_event(self.game,
                                                     random.choice(self.players),
                                                     event)
@@ -128,6 +130,7 @@ class FantasyTest(TestCase):
             square__custom_id=square_id,
             )
         self.assertEqual(props.count(),1)
+        self.assertEqual(previous_money,self.game.money)
         prop = props.first()
         if prop is None:
             raise Exception('impossible')
@@ -171,6 +174,8 @@ class FantasyTest(TestCase):
         
         ###########################################
 
+        previous_money = self.game.money
+
         result : FantasyResult = apply_fantasy_event(self.game,
                                                     self.player1,
                                                     event)
@@ -187,6 +192,8 @@ class FantasyTest(TestCase):
         prop = props.first()
         if prop is None:
             raise Exception('impossible')
+        
+        self.assertEqual(previous_money,self.game.money)
         
         if square_id == 16:
             self.assertTrue(False, 'Incorrect break')
@@ -228,11 +235,15 @@ class FantasyTest(TestCase):
         
         ###########################################
 
+        previous_money = self.game.money
+
         result : FantasyResult = apply_fantasy_event(self.game,
                                                     self.player1,
                                                     event)
         self.assertEqual(result.fantasy_type,'breakOpponentHouse')
         self.assertEqual(result.values,None)
+        self.assertEqual(previous_money,self.game.money)
+        
 
     def test_break_own_house(self):
         self.propRelation5 = PropertyRelationship.objects.create(

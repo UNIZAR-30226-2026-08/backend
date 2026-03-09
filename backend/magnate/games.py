@@ -98,8 +98,9 @@ def _demolish_square(game: Game,
                      number_demolished: int,
                      free_demolish: bool) -> PropertyRelationship:
     # Check if it's a property
+    demolition_square = demolition_square.get_real_instance()
     if not isinstance(demolition_square, PropertySquare):
-        raise MaliciousUserInput(user, "tried to demolish in a non property square")
+        raise MaliciousUserInput(user, "tried to demolish a non property square")
     
     relationship = _get_relationship(game, demolition_square)
 

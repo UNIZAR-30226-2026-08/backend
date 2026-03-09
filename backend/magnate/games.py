@@ -361,6 +361,8 @@ class GameManager:
             return await cls._bussiness_logic(game, user, action) # type: ignore
         elif game.phase == cls.ANSWER_TRADE_PROPOSAL:
             return await cls._answer_trade_proposal_logic(game, user, action)
+        elif game.phase == cls.AUCTION:
+            return await cls._bid_property_auction_logic(game, user, action) # type: ignore
         
         raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
 
@@ -488,8 +490,8 @@ class GameManager:
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionDropPurchase):
-            if isinstance(action, (ActionBuySquare, ServerSquare)):
-                game.phase = GameManager.AUCTION
+            if isinstance(action.square, (PropertySquare, ServerSquare)):
+                await GameManager._initiate_auction(game, action.square)
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionTakeTram):
@@ -631,6 +633,108 @@ class GameManager:
         else:
             raise MaliciousUserInputAction(game, user, action)
         
+    @staticmethod
+    @database_sync_to_async
+    async def _initiate_auction(game: Game, square: BaseSquare) -> Response:
+        
+        game.phase = GameManager.AUCTION
+
+        game.auction_state = {
+            "square_id": square.custom_id,
+            "bids": {} 
+        }
+        game.save()
+        
+
+        return Response()
+        
+    @staticmethod
+    @database_sync_to_async
+    async def _bid_property_auction_logic(game: Game, user: CustomUser, action: Action) -> Response:
+
+        if not isinstance(action, ActionBid):
+            raise MaliciousUserInputAction(game, user, action)
+
+        if not game.auction_state or "bids" not in game.auction_state:
+            raise GameLogicError("Auction state is missing or corrupted")
+
+        # user has not bid yet
+        if user.pk in game.auction_state["bids"]:
+            raise MaliciousUserInput(user, "User already placed a bid in this auction")
+
+        # user has enough money -> compulsory for auctions
+        amount = action.amount
+        if amount > game.money[user.pk]:
+            raise MaliciousUserInput(user, "Bid amount exceeds current balance")
+
+        # resgister bid
+        game.auction_state["bids"][user.pk] = amount
+        game.save()
+
+        return Response()
+    
+    @staticmethod
+    @database_sync_to_async
+    async def _end_auction(game: Game) -> dict:
+        ## call this with a timer -> end of the auction
+
+        if game.phase != GameManager.AUCTION:
+            raise GameLogicError("Tried to end auction but game is not in auction phase")
+
+        auction_state = game.auction_state
+        bids = auction_state.get("bids", {})
+        square_id = auction_state.get("square_id")
+
+        if not square_id:
+            raise GameLogicError("Auction state missing square_id")
+
+        square = _get_square_by_custom_id(square_id)
+
+        # no one bid
+        if not bids:
+            game.phase = GameManager.BUSSINESS
+            game.auction_state = {}
+            game.save()
+
+            return {"winner": None, "square_id": square_id, "amount": 0}
+
+        highest_bidder_id = max(bids, key=bids.get)
+        highest_bid = bids[highest_bidder_id]
+        
+        winner = CustomUser.objects.get(pk=highest_bidder_id)
+        
+        game.money[winner.pk] -= highest_bid
+        
+        new_property = PropertyRelationship(game=game, square=square, owner=winner)
+        
+        # groups n houses
+        if isinstance(square, PropertySquare):
+            user_properties = PropertyRelationship.objects.filter(game=game, owner=winner)
+            user_same_group_properties = user_properties.filter(square__propertysquare__group=square.group)
+            group_squares = PropertySquare.objects.filter(group=square.group)
+
+            if user_same_group_properties.count() == group_squares.count() - 1:
+                new_property.houses = 0
+                user_same_group_properties.update(houses=0)
+            else: 
+                new_property.houses = -1
+        else:
+            new_property.houses = -1
+            
+        new_property.save()
+
+        game.phase = GameManager.BUSSINESS
+        game.auction_state = {}
+        game.save()
+
+        return {
+            "winner": winner.pk,
+            "winner_username": winner.username,
+            "square_id": square_id,
+            "amount": highest_bid
+        }
+    
+
     ###########################################################################
     # Updaters
     ###########################################################################

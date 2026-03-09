@@ -186,6 +186,8 @@ class Game(models.Model):
     jail_remaining_turns = models.JSONField(default=dict, blank=True)
     proposal = models.ForeignKey('ActionTradeProposal', on_delete=models.SET_NULL, null=True, blank=True)
 
+    auction_state = models.JSONField(default=dict, blank=True)
+
 
 class PropertyRelationship(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='PropertyRelationship_in_game')
@@ -270,6 +272,9 @@ class ActionPayBail(Action):
 
 class ActionNextPhase(Action):
     pass
+
+class ActionBid(Action):
+    amount = models.PositiveIntegerField(default=0)
 
 ###############################################################################
 

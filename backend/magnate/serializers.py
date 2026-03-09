@@ -210,6 +210,13 @@ class ActionPayBailSerializer(ActionSerializer):
         model = ActionPayBail
         fields = ActionSerializer.Meta.fields
 
+class ActionBidSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionBid
+        fields = ActionSerializer.Meta.fields + ['amount']
+
+        
+
 class GeneralActionSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         if isinstance(instance, ActionThrowDices):
@@ -244,6 +251,8 @@ class GeneralActionSerializer(serializers.ModelSerializer):
             return ActionMortgageUnsetSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionPayBail):
             return ActionPayBailSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionBid):
+            return ActionBidSerializer(instance, context=self.context).data
         
         #TODO: excepcion
         return ActionSerializer(instance, context=self.context).data
@@ -271,6 +280,7 @@ def action_from_json(data, context=None):
         'ActionMortgageSet': ActionMortgageSetSerializer,
         'ActionMortgageUnset': ActionMortgageUnsetSerializer,
         'ActionPayBail': ActionPayBailSerializer,
+        'ActionBid': ActionBidSerializer,
     }
     type_name = data.get('type')
     if not type_name:

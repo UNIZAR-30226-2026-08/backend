@@ -184,7 +184,7 @@ class Game(models.Model):
     parking_money = models.PositiveIntegerField(default=0)
     # Maps user_id -> uint
     jail_remaining_turns = models.JSONField(default=dict, blank=True)
-    proposal = models.ForeignKey('ActionTradeProposal', on_delete=models.SET_NULL, null=True, blank=True)
+    proposal = models.ForeignKey('ActionTradeProposal', on_delete=models.SET_NULL, null=True, blank=True, related_name='trade_proposal')
 
     auction_state = models.JSONField(default=dict, blank=True)
 

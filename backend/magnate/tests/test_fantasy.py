@@ -70,52 +70,52 @@ class FantasyTest(TestCase):
         print(self.game.money[self.player1.pk])
 
     ####################################################################### tests
-    def test_win_plain_money(self):
+    async def test_win_plain_money(self):
         event = FantasyEvent(fantasy_type='winPlainMoney',
                              values={'money':60},
                              card_cost=130)
         
-        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,self.player1,event)
+        result : FantasyResult = await apply_fantasy_event(self.game,self.player1,event)
         self.assertEqual(result.fantasy_type,'winPlainMoney')
         self.assertEqual(result.values,None)
         self.assertEqual(self.game.money[self.player1.pk],160)
 
-    def test_win_ratio_money(self):
+    async def test_win_ratio_money(self):
         event = FantasyEvent(fantasy_type='winRatioMoney',
                              values={'money':5},
                              card_cost=500)
         
-        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,self.player2,event)
+        result : FantasyResult = await apply_fantasy_event(self.game,self.player2,event)
         self.assertEqual(result.fantasy_type,'winRatioMoney')
         self.assertEqual(result.values,None)
         self.assertEqual(self.game.money[self.player2.pk],210)
 
-    def test_lose_plain_money(self):
+    async def test_lose_plain_money(self):
         event = FantasyEvent(fantasy_type='losePlainMoney',
                              values={'money':60},
                              card_cost=130)
         
-        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,self.player1,event)
+        result : FantasyResult = await apply_fantasy_event(self.game,self.player1,event)
         self.assertEqual(result.fantasy_type,'losePlainMoney')
         self.assertEqual(result.values,None)
         self.assertEqual(self.game.money[self.player1.pk],40)
 
-    def test_lose_ratio_money(self):
+    async def test_lose_ratio_money(self):
         event = FantasyEvent(fantasy_type='loseRatioMoney',
                              values={'money':5},
                              card_cost=500)
         
-        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,self.player2,event)
+        result : FantasyResult = await apply_fantasy_event(self.game,self.player2,event)
         self.assertEqual(result.fantasy_type,'loseRatioMoney')
         self.assertEqual(result.values,None)
         self.assertEqual(self.game.money[self.player2.pk],190)
 
-    def test_break_opponent_house(self):
+    async def test_break_opponent_house(self):
         event = FantasyEvent(fantasy_type='breakOpponentHouse',
                              values=None,
                              card_cost=500)
         
-        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,
+        result : FantasyResult = await apply_fantasy_event(self.game,
                                                                     random.choice(self.players),
                                                                     event)
         self.assertEqual(result.fantasy_type,'breakOpponentHouse')
@@ -143,7 +143,7 @@ class FantasyTest(TestCase):
         else:
             self.assertTrue(False)
 
-    def test_break_opponent_house2(self):
+    async def test_break_opponent_house2(self):
         event = FantasyEvent(fantasy_type='breakOpponentHouse',
                              values=None,
                              card_cost=500)
@@ -171,7 +171,7 @@ class FantasyTest(TestCase):
         
         ###########################################
 
-        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,
+        result : FantasyResult = await apply_fantasy_event(self.game,
                                                                     self.player1,
                                                                     event)
         self.assertEqual(result.fantasy_type,'breakOpponentHouse')
@@ -199,7 +199,7 @@ class FantasyTest(TestCase):
         else:
             self.assertTrue(False, 'else')
 
-    def test_break_opponent_house3(self):
+    async def test_break_opponent_house3(self):
         event = FantasyEvent(fantasy_type='breakOpponentHouse',
                              values=None,
                              card_cost=500)
@@ -228,13 +228,13 @@ class FantasyTest(TestCase):
         
         ###########################################
 
-        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,
+        result : FantasyResult = await apply_fantasy_event(self.game,
                                                                     self.player1,
                                                                     event)
         self.assertEqual(result.fantasy_type,'breakOpponentHouse')
         self.assertEqual(result.values,None)
 
-    def test_break_own_house(self):
+    async def test_break_own_house(self):
         self.propRelation5 = PropertyRelationship.objects.create(
             game=self.game,owner=self.player1,
             square=BaseSquare.objects.get(custom_id=3),#mismo grupo que 1
@@ -255,7 +255,7 @@ class FantasyTest(TestCase):
                              values=None,
                              card_cost=1)
         
-        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,
+        result : FantasyResult = await apply_fantasy_event(self.game,
                                                                     self.player1,
                                                                     event)
         self.assertEqual(result.fantasy_type,'breakOwnHouse')
@@ -283,25 +283,22 @@ class FantasyTest(TestCase):
         else:
             self.assertTrue(False, 'else')
 
-    def test_shuffle_positions(self): #TODO: test con carcel cuando esté
-                                     #TODO: no sé que más probar la verdad
+    async def test_shuffle_positions(self): #TODO: test con carcel cuando esté
         event = FantasyEvent(fantasy_type='shufflePositions',
                              values=None,
                              card_cost=1)
         
-        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,
-                                                                    self.player1,
-                                                                    event)
+        result : FantasyResult = await apply_fantasy_event(self.game,self.player1,event)
         self.assertEqual(result.fantasy_type,'shufflePositions')
         self.assertEqual(result.values,None)
         #for player in self.players:
             #print(self.game.positions[player.pk])
 
-    def test_move_anywhere_random(self):
+    async def test_move_anywhere_random(self):
         event = FantasyEvent(fantasy_type='moveAnywhereRandom',
                              values=None,
                              card_cost=1)
-        result : FantasyResult = async_to_sync(apply_fantasy_event)(self.game,
+        result : FantasyResult = await apply_fantasy_event(self.game,
                                                                     self.player1,
                                                                     event)
         self.assertEqual(result.fantasy_type,'moveAnywhereRandom')

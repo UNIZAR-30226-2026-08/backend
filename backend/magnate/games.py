@@ -878,7 +878,7 @@ class GameManager:
 
         game.phase = GameManager.PROPOSAL_ACCEPTANCE
         game.active_phase_player = action.destination_user
-        game.proposal = action
+        game.proposal = action # type: ignore
         game.save()
 
     @classmethod

@@ -1,8 +1,8 @@
 from django.test import TestCase
 from django.core.management import call_command
-from backend.magnate.exceptions import GameLogicError
+from magnate.exceptions import *
 from magnate.models import *
-from magnate.games import GameManager, _calculate_rent_price
+from magnate.games import *
 from magnate.serializers import *
 from django.utils import timezone
 from asgiref.sync import async_to_sync
@@ -36,14 +36,14 @@ class GamesTest(TestCase):
         self.server_square = ServerSquare.objects.filter(buy_price__gt=0).first()
 
         self.game.money = {
-            self.player1.pk: 1500, 
-            self.player2.pk: 1500,
-            self.player3.pk: 1500
+            str(self.player1.pk): 1500, 
+            str(self.player2.pk): 1500,
+            str(self.player3.pk): 1500
         }
         self.game.positions = {
-            self.player1.pk: self.property_square.custom_id, 
-            self.player2.pk: 0,
-            self.player3.pk: 0
+            str(self.player1.pk): self.property_square.custom_id, 
+            str(self.player2.pk): 0,
+            str(self.player3.pk): 0
         }
         self.game.save()
 
@@ -56,7 +56,7 @@ class GamesTest(TestCase):
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)
 
         self.game.refresh_from_db()
-        self.assertEqual(self.game.phase, GameManager.BUSSINESS)
+        self.assertEqual(self.game.phase, GameManager.BUSINESS)
         
         rel = PropertyRelationship.objects.get(game=self.game, square=self.property_square)
         self.assertEqual(rel.owner, self.player1)
@@ -64,7 +64,7 @@ class GamesTest(TestCase):
             raise GameLogicError("no property square") 
         
         expected_money = 1500 - self.property_square.buy_price
-        self.assertEqual(self.game.money[self.player1.pk], expected_money)
+        self.assertEqual(self.game.money[str(self.player1.pk)], expected_money)
 
 
     def test_build_and_demolish_houses(self):
@@ -78,7 +78,7 @@ class GamesTest(TestCase):
         for sq in group_squares:
             PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=sq, houses=0)
 
-        self.game.phase = GameManager.BUSSINESS
+        self.game.phase = GameManager.BUSINESS
         self.game.save()
 
         build_action = ActionBuild(game=self.game, player=self.player1, square=self.property_square, houses=1)
@@ -96,7 +96,7 @@ class GamesTest(TestCase):
     def test_set_and_unset_mortgage(self):
 
         PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=self.property_square, houses=-1)
-        self.game.phase = GameManager.BUSSINESS
+        self.game.phase = GameManager.BUSINESS
         self.game.save()
 
         # set
@@ -145,10 +145,10 @@ class GamesTest(TestCase):
 
         self.game.refresh_from_db()
         bids = self.game.auction_state["bids"]
-        self.assertIn(self.player1.pk, bids)
-        self.assertIn(self.player2.pk, bids)
-        self.assertIn(self.player3.pk, bids)
-        self.assertEqual(bids[self.player2.pk], 300)
+        self.assertIn(str(self.player1.pk), bids)
+        self.assertIn(str(self.player2.pk), bids)
+        self.assertIn(str(self.player3.pk), bids)
+        self.assertEqual(bids[str(self.player2.pk)], 300)
 
         result_dict = async_to_sync(GameManager._end_auction)(self.game)
 
@@ -156,11 +156,11 @@ class GamesTest(TestCase):
         self.assertEqual(result_dict["amount"], 300)
 
         self.game.refresh_from_db()
-        self.assertEqual(self.game.phase, GameManager.BUSSINESS)
+        self.assertEqual(self.game.phase, GameManager.BUSINESS)
 
         rel = PropertyRelationship.objects.get(game=self.game, square=self.property_square)
         self.assertEqual(rel.owner, self.player2)
-        self.assertEqual(self.game.money[self.player2.pk], 1500 - 300)
+        self.assertEqual(self.game.money[str(self.player2.pk)], 1500 - 300)
 
     def test_auction_desert(self):
         if self.server_square is None:
@@ -177,7 +177,7 @@ class GamesTest(TestCase):
         self.assertEqual(result_dict["amount"], 0)
 
         self.game.refresh_from_db()
-        self.assertEqual(self.game.phase, GameManager.BUSSINESS)
+        self.assertEqual(self.game.phase, GameManager.BUSINESS)
         self.assertEqual(self.game.auction_state, {})
         
         with self.assertRaises(PropertyRelationship.DoesNotExist):
@@ -214,8 +214,8 @@ class GamesTest(TestCase):
         # expected rent
         expected_rent = self.property_square.rent_prices[2]
         
-        self.assertEqual(self.game.money[self.player2.pk], 1500 - expected_rent)
-        self.assertEqual(self.game.money[self.player1.pk], 1500 + expected_rent)
+        self.assertEqual(self.game.money[str(self.player2.pk)], 1500 - expected_rent)
+        self.assertEqual(self.game.money[str(self.player1.pk)], 1500 + expected_rent)
 
     def test_take_tram(self):
         """
@@ -227,7 +227,7 @@ class GamesTest(TestCase):
         if not tram_square_1 or not tram_square_2:
             raise GameLogicError("No tram squares in DB")
 
-        self.game.positions[self.player1.pk] = tram_square_1.custom_id
+        self.game.positions[str(self.player1.pk)] = tram_square_1.custom_id
         self.game.phase = GameManager.MANAGEMENT
         self.game.save()
 
@@ -237,8 +237,8 @@ class GamesTest(TestCase):
         self.game.refresh_from_db()
         
         # check new position
-        self.assertEqual(self.game.positions[self.player1.pk], tram_square_2.custom_id)
-        self.assertEqual(self.game.money[self.player1.pk], 1500 - tram_square_2.buy_price)
+        self.assertEqual(self.game.positions[str(self.player1.pk)], tram_square_2.custom_id)
+        self.assertEqual(self.game.money[str(self.player1.pk)], 1500 - tram_square_2.buy_price)
 
     def test_not_take_tram(self):
         """
@@ -250,7 +250,7 @@ class GamesTest(TestCase):
         if not tram_square_1 or not tram_square_2:
             raise GameLogicError("No tram squares in DB")
 
-        self.game.positions[self.player1.pk] = tram_square_1.custom_id
+        self.game.positions[str(self.player1.pk)] = tram_square_1.custom_id
         self.game.phase = GameManager.MANAGEMENT
         self.game.save()
 
@@ -261,9 +261,9 @@ class GamesTest(TestCase):
         self.game.refresh_from_db()
         
         # verify no changes in position/money and phase advances
-        self.assertEqual(self.game.positions[self.player1.pk], tram_square_1.custom_id)
-        self.assertEqual(self.game.money[self.player1.pk], 1500)
-        self.assertEqual(self.game.phase, GameManager.BUSSINESS)
+        self.assertEqual(self.game.positions[str(self.player1.pk)], tram_square_1.custom_id)
+        self.assertEqual(self.game.money[str(self.player1.pk)], 1500)
+        self.assertEqual(self.game.phase, GameManager.BUSINESS)
 
 
     ##########################
@@ -280,7 +280,7 @@ class GamesTest(TestCase):
         rel3 = PropertyRelationship.objects.create(game=self.game, owner=self.player2, square=squares[2], houses=-1)
         rel4 = PropertyRelationship.objects.create(game=self.game, owner=self.player2, square=squares[3], houses=-1)
         
-        self.game.phase = GameManager.BUSSINESS
+        self.game.phase = GameManager.BUSINESS
         self.game.save()
 
         # p1 offers rel1, rel2 and 200 money for rel3, rel4 and 300 money
@@ -310,8 +310,8 @@ class GamesTest(TestCase):
         rel4.refresh_from_db()
         
         # verify money exchange
-        self.assertEqual(self.game.money[self.player1.pk], 1500 - 200 + 300) 
-        self.assertEqual(self.game.money[self.player2.pk], 1500 - 300 + 200) 
+        self.assertEqual(self.game.money[str(self.player1.pk)], 1500 - 200 + 300) 
+        self.assertEqual(self.game.money[str(self.player2.pk)], 1500 - 300 + 200) 
         
         # verify transfer of properties
         self.assertEqual(rel1.owner, self.player2)
@@ -320,7 +320,7 @@ class GamesTest(TestCase):
         self.assertEqual(rel4.owner, self.player1)
         
         # verify phase and active player reverted to p1
-        self.assertEqual(self.game.phase, GameManager.BUSSINESS)
+        self.assertEqual(self.game.phase, GameManager.BUSINESS)
         self.assertEqual(self.game.active_phase_player, self.player1)
 
 
@@ -331,7 +331,7 @@ class GamesTest(TestCase):
         rel1 = PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=squares[0], houses=-1)
         rel2 = PropertyRelationship.objects.create(game=self.game, owner=self.player2, square=squares[1], houses=-1)
         
-        self.game.phase = GameManager.BUSSINESS
+        self.game.phase = GameManager.BUSINESS
         self.game.save()
 
         proposal = ActionTradeProposal.objects.create(
@@ -355,15 +355,15 @@ class GamesTest(TestCase):
         rel2.refresh_from_db()
         
         # verify money is intact
-        self.assertEqual(self.game.money[self.player1.pk], 1500)
-        self.assertEqual(self.game.money[self.player2.pk], 1500)
+        self.assertEqual(self.game.money[str(self.player1.pk)], 1500)
+        self.assertEqual(self.game.money[str(self.player2.pk)], 1500)
         
         # verify ownership is intact
         self.assertEqual(rel1.owner, self.player1)
         self.assertEqual(rel2.owner, self.player2)
         
         # phase and turn return to p1 normally
-        self.assertEqual(self.game.phase, GameManager.BUSSINESS)
+        self.assertEqual(self.game.phase, GameManager.BUSINESS)
         self.assertEqual(self.game.active_phase_player, self.player1)
 
     
@@ -447,7 +447,7 @@ class GamesTest(TestCase):
         # streak should reset, phase to liquidation (per jail rules), and player in jail
         self.assertEqual(self.game.streak, 0)
         self.assertEqual(self.game.phase, GameManager.LIQUIDATION)
-        self.assertEqual(self.game.positions[str(self.player1.pk)] if str(self.player1.pk) in self.game.positions else self.game.positions[self.player1.pk], jail_square.custom_id)
+        self.assertEqual(self.game.positions[str(self.player1.pk)] if str(self.player1.pk) in self.game.positions else self.game.positions[str(self.player1.pk)], jail_square.custom_id)
 
 
     ##########################
@@ -461,7 +461,7 @@ class GamesTest(TestCase):
         # p2 owns both properties, p1 owns nothing
         rel1 = PropertyRelationship.objects.create(game=self.game, owner=self.player2, square=squares[0], houses=-1)
         
-        self.game.phase = GameManager.BUSSINESS
+        self.game.phase = GameManager.BUSINESS
         self.game.save()
 
         proposal = ActionTradeProposal.objects.create(

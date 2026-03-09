@@ -5,6 +5,8 @@ from django.utils import timezone
 from django.db import transaction
 from .models import  PublicQueuePosition, PrivateRoom, Game, CustomUser
 from .games import *
+import os
+import asyncio
 
 try:
     with open('config.json') as f:
@@ -16,73 +18,63 @@ except FileNotFoundError:
 MIN_PRIVATE_GAME_PLAYERS = CONFIG["MIN_PRIVATE_GAME_PLAYERS"]
 MAX_PRIVATE_GAME_PLAYERS = CONFIG["MAX_PRIVATE_GAME_PLAYERS"]
 NUM_PUBLIC_GAME_PLAYERS = CONFIG["NUM_PUBLIC_GAME_PLAYERS"]
-PHASE_MOVEMENT =CONFIG["PHASE_MOVEMENT"]
-PHASE_BUSINESS = CONFIG["PHASE_BUSINESS"]
-PHASE_LIQUIDATION = CONFIG["PHASE_LIQUIDATION"]
 
 class PublicQueueConsumer(AsyncWebsocketConsumer):
     
+    QUEUE_GROUP = "public_queue"
+
     async def connect(self):
-        # Triggered when user opens the matchmaking page or "Join Game". Accept connection & auth.
-        self.user = self.scope.get('user')
-        if self.user is None:
+        scope_user = self.scope.get('user')
+        if scope_user is None or getattr(scope_user, 'is_anonymous', True):
             await self.close(code=4002)
             return
-        
-        # Security 
-        if self.user.is_anonymous:
-            await self.close(code=4002)  
-            return
-
+            
+        self.user = await database_sync_to_async(CustomUser.objects.get)(pk=scope_user.pk)
         await self.accept()
 
+        # join queue
+        await self.channel_layer.group_add(self.QUEUE_GROUP, self.channel_name)
+        
         await self.add_user_to_queue(self.user, self.channel_name)
 
+        # checking
         match_result = await self.matchmaking_logic()
-        
         
         if match_result:    
             game_id, players_channels = match_result
-            # Notify front end to redirect to game room
             for channel in players_channels:
                 await self.channel_layer.send(
                     channel,
                     {
-                        'type': 'match_found_event', # Method below
+                        'type': 'match_found_event',
                         'game_id': game_id
                     }
                 )
         
     async def disconnect(self, close_code):
-        # Triggered when user closes tab or finds a match -> manage differences with close code. Remove from DB 
-        if close_code ==4001:
+        await self.channel_layer.group_discard(self.QUEUE_GROUP, self.channel_name)
+        
+        if close_code == 4001:
             print(f"User {self.user} found a match and is leaving the queue.")
-        elif close_code ==4002:
-            print(f"Unauthorized user attempted to connect and was rejected.")
+        elif close_code == 4002:
             return 
         else:
             print(f"User {self.user} left the queue.")
-
-        await self.remove_user_from_queue(self.user)
+            await self.remove_user_from_queue(self.user)
 
     async def receive(self, text_data):
-        # Cancel button -> tell front guys
         try:
             data = json.loads(text_data)
             if data.get('action') == 'cancel':
                 await self.close(code=4000)
         except json.JSONDecodeError:
             await self.send_error("Datos invalidos.")
-            return
 
-
-# --------------- Handlers -------------------#
     async def match_found_event(self, event):
         await self.send(text_data=json.dumps({
             'action': 'match_found',
             'game_id': event['game_id']
         }))
-
         await self.close(code=4001)
 
     async def send_error(self, message):
@@ -122,35 +114,40 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
     # TODO: be aware of race conditions -> new users while executing the method
     @database_sync_to_async
     def matchmaking_logic(self):
-        # Check if enough players in queue -> create game instance, return game ID and channels of matched players
-        # Avoid race conditions
         with transaction.atomic():
-
-            number_of_players = PublicQueuePosition.objects.select_for_update().count()
-            
-            if number_of_players < NUM_PUBLIC_GAME_PLAYERS: 
-                return None
             
             players = list(PublicQueuePosition.objects.select_for_update().order_by('date_time')[:NUM_PUBLIC_GAME_PLAYERS])
+
+            if len(players) < NUM_PUBLIC_GAME_PLAYERS: 
+                return None
+            
             player_channels = [player.channel for player in players]
             users = [player.user for player in players]
-            game = Game.objects.create(datetime=timezone.now())
+            
+            # create with compulsory sh -> TODO: change to random
+            game = Game.objects.create(
+                datetime=timezone.now(),
+                active_turn_player=users[0],  
+                active_phase_player=users[0],
+                phase=GameManager.ROLL_THE_DICES
+            )
 
+            # initialize money and positions (see then what the optimal money)
+            game.money = {str(u.pk): 1500 for u in users}
+            game.positions = {str(u.pk): 0 for u in users}
+            game.save()
+
+            game.players.set(users)
+            
             for user in users:
-                if game is None:
-                    return None
-                
                 user.active_game = game
                 user.played_games.add(game)
                 user.save()
             
-            # Remove players from queue
             PublicQueuePosition.objects.filter(pk__in=[p.pk for p in players]).delete()
             
             return (game.pk, player_channels)
 
-
-            
 
 
         
@@ -160,15 +157,12 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
 class PrivateRoomConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         # Triggered when user opens a new private room or joins an existing one.
-        self.user = self.scope.get('user')
-        if self.user is None:
+        scope_user = self.scope.get('user')
+        if scope_user is None or getattr(scope_user, 'is_anonymous', True):
             await self.close(code=4002)
             return
-
-        # Security
-        if self.user.is_anonymous:
-            await self.close(code=4002)  
-            return
+            
+        self.user = await database_sync_to_async(CustomUser.objects.get)(pk=scope_user.pk)
         
         self.url = self.scope.get('url_route')
         if self.url is None:
@@ -407,30 +401,36 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def join_room_group_db(self, room_code, user):
         current_user = CustomUser.objects.get(username=user.username)
+        room = PrivateRoom.objects.get(room_code=room_code)
+        
         current_user.current_private_room = PrivateRoom.objects.get(room_code=room_code)
         current_user.ready_to_play = False
         current_user.save()
+
+        return list(room.players.values('username', 'ready_to_play'))
 
     @database_sync_to_async
     def leave_room_and_update_host(self, room_code, user):
         room = PrivateRoom.objects.get(room_code=room_code)
         user_from_db = CustomUser.objects.get(username=user.username)
-
         
         user_from_db.current_private_room = None
         user_from_db.save()
 
-        room.owner = room.players.first()
+        new_owner = room.players.exclude(pk=user_from_db.pk).first()
 
-        if room is None:
-            return None
-        if room.owner is None:
+        # if no one left, delete
+        if new_owner is None:
+            room.delete()
             return None
 
+        room.owner = new_owner
         room.save()
 
-        return {'owner': room.owner.username, 'players': room.players.all()}
-
+        return {
+            'owner': room.owner.username,
+            'players': list(room.players.values('username', 'ready_to_play'))
+        }
 
 
         
@@ -508,16 +508,13 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         # Triggered when user joins a specific match ID (game really begins) -> add to Redis room group.
-        self.user = self.scope.get('user')
-        if self.user is None:
+        scope_user = self.scope.get('user')
+        if scope_user is None or getattr(scope_user, 'is_anonymous', True):
             await self.close(code=4002)
             return
-        
-
-        # Security
-        if self.user.is_anonymous:
-            await self.close(code=4002)
-            return
+            
+        # Extraemos la instancia real de CustomUser de la BD
+        self.user = await database_sync_to_async(CustomUser.objects.get)(pk=scope_user.pk)
         
         self.url = self.scope.get('url_route')
         if self.url is None:
@@ -584,42 +581,43 @@ class GameConsumer(AsyncWebsocketConsumer):
                 await self.send_error(f"Acción inválida: {e}")
                 return
             
-            response = await GameManager.process_action(game, self.user, action)
+            try:
+                response = await GameManager.process_action(game, self.user, action)
 
-            if response is None:
-                await self.send_error("Acción no válida en la fase actual.")
+                if response is None:
+                    await database_sync_to_async(action.delete)() # Limpiamos BD
+                    await self.send_error("Acción no válida en la fase actual.")
+                    return
+                
+                response_data = await database_sync_to_async(lambda: GeneralActionSerializer(action).data)()
+                
+                await self.channel_layer.group_send(
+                    self.game_group_name,
+                    {
+                        'type': 'game_action_event',
+                        'action_data': response_data
+                    }
+                )
+
+            except MaliciousUserInput:
+                await database_sync_to_async(action.delete)() 
+                # TODO: remove user and ban
+                pass
+            except GameLogicError:
+                await database_sync_to_async(action.delete)()
+                pass
+            except GameDesignError:
+                await database_sync_to_async(action.delete)()
+                pass
+            except Exception as e:
+                await database_sync_to_async(action.delete)()
+                print(f"Error procesando turno: {e}")
+                await self.send_error("Error interno procesando tu movimiento.")
                 return
             
-            response_data = await database_sync_to_async(lambda: GeneralActionSerializer(response).data)()
-            
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'game_action_event',
-                    'action_data': response_data
-                }
-            )
-
-            # TODO: send to all
-
         except json.JSONDecodeError:
             await self.send_error("Datos inválidos.")
             return
-        except MaliciousUserInput:
-            # TODO: Reply user, ban, etc.
-            pass
-        except GameLogicError:
-            # TODO
-            pass
-        except GameDesignError:
-            # TODO
-            pass
-        except Exception as e:
-            print(f"Error  procesando turno: {e}")
-            await self.send_error("Error interno procesando tu movimiento.")
-            return
-        
-
             
 
 
@@ -648,13 +646,24 @@ class GameConsumer(AsyncWebsocketConsumer):
 #----------------------- DB access --------------------#
     @database_sync_to_async
     def is_player_in_game(self, user, game_id):
-        pass
+        try:
+            game = Game.objects.get(pk=game_id)
+            return game.players.filter(pk=user.pk).exists()
+        except Game.DoesNotExist:
+            return False
 
     @database_sync_to_async
     def get_game_state(self, game_id, user):
-        # retrieve current state 
-        pass
-
+        game = Game.objects.get(pk=game_id)
+        # Envías la info vital para pintar el tablero inicial
+        return {
+            "phase": game.phase,
+            "money": game.money,
+            "positions": game.positions,
+            "active_turn_player": game.active_turn_player.username if game.active_turn_player else None,
+            "streak": game.streak
+        }
+    
     @database_sync_to_async
     def get_game(self, game_id):
         try:

@@ -469,13 +469,45 @@ class FantasyTest(TestCase):
         self.assertEqual(targeted_property_relationship.houses,1)
 
     def test_go_to_jail(self):
-        pass
+        event = FantasyEvent(fantasy_type='goToJail',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'goToJail')
+        jail_id = _get_jail_square().custom_id
+        self.assertEqual(self.game.positions[self.player1.pk],jail_id)
+        self.assertEqual(self.game.jail_remaining_turns[self.player1.pk],3)
 
     def test_send_to_jail(self):
-        pass
+        event = FantasyEvent(fantasy_type='sendToJail',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'sendToJail')
+        jail_id = _get_jail_square().custom_id
+        if result.values is None:
+            self.assertFalse(True)
+            return
+        self.assertEqual(self.game.positions[result.values['target_user']],jail_id)
+        self.assertNotEqual(result.values['target_user'],self.player1.pk)
+        self.assertEqual(self.game.jail_remaining_turns[result.values['target_user']],3)
     
-    def everybody_to_jail(self):
-        pass
+    def test_everybody_to_jail(self):
+        event = FantasyEvent(fantasy_type='everybodyToJail',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'everybodyToJail')
+        jail_id = _get_jail_square().custom_id
+        for p in self.game.players.all():
+            self.assertEqual(self.game.positions[p.pk],jail_id)
+            self.assertEqual(self.game.jail_remaining_turns[p.pk],3)
 
     def test_double_or_nothing(self):
         event = FantasyEvent(fantasy_type='doubleOrNothing',

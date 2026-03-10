@@ -169,3 +169,38 @@ class ConsumersTest(TransactionTestCase):
         self.assertEqual(res['game_state']['money'][str(user.pk)], 1500)
         
         await comm.disconnect()
+
+        async def test_game_action_broadcast(self):
+            user = await database_sync_to_async(CustomUser.objects.create)(
+                username="p_broadcast", email="p_b@gmail.com"
+            )
+            game = await database_sync_to_async(Game.objects.create)(
+                datetime=timezone.now(),
+                active_turn_player=user,
+                active_phase_player=user,
+                phase=GameManager.MANAGEMENT
+            )
+            await database_sync_to_async(game.players.add)(user)
+            game.money = {str(user.pk): 2000}
+            game.positions = {str(user.pk): 1} # Some square
+            await database_sync_to_async(game.save)()
+
+            comm = WebsocketCommunicator(application, f"ws/game/{game.pk}/")
+            comm.scope['user'] = user # type: ignore
+            await comm.connect()
+            await comm.receive_json_from() # Consume initial state
+
+            # Send a move action (ActionMoveTo)
+            square = await database_sync_to_async(BaseSquare.objects.get)(custom_id=2)
+            await comm.send_json_to({
+                'action': 'game_action',
+                'type': 'ActionMoveTo',
+                'square': 2
+            })
+
+            broadcast = await comm.receive_json_from()
+            self.assertEqual(broadcast['action'], 'game_action')
+            self.assertEqual(broadcast['data']['type'], 'ActionMoveTo')
+            self.assertEqual(broadcast['data']['square'], 2)
+
+            await comm.disconnect()

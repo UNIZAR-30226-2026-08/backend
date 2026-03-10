@@ -331,10 +331,10 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         return FantasyResult(
             fantasy_type = fantasy_event.fantasy_type,
-            values = None # que mire otra vez el estado y ya
+            values = {'target_player_pk':target_player.pk}
             )
     
-    elif fantasy_event.fantasy_type == 'ShareMoneyAll':
+    elif fantasy_event.fantasy_type == 'shareMoneyAll':
         if fantasy_event.values is None:
             raise Exception('FantasyEvent values is None')
         
@@ -372,7 +372,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         
         groups = defaultdict(list)
         for prop in properties:
-            key = prop.square.color_group
+            key = prop.square.get_real_instance().group
             groups[key].append(prop)
 
         valid_candidates = []
@@ -396,13 +396,40 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         )
     
     elif fantasy_event.fantasy_type == 'goToJail':
-        raise NotImplementedError('fantasy type not implemented')
+        jail_id = _get_jail_square().custom_id
+        game.positions[user.pk] = jail_id
+        game.jail_remaining_turns[user.pk] = 3
+        game.save()
+
+        return FantasyResult(
+            fantasy_type=fantasy_event.fantasy_type,
+            values=None
+        )
     
     elif fantasy_event.fantasy_type == 'sendToJail':
-        raise NotImplementedError('fantasy type not implemented')
+        target_user = random.choice(game.players.exclude(pk=user.pk))
+        jail_id = _get_jail_square().custom_id
+        game.positions[target_user.pk] = jail_id
+        game.jail_remaining_turns[target_user.pk] = 3
+        game.save()
+
+        return FantasyResult(
+            fantasy_type=fantasy_event.fantasy_type,
+            values={'target_user':target_user.pk}
+        )
     
     elif fantasy_event.fantasy_type == 'everybodyToJail':
-        raise NotImplementedError('fantasy type not implemented')
+        jail_id = _get_jail_square().custom_id
+        for player in game.players.all():
+            game.positions[player.pk] = jail_id
+            game.jail_remaining_turns[player.pk] = 3
+
+        game.save()
+
+        return FantasyResult(
+            fantasy_type=fantasy_event.fantasy_type,
+            values=None
+        )
     
     elif fantasy_event.fantasy_type == 'doubleOrNothing':
         r = random.choice([True,False])
@@ -436,7 +463,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         if not properties.exists():
             return FantasyResult(
             fantasy_type=fantasy_event.fantasy_type,
-            values={'squares': None}
+            values=None
             )
 
         target = random.choice(properties)
@@ -445,7 +472,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         return FantasyResult(
             fantasy_type=fantasy_event.fantasy_type,
-            values={'squares': result.square.custom_id}
+            values={'square': result.square.custom_id}
             )
 
     
@@ -458,7 +485,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         if not properties.exists():
             return FantasyResult(
             fantasy_type=fantasy_event.fantasy_type,
-            values={'squares': None}
+            values=None
         )
 
         demolished_houses = []

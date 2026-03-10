@@ -3,6 +3,7 @@ from django.core.management import call_command
 from magnate.exceptions import *
 from magnate.models import *
 from magnate.games import *
+from magnate.games import _calculate_rent_price
 from magnate.serializers import *
 from django.utils import timezone
 from asgiref.sync import async_to_sync
@@ -24,7 +25,7 @@ class GamesTest(TestCase):
             datetime=timezone.now(),
             active_phase_player=self.player1,
             active_turn_player=self.player1,
-            phase=GameManager.MANAGEMENT
+            phase=GameManager.ROLL_THE_DICES
         )
 
         self.game.players.set([self.player1, self.player2, self.player3])
@@ -42,16 +43,138 @@ class GamesTest(TestCase):
         }
         self.game.positions = {
             str(self.player1.pk): self.property_square.custom_id, 
-            str(self.player2.pk): 0,
-            str(self.player3.pk): 0
+            str(self.player2.pk): "000",
+            str(self.player3.pk): "000"
         }
         self.game.save()
+
+    ##########################
+    ###### JAIL TESTS ##########
+    ##########################
+
+    @patch('magnate.games.random.randint')
+    def test_jail_entry_on_third_double(self, mock_randint):
+        self.game.streak = 2
+        self.game.phase = GameManager.ROLL_THE_DICES
+        self.game.save()
+
+        # 3 rd double
+        mock_randint.side_effect = [4, 4, 5]
+        
+        action = ActionThrowDices(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        jail_sq = JailSquare.objects.first()
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+        
+        self.assertEqual(self.game.positions[str(self.player1.pk)], jail_sq.custom_id)
+        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 3)
+        
+        self.assertEqual(self.game.active_turn_player, self.player2)
+        self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES)
+
+    @patch('magnate.games.random.randint')
+    def test_jail_exit_via_doubles(self, mock_randint):
+        jail_sq = JailSquare.objects.first()
+
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+
+       
+        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
+        self.game.jail_remaining_turns[str(self.player1.pk)] = 2
+        self.game.phase = GameManager.ROLL_THE_DICES
+        self.game.save()
+
+        # ddoubles and bus
+        mock_randint.side_effect = [2, 2, 6]
+        
+        action = ActionThrowDices(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.jail_remaining_turns.get(str(self.player1.pk)), 0)
+        self.assertEqual(self.game.streak, 0) 
+        self.assertEqual(self.game.phase, GameManager.CHOOSE_SQUARE)
+
+    @patch('magnate.games.random.randint')
+    def test_jail_stay_on_no_doubles(self, mock_randint):
+        
+        jail_sq = JailSquare.objects.first()
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+
+        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
+        self.game.jail_remaining_turns[str(self.player1.pk)] = 2
+        self.game.phase = GameManager.ROLL_THE_DICES
+        self.game.save()
+
+        # no doubles
+        mock_randint.side_effect = [1, 2, 3]
+        
+        action = ActionThrowDices(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 1)
+        self.assertEqual(self.game.positions[str(self.player1.pk)], jail_sq.custom_id)
+        # Stays in jail, phase goes to BUSINESS for management
+        self.assertEqual(self.game.phase, GameManager.BUSINESS)
+
+    @patch('magnate.games.random.randint')
+    def test_jail_forced_payment_on_third_turn(self, mock_randint):
+        
+        jail_sq = JailSquare.objects.first()
+
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+
+        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
+        self.game.jail_remaining_turns[str(self.player1.pk)] = 1
+        self.game.phase = GameManager.ROLL_THE_DICES
+        initial_money = self.game.money[str(self.player1.pk)]
+        self.game.save()
+
+        # roll
+        mock_randint.side_effect = [1, 2, 3]
+        
+        action = ActionThrowDices(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money - jail_sq.bail_price)
+        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 0)
+        self.assertEqual(self.game.phase, GameManager.MANAGEMENT) # Moved out
+
+    def test_jail_manual_bail_payment(self):
+        
+        jail_sq = JailSquare.objects.first()
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+
+        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
+        self.game.jail_remaining_turns[str(self.player1.pk)] = 2
+        self.game.phase = GameManager.ROLL_THE_DICES
+        initial_money = self.game.money[str(self.player1.pk)]
+        self.game.save()
+
+        action = ActionPayBail(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money - jail_sq.bail_price)
+        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 0)
+        self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES) # Ready to roll free
 
     ##########################
     ###### BUSINESS TESTS ######
     ##########################
 
     def test_buy_property(self):
+        self.game.phase = GameManager.MANAGEMENT
+        self.game.save()
         action = ActionBuySquare(game=self.game, player=self.player1, square=self.property_square)
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)
 
@@ -127,6 +250,9 @@ class GamesTest(TestCase):
         if self.property_square is None:
             raise GameLogicError("no property square")
 
+        self.game.phase = GameManager.MANAGEMENT
+        self.game.save()
+
         drop_action = ActionDropPurchase(game=self.game, player=self.player1, square=self.property_square)
         async_to_sync(GameManager.process_action)(self.game, self.player1, drop_action)
 
@@ -183,10 +309,76 @@ class GamesTest(TestCase):
         with self.assertRaises(PropertyRelationship.DoesNotExist):
             PropertyRelationship.objects.get(game=self.game, square=self.server_square)
 
+    def test_auction_tie(self):
+        if not self.property_square:
+            raise GameLogicError("no property square")
+
+        GameManager._initiate_auction(self.game, self.property_square)
+        self.game.refresh_from_db()
+
+        bid_p1 = ActionBid(game=self.game, player=self.player1, amount=300)
+        bid_p2 = ActionBid(game=self.game, player=self.player2, amount=300) # Tie
+
+        async_to_sync(GameManager.process_action)(self.game, self.player1, bid_p1)
+        async_to_sync(GameManager.process_action)(self.game, self.player2, bid_p2)
+
+        result_dict = async_to_sync(GameManager._end_auction)(self.game)
+
+        self.assertIsNone(result_dict["winner"])
+        self.assertTrue(result_dict.get("tie"))
+        
+        with self.assertRaises(PropertyRelationship.DoesNotExist):
+            PropertyRelationship.objects.get(game=self.game, square=self.property_square)
 
     ##################################
     ###### MOVEMENT & RENT TESTS ######
     ##################################
+
+    def test_bridge_rent(self):
+        bridges = BridgeSquare.objects.all()[:2]
+        PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=bridges[0])
+        PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=bridges[1])
+
+        rent = _calculate_rent_price(self.game, self.player2, bridges[0])
+        self.assertEqual(rent, bridges[0].rent_prices[1]) # price for 2 bridges
+
+    def test_trade_restriction_with_houses(self):
+        
+        if not self.property_square:
+            raise GameLogicError("no property square")
+
+        group_squares = PropertySquare.objects.filter(group=self.property_square.group)
+        rel1 = PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=group_squares[0], houses=1) # Has house
+        rel2 = PropertyRelationship.objects.create(game=self.game, owner=self.player2, square=self.server_square)
+
+        self.game.phase = GameManager.BUSINESS
+        self.game.save()
+
+        proposal = ActionTradeProposal.objects.create(
+            game=self.game, player=self.player1, destination_user=self.player2,
+            offered_money=0, asked_money=0
+        )
+        proposal.offered_properties.add(rel1)
+        proposal.asked_properties.add(rel2)
+
+        with self.assertRaises(MaliciousUserInput):
+            async_to_sync(GameManager.process_action)(self.game, self.player1, proposal)
+
+    def test_calculate_net_worth(self):
+        if self.property_square is None:
+            raise GameLogicError("no property square")
+            
+        # P1 has 1000 cash, 1 property (buy_price 100), 2 houses (build_price 50 each)
+        self.game.money[str(self.player1.pk)] = 1000
+        PropertyRelationship.objects.create(
+            game=self.game, owner=self.player1, square=self.property_square, houses=2
+        )
+        self.game.save()
+        
+        # Expected: 1000 + 100 + (2 * 50) = 1200
+        nw = calculate_net_worth(self.game, self.player1)
+        expected = 1000 + self.property_square.buy_price + (2 * self.property_square.build_price)
+        self.assertEqual(nw, expected)
 
     def test_pay_rent_on_owned_property(self):
         """
@@ -444,10 +636,11 @@ class GamesTest(TestCase):
         if not jail_square:
             raise GameLogicError("no jail square in DB")
 
-        # streak should reset, phase to liquidation (per jail rules), and player in jail
+        # streak should reset, phase to roll_the_dices (next player turn), and player in jail
         self.assertEqual(self.game.streak, 0)
-        self.assertEqual(self.game.phase, GameManager.LIQUIDATION)
-        self.assertEqual(self.game.positions[str(self.player1.pk)] if str(self.player1.pk) in self.game.positions else self.game.positions[str(self.player1.pk)], jail_square.custom_id)
+        self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES)
+        self.assertEqual(self.game.active_turn_player, self.player2)
+        self.assertEqual(self.game.positions[str(self.player1.pk)], jail_square.custom_id)
 
 
     ##########################

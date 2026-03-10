@@ -4,6 +4,7 @@ from magnate.models import *
 from django.utils import timezone
 from magnate.fantasy import apply_fantasy_event
 from asgiref.sync import async_to_sync
+from magnate.games import _get_relationship, _get_jail_square
 import random
 
 class FantasyTest(TestCase):
@@ -316,3 +317,364 @@ class FantasyTest(TestCase):
         self.assertEqual(result.values,None)
         #print(self.game.positions[self.player1.pk])
 
+    def test_move_opponent_anywhere_random(self):
+        event = FantasyEvent(fantasy_type='moveOpponentAnywhereRandom',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'moveOpponentAnywhereRandom')
+        self.assertNotEqual(result.values,None)
+        if result.values is None:
+            self.assertTrue(False)
+            return
+        self.assertNotEqual(self.player1.pk,result.values['target_player_pk'])
+        #print(result.values['target_player_pk'])
+        #print(self.game.positions[result.values['target_player_pk']])
+
+    def test_share_money_all(self):
+        event = FantasyEvent(fantasy_type='shareMoneyAll',
+                             values={'money':30},
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'shareMoneyAll')
+        self.assertEqual(self.game.money[self.player1.pk],100-(30*3))
+        self.assertEqual(self.game.money[self.player2.pk],200+30)
+        self.assertEqual(self.game.money[self.player3.pk],300+30)
+        self.assertEqual(self.game.money[self.player4.pk],400+30)
+        
+    def test_free_house1(self):
+        self.propRelation1.delete()
+        self.propRelation2.delete()
+        self.propRelation3.delete()
+        self.propRelation4.delete()
+
+        ###### complete group 4
+        self.propRelation1 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=16),
+            houses=2
+        )
+        self.propRelation2 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=18),
+            houses=2
+        )
+        self.propRelation3 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=19),
+            houses=2
+        )
+
+        ####### non completed group 5
+        self.propRelation4 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=21),
+            houses=-1
+        )
+
+
+        ###############################
+        event = FantasyEvent(fantasy_type='freeHouse',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        
+        self.assertEqual(result.fantasy_type,'freeHouse')
+        if result.values is None:
+            self.assertTrue(False)
+            return
+        
+        targeted_property_relationship = _get_relationship(self.game,
+                    BaseSquare.objects.get(custom_id=result.values['square']))
+        
+        if targeted_property_relationship is None:
+            self.assertTrue(False)
+            return
+
+        self.assertEqual(targeted_property_relationship.houses,3)
+
+    def test_free_house2(self):
+        self.propRelation1.delete()
+        self.propRelation2.delete()
+        self.propRelation3.delete()
+        self.propRelation4.delete()
+
+        self.propRelation4 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=21),
+            houses=-1
+        )
+
+        ###############################
+        event = FantasyEvent(fantasy_type='freeHouse',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        
+        self.assertEqual(result.fantasy_type,'freeHouse')
+        self.assertEqual(result.values,None)
+        self.assertEqual(self.propRelation4.houses,-1)
+
+    def test_free_house3(self):
+        self.propRelation1.delete()
+        self.propRelation2.delete()
+        self.propRelation3.delete()
+        self.propRelation4.delete()
+
+        self.propRelation1 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=16),
+            houses=1
+        )
+        self.propRelation2 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=18),
+            houses=1
+        )
+        self.propRelation3 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=19),
+            houses=0
+        )
+
+        ###############################
+        event = FantasyEvent(fantasy_type='freeHouse',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        
+        self.assertEqual(result.fantasy_type,'freeHouse')
+        if result.values is None:
+            self.assertTrue(False)
+            return
+        
+        self.assertEqual(result.values['square'],19)
+        targeted_property_relationship = _get_relationship(self.game,
+                    BaseSquare.objects.get(custom_id=19))
+        
+        if targeted_property_relationship is None:
+            self.assertTrue(False)
+            return
+
+        self.assertEqual(targeted_property_relationship.houses,1)
+
+    def test_go_to_jail(self):
+        pass
+
+    def test_send_to_jail(self):
+        pass
+    
+    def everybody_to_jail(self):
+        pass
+
+    def test_double_or_nothing(self):
+        event = FantasyEvent(fantasy_type='doubleOrNothing',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        
+        self.assertEqual(result.fantasy_type,'doubleOrNothing')
+        if result.values is None:
+            self.assertTrue(False)
+            return
+        
+        if result.values['doubled']:
+            #print('doubled')
+            self.assertEqual(self.game.money[self.player1.pk],200)
+        else:
+            #print('not doubled')
+            self.assertEqual(self.game.money[self.player1.pk],0)
+
+    def test_get_parking_money(self):
+        self.game.parking_money = 1500
+        self.game.save()
+
+        event = FantasyEvent(fantasy_type='getParkingMoney',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'getParkingMoney')
+        self.assertEqual(self.game.money[self.player1.pk],1600)
+
+    def test_revive_property1(self):
+        self.propRelation1.delete()
+        self.propRelation2.delete()
+        self.propRelation3.delete()
+        self.propRelation4.delete()
+
+        ####### group 5
+        self.propRelation1 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=16),
+            houses=0
+        )
+        self.propRelation2 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=18),
+            houses=0
+        )
+        self.propRelation3 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=19),
+            houses=0,
+            mortgage=True
+        )
+
+        ######################
+
+        event = FantasyEvent(fantasy_type='reviveProperty',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'reviveProperty')
+        if result.values is None:
+            self.assertTrue(False)
+            return
+        self.assertEqual(result.values['square'],19)
+        targeted_property_relationship = _get_relationship(self.game,
+                    BaseSquare.objects.get(custom_id=19))
+        
+        if targeted_property_relationship is None:
+            self.assertTrue(False)
+            return
+
+        self.assertEqual(targeted_property_relationship.mortgage,False)
+        
+    def test_revive_property2(self):
+        self.propRelation1.delete()
+        self.propRelation2.delete()
+        self.propRelation3.delete()
+        self.propRelation4.delete()
+
+        ####### group 5
+        self.propRelation1 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=16),
+            houses=0
+        )
+        self.propRelation2 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=18),
+            houses=0
+        )
+        self.propRelation3 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=19),
+            houses=0
+        )
+
+        ######################
+
+        event = FantasyEvent(fantasy_type='reviveProperty',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'reviveProperty')
+        
+        self.assertEqual(result.values,None)    
+
+    def test_earthquake(self):
+        self.propRelation5 = PropertyRelationship.objects.create(
+            game=self.game,owner=self.player1,
+            square=BaseSquare.objects.get(custom_id=19),
+            houses=0
+        )
+
+        event = FantasyEvent(fantasy_type='earthquake',
+                             values=None,
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'earthquake')
+
+        relationships = PropertyRelationship.objects.all()
+        self.assertEqual(relationships[0].houses,1)
+        self.assertEqual(relationships[1].houses,2)
+        self.assertEqual(relationships[2].houses,3)
+        self.assertEqual(relationships[3].houses,1)
+        self.assertEqual(relationships[4].houses,0)
+
+        if result.values is None:
+            self.assertTrue(False)
+            return
+        self.assertEqual(len(result.values['squares']),4)
+
+    def test_everybody_sends_you_money(self):
+        event = FantasyEvent(fantasy_type='everybodySendsYouMoney',
+                             values={'money':30},
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'everybodySendsYouMoney')
+        self.assertEqual(self.game.money[self.player1.pk],100+3*30)
+        self.assertEqual(self.game.money[self.player2.pk],200-30)
+        self.assertEqual(self.game.money[self.player3.pk],300-30)
+        self.assertEqual(self.game.money[self.player4.pk],400-30)
+
+    def test_magnetism(self):
+        jail_id = _get_jail_square().custom_id
+        self.game.positions[self.player4.pk] = jail_id
+        self.game.save()
+
+        original_position = self.game.positions[self.player1.pk]
+        event = FantasyEvent(fantasy_type='magnetism',
+                             values={'money':30},
+                             card_cost=1)
+        result : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event)
+        self.assertEqual(result.fantasy_type,'magnetism')
+        self.assertEqual(result.values,None)
+        self.assertEqual(self.game.positions[self.player1.pk],original_position)
+        self.assertEqual(self.game.positions[self.player2.pk],original_position)
+        self.assertEqual(self.game.positions[self.player3.pk],original_position)
+        self.assertEqual(self.game.positions[self.player4.pk],jail_id)
+
+    def test_go_to_start(self):
+        jail_id = _get_jail_square().custom_id
+        self.game.positions[self.player2.pk] = jail_id
+        self.game.save()
+
+        event1 = FantasyEvent(fantasy_type='goToStart',
+                             values={'money':30},
+                             card_cost=1)
+        result1 : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player1,
+                                                    event1)
+        
+        event2 = FantasyEvent(fantasy_type='goToStart',
+                             values={'money':30},
+                             card_cost=1)
+        result2 : FantasyResult = apply_fantasy_event(self.game,
+                                                    self.player2,
+                                                    event2)
+        
+
+        self.assertEqual(result1.fantasy_type,'goToStart')
+        self.assertEqual(result2.fantasy_type,'goToStart')
+
+        self.assertEqual(self.game.positions[self.player1.pk],0)
+        self.assertEqual(self.game.money[self.player1.pk],300)
+
+        self.assertEqual(self.game.positions[self.player2.pk],jail_id)
+        self.assertEqual(self.game.money[self.player2.pk],200)

@@ -127,8 +127,6 @@ class FantasyEvent(models.Model):
         moveAnywhereRandom = 'moveAnywhereRandom',
         moveOpponentAnywhereRandom = 'moveOpponentAnywhereRandom',
         shareMoneyAll = 'shareMoneyAll',
-        dontPayNextTurnRent = 'dontPayNextTurnRent',
-        allYourRentsX2OneTurn = 'allYourRentsX2OneTurn',
         freeHouse = 'freeHouse',
         goToJail = 'goToJail',
         sendToJail = 'sendToJail',

@@ -93,12 +93,6 @@ class FantasyEventFactory:
             elif(rand == 2):
                 values = {'money': 50}
 
-        elif fantasy_type == 'dontPayNextTurnRent':
-            card_cost = 35
-
-        elif fantasy_type == 'allYourRentsX2OneTurn':
-            card_cost = 100
-
         elif fantasy_type == 'freeHouse':
             card_cost = 80
 

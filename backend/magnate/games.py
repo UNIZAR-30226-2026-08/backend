@@ -314,7 +314,7 @@ def _move_player_logic(curr, total_steps) -> dict:
     return {"final_id": curr.custom_id, 
             "path": path_log, "passed_go": passed_go, "jailed": False}
 
-def _get_possible_destinations_ids(user, game, dice_combinations):
+def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinations: list[int]):
     destination_ids = []
     current_pos_id = game.positions[str(user.pk)]
     current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
@@ -449,14 +449,12 @@ class GameManager:
         return Response()
 
     @staticmethod
-    
     def _roll_dices_logic(game: Game, user: CustomUser, action: ActionThrowDices) -> Response: 
         d1 = random.randint(1,6)
         d2 = random.randint(1,6)
         d3 = random.randint(1,6) # 4-6 are the bus faces
 
         bus_is_numeric = d3 <= 3
-        dice_results = [d1, d2, d3 if bus_is_numeric else 'bus']
 
         action.dice1 = d1
         action.dice2 = d2
@@ -497,7 +495,7 @@ class GameManager:
             action.triple = True
             square = _get_user_square(game, user)
             all_squares = BaseSquare.objects.filter(board=square.board)
-            action.destinations = [s.custom_id for s in all_squares]
+            action.destinations = [s.custom_id for s in all_squares] #TODO: quitar carcel real
             
             GameManager._update_game_state_dices(game, user, action)
             return Response()
@@ -529,7 +527,7 @@ class GameManager:
 
         dice_combinations = list(set(dice_combinations))
 
-        action.destinations = _get_possible_destinations_ids(user, game, dice_combinations)
+        action.destinations = _get_possible_destinations_ids(game, user, dice_combinations)
         
         GameManager._update_game_state_dices(game, user, action) 
         return Response()
@@ -538,14 +536,12 @@ class GameManager:
     @staticmethod
     def _square_chosen_logic(game: Game, user: CustomUser, action: Action) -> Response:
         if not isinstance(action, ActionMoveTo):
-            raise MaliciousUserInput(user, "made an unsynced action")
+            raise MaliciousUserInputAction(game, user, action)
 
         square = action.square
 
         if square.custom_id not in game.possible_destinations:
             raise MaliciousUserInput(user, "tried to move to an illegal square")
-        
-        
 
         GameManager._update_game_state_square_chosen(game, user, action)
         # FIXME
@@ -558,6 +554,7 @@ class GameManager:
 
         first -> what is the action? -> check internally its current square and data associated ->
             Then check user info to update the game state accordingly and return next state
+        TODO: Ir a business si no hay dobles y a dados si no
         """
         current_square = _get_user_square(game, user).get_real_instance()
         prop_rel = _get_relationship(game, current_square)
@@ -594,7 +591,6 @@ class GameManager:
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionTakeTram):
-            # TODO: User could loop infinite times between both tram squares
             if isinstance(current_square, TramSquare):
                 # TODO: Change for a take_tram function that verifies enough money
                 square = action.square
@@ -605,13 +601,15 @@ class GameManager:
                 if square.custom_id in tram_squares_ids: # confirms its valid
                     game.money[str(user.pk)] -= square.buy_price
                     game.positions[str(user.pk)] = square.custom_id
+                else:
+                    raise MaliciousUserInput(user, "tried to take a tram to a non tram square")
 
-                game.phase = GameManager.MANAGEMENT
+                game.phase = GameManager.BUSINESS
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionDoNotTakeTram):
             game.phase = GameManager.BUSINESS
-        elif isinstance(action, ActionNextPhase):
+        elif isinstance(action, ActionNextPhase): # TODO: remove
             game.phase = GameManager.BUSINESS
         else:
             raise MaliciousUserInputAction(game, user, action)
@@ -855,23 +853,6 @@ class GameManager:
         estado de la partida (destinos posibles almacenados en el JSON del
         juego).
         """
-        # TODO: Remove this
-        serializer = ActionThrowDicesSerializer(
-            action,
-            data={
-                'game': game.pk,
-                'player': user.pk,
-                'dice1': action.dice1,
-                'dice2': action.dice2,
-                'dice_bus': action.dice_bus,
-                'destinations': action.destinations,
-                'triple': action.triple,
-                'path': action.path,
-            },
-            partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
 
         game.possible_destinations = action.destinations if len(action.destinations) > 1 else []
         game.streak = action.streak
@@ -892,6 +873,7 @@ class GameManager:
                     game.money[str(user.pk)] += game.parking_money # recently added
                     game.parking_money = 0
                 game.phase = GameManager.MANAGEMENT
+            # TODO: Casilla inicial
 
         game.save()
 
@@ -901,18 +883,6 @@ class GameManager:
         Persiste la ActionMoveTo en BD usando su serializer y actualiza
         la posición del jugador en la partida.
         """
-        # TODO: Remove this
-        serializer = ActionMoveToSerializer(
-            action,
-            data={
-                'game': game.pk,
-                'player': user.pk,
-                'square': action.square.custom_id,
-            },
-            partial=True
-        )
-        if serializer.is_valid():
-            serializer.save()
 
         game.positions[str(user.pk)] = action.square.custom_id
         game.possible_destinations = []
@@ -946,9 +916,8 @@ class GameManager:
         game.save()
 
     @classmethod
-    
     def _next_turn(cls, game, user) -> None:
-        all_players = game.players
+        # TODO: cambiar el order, meter json de jugadores ordenados
         players_list = list(game.players.all().order_by('id')) 
         num_players = len(players_list)
         current_index = -1
@@ -966,7 +935,6 @@ class GameManager:
         game.save()
  
     @classmethod
-    
     def _propose_trade(cls, game: Game,  user: CustomUser,action: ActionTradeProposal) -> None:
         if action.player != user or action.offered_money < 0 or action.asked_money < 0:
             raise MaliciousUserInput(user, "cannot do operation")
@@ -1012,7 +980,6 @@ class GameManager:
         game.save()
 
     @classmethod
-    
     def _bankrupt_player(cls, game: Game, user: CustomUser) -> None:
         properties = PropertyRelationship.objects.filter(game=game, owner=user)
         
@@ -1026,11 +993,12 @@ class GameManager:
 
         game.money[str(user.pk)] = 0
 
-        # next_tirns fails if we dont do this sh
+        # next_turns fails if we dont do this sh
         if game.active_turn_player == user:
             cls._next_turn(game, user)
 
-        game.players.remove(user) 
+        game.players.remove(user)
+        #TODO: quitar de la lista de jugadores ordenados
         game.save()
         
         # TODO: if only one left -> he wins

@@ -36,3 +36,8 @@ typing_extensions
 ujson
 zope.interface
 django-polymorphic
+# Documentation (remove in production)
+mkdocs-with-pdf
+mkdocs-material
+mkdocstrings[python]
+qrcode

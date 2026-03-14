@@ -1,9 +1,17 @@
+"""
+Core Game Logic Module.
+
+This module handles the rules, state transitions, and actions of the game.
+It provides helper functions to calculate net worth, rent, building/demolishing
+rules, and a GameManager class that acts as a state machine for the different phases
+of a player's turn.
+"""
+
 from asyncio import Server
 import random 
 import json
 from tokenize import group
 from django.db import transaction
-
 
 from magnate.serializers import *
 from .models import *
@@ -15,6 +23,18 @@ from typing import Optional
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 
 def _get_square_by_custom_id(custom_id: int) -> BaseSquare:
+    """
+    Retrieves a BaseSquare instance by its custom_id.
+
+    Args:
+        custom_id (int): The custom identifier of the square.
+
+    Returns:
+        BaseSquare: The square instance.
+
+    Raises:
+        GameLogicError: If no square with the given custom_id exists.
+    """
     square = BaseSquare.objects.filter(custom_id=custom_id).first()
     if square is None:
         raise GameLogicError(f"no square with id {custom_id}")
@@ -22,6 +42,19 @@ def _get_square_by_custom_id(custom_id: int) -> BaseSquare:
     return square
 
 def _get_user_square(game: Game, user: CustomUser) -> BaseSquare:
+    """
+    Retrieves the square where a specific user is currently located.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user whose position is being queried.
+
+    Returns:
+        BaseSquare: The square where the user is currently standing.
+
+    Raises:
+        GameLogicError: If the user is not part of the game.
+    """
     user_key = str(user.pk) if str(user.pk) in game.positions else user.pk
     
     if user_key not in game.positions:
@@ -30,6 +63,19 @@ def _get_user_square(game: Game, user: CustomUser) -> BaseSquare:
     return _get_square_by_custom_id(game.positions[user_key])
 
 def _get_relationship(game: Game, square: BaseSquare) -> Optional[PropertyRelationship]:
+    """
+    Gets the ownership relationship between a game and a specific square.
+
+    Args:
+        game (Game): The current game instance.
+        square (BaseSquare): The property square to check.
+
+    Returns:
+        Optional[PropertyRelationship]: The relationship object if owned, None otherwise.
+
+    Raises:
+        GameLogicError: If more than one owner is found for the same square.
+    """
     try:
         return PropertyRelationship.objects.get(game=game, square=square)
     except PropertyRelationship.DoesNotExist:
@@ -38,6 +84,15 @@ def _get_relationship(game: Game, square: BaseSquare) -> Optional[PropertyRelati
         raise GameLogicError("more than one owners for the same square")
 
 def _get_jail_square() -> BaseSquare:
+    """
+    Retrieves the designated Jail square for the board.
+
+    Returns:
+        BaseSquare: The JailSquare instance.
+
+    Raises:
+        GameDesignError: If there are no jail squares or too many jail squares.
+    """
     try:
         return JailSquare.objects.get()
     except JailSquare.DoesNotExist:
@@ -46,6 +101,24 @@ def _get_jail_square() -> BaseSquare:
         raise GameDesignError("there are too many jail squares")
 
 def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -> int:
+    """
+    Calculates the rent price a user must pay when landing on a square.
+
+    Handles different logic for PropertySquares (houses), TramSquares, 
+    BridgeSquares, and ServerSquares based on ownership and multipliers.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user landing on the square.
+        square (BaseSquare): The square being landed on.
+
+    Returns:
+        int: The calculated rent amount to pay. Returns 0 if unowned or owned by the user.
+
+    Raises:
+        GameDesignError: If the rent arrays on the square are incorrectly configured.
+        GameLogicError: If an unexpected condition occurs during calculation.
+    """
     # If it is not owned or is owned by the same user, no rent is paid
     prop_rel = _get_relationship(game, square)
     if not prop_rel or prop_rel.owner == user:
@@ -108,6 +181,25 @@ def _demolish_square(game: Game,
                      demolition_square: BaseSquare, 
                      number_demolished: int,
                      free_demolish: bool) -> PropertyRelationship:
+    """
+    Demolishes houses/hotels on a property and returns money to the user.
+
+    Ensures that uniform building rules are respected during demolition.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user attempting to demolish.
+        demolition_square (BaseSquare): The square where buildings will be demolished.
+        number_demolished (int): The amount of houses to demolish.
+        free_demolish (bool): If True, no money is refunded to the user.
+
+    Returns:
+        PropertyRelationship: The updated ownership relationship.
+
+    Raises:
+        MaliciousUserInput: If the property is unowned, owned by someone else, 
+            is not a property square, or violates uniform building rules.
+    """
     # Check if it's a property
     demolition_square = demolition_square.get_real_instance()
     if not isinstance(demolition_square, PropertySquare):
@@ -157,6 +249,27 @@ def _build_square(game: Game,
                   building_square: BaseSquare, 
                   number_built: int,
                   free_build: bool) -> PropertyRelationship:
+    """
+    Builds houses or hotels on a property.
+
+    Validates that the user owns the complete color group and respects 
+    the uniform building rule.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user attempting to build.
+        building_square (BaseSquare): The target property square.
+        number_built (int): Number of buildings to construct.
+        free_build (bool): If True, the user is not charged for the construction.
+
+    Returns:
+        PropertyRelationship: The updated ownership relationship.
+
+    Raises:
+        MaliciousUserInput: If the user does not own the full group, violates 
+            uniform building rules, or tries to build beyond the max limit.
+        GameLogicError: If negative house values are encountered.
+    """
     # Check if it's  a property and take its group
     building_square = building_square.get_real_instance()
 
@@ -212,8 +325,23 @@ def _build_square(game: Game,
 
 
 #TODO: si hay hipotecada no se cuenta grupo completo?
+def _set_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_mortgage: bool) -> PropertyRelationship:
+    """
+    Mortgages a property to receive immediate funds.
 
-def _set_mortgage( game: Game, user: CustomUser,target_square: BaseSquare, free_mortgage: bool) -> PropertyRelationship:
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user attempting the mortgage.
+        target_square (BaseSquare): The property to be mortgaged.
+        free_mortgage (bool): If True, no money is added to the user's balance.
+
+    Returns:
+        PropertyRelationship: The updated relationship.
+
+    Raises:
+        MaliciousUserInput: If not owned, already mortgaged, or wrong type of square.
+        GameLogicError: If trying to mortgage a property that still has houses built on it.
+    """
     target_square = target_square.get_real_instance()
     if not (isinstance(target_square, PropertySquare) or
             isinstance(target_square, BridgeSquare) or
@@ -248,8 +376,22 @@ def _set_mortgage( game: Game, user: CustomUser,target_square: BaseSquare, free_
     return relationship
 
 #TODO: si hay hipotecada no se cuenta grupo completo?
+def _unset_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_unset_mortgage: bool) -> PropertyRelationship:
+    """
+    Lifts the mortgage from a property by paying the required fee.
 
-def _unset_mortgage( game: Game, user: CustomUser,target_square: BaseSquare, free_unset_mortgage: bool) -> PropertyRelationship:
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user lifting the mortgage.
+        target_square (BaseSquare): The property to unmortgage.
+        free_unset_mortgage (bool): If True, the user is not charged.
+
+    Returns:
+        PropertyRelationship: The updated relationship.
+
+    Raises:
+        MaliciousUserInput: If not owned, not mortgaged, or wrong type of square.
+    """
     target_square = target_square.get_real_instance()
     if not (isinstance(target_square, PropertySquare) or
             isinstance(target_square, BridgeSquare) or
@@ -279,7 +421,27 @@ def _unset_mortgage( game: Game, user: CustomUser,target_square: BaseSquare, fre
     return relationship
 
 
-def _move_player_logic(curr, total_steps) -> dict:
+def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
+    """
+    Calculates the final destination and path of a player moving a set number of steps.
+
+    Handles specific movement mechanics such as passing Go, taking bridges, 
+    and landing on the "Go to Jail" square.
+
+    Args:
+        curr (BaseSquare): The starting square instance.
+        total_steps (int): The number of squares to move forward.
+
+    Returns:
+        dict: A dictionary containing:
+            - final_id (int): Custom ID of the final square.
+            - path (list[int]): List of custom IDs traversed.
+            - passed_go (bool): True if the player passed the Go square.
+            - jailed (bool): True if the player landed on Go to Jail.
+
+    Raises:
+        GameDesignError: If a successor square cannot be found or the jail doesn't exist.
+    """
     path_log = [curr]
     passed_go = False
 
@@ -314,7 +476,18 @@ def _move_player_logic(curr, total_steps) -> dict:
     return {"final_id": curr.custom_id, 
             "path": path_log, "passed_go": passed_go, "jailed": False}
 
-def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinations: list[int]):
+def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinations: list[int]) -> list[int]:
+    """
+    Calculates all possible destination square IDs based on dice combinations.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user whose possible moves are calculated.
+        dice_combinations (list[int]): Possible total steps generated by the dice roll.
+
+    Returns:
+        list[int]: A sorted list of unique destination custom_ids.
+    """
     destination_ids = []
     current_pos_id = game.positions[str(user.pk)]
     current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
@@ -329,6 +502,18 @@ def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinatio
 
 
 def _get_max_liquidation_value(game: Game, user: CustomUser) -> int:
+    """
+    Calculates the absolute maximum money a user can raise by liquidating all assets.
+
+    This includes selling all houses and mortgaging all unmortgaged properties.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The target user.
+
+    Returns:
+        int: The maximum liquidation value in cash.
+    """
     total_value = game.money[str(user.pk)] 
     
     properties = PropertyRelationship.objects.filter(
@@ -348,6 +533,16 @@ def _get_max_liquidation_value(game: Game, user: CustomUser) -> int:
     return total_value
 
 def calculate_net_worth(game: Game, user: CustomUser) -> int:
+    """
+    Calculates the total net worth of a user (Cash + Property Value + Building Value).
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user to calculate for.
+
+    Returns:
+        int: The total calculated net worth.
+    """
     total_value = game.money.get(str(user.pk), 0)
     
     properties = PropertyRelationship.objects.filter(game=game, owner=user).select_related('square')
@@ -368,6 +563,13 @@ def calculate_net_worth(game: Game, user: CustomUser) -> int:
 
 
 class GameManager:
+    """
+    State machine and core processor for Game Actions.
+
+    The GameManager encapsulates the logic for each specific phase of a 
+    player's turn, processing polymorphic Action objects and mutating the 
+    database state accordingly.
+    """
     ###########################################################################
     # Phase logic
     ###########################################################################
@@ -387,7 +589,19 @@ class GameManager:
         """
         The only public method exposed in the API. It processes each action
         in dedicated functions depending on the current phase and returns
-        another action
+        a Response.
+
+        Args:
+            game (Game): The current active game instance.
+            user (CustomUser): The user performing the action.
+            action (Action): The deserialized action payload.
+
+        Returns:
+            Response: A response object representing the outcome.
+
+        Raises:
+            MaliciousUserInput: If the user acts out of turn or phase.
+            GameLogicError: If an unrecognized phase is encountered.
         """
         if isinstance(action, ActionSurrender):
             # TODO
@@ -427,6 +641,21 @@ class GameManager:
 
     @staticmethod
     def _pay_bail_logic(game: Game, user: CustomUser, action: ActionPayBail) -> Response:
+        """
+        Processes the action to pay the jail bail.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The jailed user.
+            action (ActionPayBail): The bail action payload.
+
+        Returns:
+            Response: The standard response.
+
+        Raises:
+            MaliciousUserInput: If the user is not actually in jail.
+            GameLogicError: If the user does not have enough money.
+        """
         square = _get_user_square(game, user).get_real_instance()
 
         if not isinstance(square, JailSquare):
@@ -450,6 +679,17 @@ class GameManager:
 
     @staticmethod
     def _roll_dices_logic(game: Game, user: CustomUser, action: ActionThrowDices) -> Response: 
+        """
+        Handles rolling the dice, checking for doubles/triples, and resolving jail mechanics.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The user throwing the dice.
+            action (ActionThrowDices): The dice throw action payload.
+
+        Returns:
+            Response: Standard response.
+        """
         d1 = random.randint(1,6)
         d2 = random.randint(1,6)
         d3 = random.randint(1,6) # 4-6 are the bus faces
@@ -535,6 +775,20 @@ class GameManager:
 
     @staticmethod
     def _square_chosen_logic(game: Game, user: CustomUser, action: Action) -> Response:
+        """
+        Handles the logic when a user selects their final destination (if multiple choices were given).
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The current user.
+            action (ActionMoveTo): Action indicating the chosen square.
+
+        Returns:
+            Response: Standard response.
+
+        Raises:
+            MaliciousUserInput: If the chosen square is not in `possible_destinations`.
+        """
         if not isinstance(action, ActionMoveTo):
             raise MaliciousUserInputAction(game, user, action)
 
@@ -550,11 +804,21 @@ class GameManager:
     @staticmethod
     def _management_logic(game: Game, user: CustomUser, action: Action) -> Response:
         """
-        Logic of management phase, where the user can buy properties, pay bills etc
+        Logic of management phase, where the user can buy properties, pay bills etc.
 
-        first -> what is the action? -> check internally its current square and data associated ->
-            Then check user info to update the game state accordingly and return next state
-        TODO: Ir a business si no hay dobles y a dados si no
+        It checks the user's action against the current square they are on to update 
+        the game state and transition to the next phase.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The acting user.
+            action (Action): The payload of the action taken (e.g., ActionBuySquare).
+
+        Returns:
+            Response: Standard response.
+
+        Raises:
+            MaliciousUserInputAction: If the action does not fit the phase/context.
         """
         current_square = _get_user_square(game, user).get_real_instance()
         prop_rel = _get_relationship(game, current_square)
@@ -620,41 +884,34 @@ class GameManager:
         return Response()
 
     @staticmethod
-    
     def _business_logic(game: Game, user: CustomUser, action: Action) -> Response:
         """
-        Unifies the business and liquidation phases
-        TODO: Check that users money does not go to negative after:
-            - ActionBuild
-            - ActionTradeProposal
-            - etc.
-        """
+        Unifies the business and liquidation phases. Handles building, demolishing, 
+        trading, mortgaging, and proceeding to the next turn.
 
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The active user.
+            action (Action): The payload of the action taken.
+
+        Returns:
+            Response: Standard response.
+
+        Raises:
+            MaliciousUserInput: If restrictions (e.g., negative balance on next turn) are unmet.
+        """
         # Logic for the business phase where players can build houses, trade, etc.
         if isinstance(action, ActionBuild):
-            """
-            Check if squares are from user and if he has the complete group -> check limitations
-            Check if there's no difference of 2 built houeses between group squares
-            """
-
             # Check owner 
             building_square = action.square
-
             relationship = _build_square(game, user, building_square, action.houses, False)
 
         elif isinstance(action, ActionDemolish):
             # Similiar to build
             demolition_square = action.square
-
             relationship = _demolish_square(game, user, demolition_square, action.houses, False)
 
         elif isinstance(action, ActionTradeProposal):
-            """
-            Check if every number /property makes sense, then sned to frond a
-            waiting message and to all players the action The destination
-            players must decide whether or not to accept -> think of a way to
-            do that -> front messages 
-            """
             relationship = GameManager._propose_trade(game, user, action)
 
         elif isinstance(action, ActionMortgageSet):
@@ -679,12 +936,26 @@ class GameManager:
                     raise MaliciousUserInput(user, "Cannot end in NEGATIVE")
 
         #TODO: elif with a timeout -> auto sell in case user can reach positive status or kick out in case
-
         
         return Response()
                    
     @staticmethod
     def _answer_trade_proposal_logic(game: Game, user: CustomUser, action: Action) -> Response:
+        """
+        Processes a user's answer (accept/reject) to an active trade proposal.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The targeted user responding to the offer.
+            action (ActionTradeAnswer): The user's response payload.
+
+        Returns:
+            Response: Standard response.
+
+        Raises:
+            MaliciousUserInput: If an unauthorized user attempts to answer, 
+                or references an invalid proposal.
+        """
         if isinstance(action, ActionTradeAnswer):
             offer = action.proposal
 
@@ -731,9 +1002,17 @@ class GameManager:
             raise MaliciousUserInputAction(game, user, action)
         
     @staticmethod
-    
     def _initiate_auction(game: Game, square: BaseSquare) -> Response:
-        
+        """
+        Transitions the game into an AUCTION phase for a dropped property.
+
+        Args:
+            game (Game): The current game instance.
+            square (BaseSquare): The property square going up for auction.
+
+        Returns:
+            Response: Standard response.
+        """
         game.phase = GameManager.AUCTION
 
         game.auction_state = {
@@ -746,9 +1025,22 @@ class GameManager:
         return Response()
         
     @staticmethod
-    
     def _bid_property_auction_logic(game: Game, user: CustomUser, action: Action) -> Response:
+        """
+        Registers a player's bid during an active auction phase.
 
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The user placing the bid.
+            action (ActionBid): The action carrying the bid amount.
+
+        Returns:
+            Response: Standard response.
+
+        Raises:
+            GameLogicError: If auction state is corrupted.
+            MaliciousUserInput: If the user bids twice or exceeds their balance.
+        """
         if not isinstance(action, ActionBid):
             raise MaliciousUserInputAction(game, user, action)
 
@@ -773,6 +1065,20 @@ class GameManager:
     @staticmethod
     @database_sync_to_async
     def _end_auction(game: Game) -> dict:
+        """
+        Ends an active auction, resolves the winner based on the highest bid, 
+        handles ties, and transitions the game state back to BUSINESS.
+
+        Args:
+            game (Game): The current game instance.
+
+        Returns:
+            dict: Results of the auction containing winner ID, username, square ID, 
+            amount, and tie status if applicable.
+
+        Raises:
+            GameLogicError: If not in AUCTION phase or state is missing square ID.
+        """
         ## call this with a timer -> end of the auction
 
         if game.phase != GameManager.AUCTION:
@@ -841,164 +1147,4 @@ class GameManager:
         }
     
 
-    ###########################################################################
-    # Updaters
-    ###########################################################################
-
-    @classmethod
-    
-    def _update_game_state_dices(cls, game: Game, user: CustomUser, action: ActionThrowDices) -> None:
-        """
-        Persiste la ActionThrowDices en BD usando su serializer y actualiza el
-        estado de la partida (destinos posibles almacenados en el JSON del
-        juego).
-        """
-
-        game.possible_destinations = action.destinations if len(action.destinations) > 1 else []
-        game.streak = action.streak
-
-        if len(action.destinations) > 1:
-            game.phase = GameManager.CHOOSE_SQUARE
-        elif len(action.destinations) == 1:
-            dest_square_id = action.destinations[0]
-            game.positions[str(user.pk)] = dest_square_id
-            square = _get_square_by_custom_id(dest_square_id).get_real_instance()
-            if isinstance(square, JailSquare):
-                if game.money[str(user.pk)] < 0:
-                    game.phase = GameManager.LIQUIDATION
-                else:
-                    GameManager._next_turn(game, user)
-            else:
-                if isinstance(square, ParkingSquare):
-                    game.money[str(user.pk)] += game.parking_money # recently added
-                    game.parking_money = 0
-                game.phase = GameManager.MANAGEMENT
-            # TODO: Casilla inicial
-
-        game.save()
-
-    @classmethod
-    def _update_game_state_square_chosen(cls, game: Game, user: CustomUser, action: ActionMoveTo) -> None:
-        """
-        Persiste la ActionMoveTo en BD usando su serializer y actualiza
-        la posición del jugador en la partida.
-        """
-
-        game.positions[str(user.pk)] = action.square.custom_id
-        game.possible_destinations = []
-
-        pay_price = _calculate_rent_price(game, user, action.square)
-        if pay_price > 0:
-            rel = _get_relationship(game, action.square)
-            if rel is None:
-                raise GameLogicError(f"no user owns this square")
-
-            game.money[str(user.pk)] -= pay_price
-            game.money[str(rel.owner.pk)] += pay_price
-
-        # TODO: Check rules for this
-
-        if isinstance(action.square, JailSquare):
-            if game.money[str(user.pk)] < 0:
-                game.phase = GameManager.LIQUIDATION
-            else:
-                GameManager._next_turn(game, user)
-        elif isinstance(action.square, ParkingSquare):
-            game.money[str(user.pk)] += game.parking_money
-            game.parking_money = 0
-        elif game.money[str(user.pk)] < 0:
-            game.phase = GameManager.LIQUIDATION
-        elif game.streak > 0:
-            game.phase = GameManager.ROLL_THE_DICES
-        else:
-            game.phase = GameManager.MANAGEMENT
-
-        game.save()
-
-    @classmethod
-    def _next_turn(cls, game, user) -> None:
-        # TODO: cambiar el order, meter json de jugadores ordenados
-        players_list = list(game.players.all().order_by('id')) 
-        num_players = len(players_list)
-        current_index = -1
-        for i, p in enumerate(players_list):
-            if p == game.active_turn_player:
-                current_index = i
-                break
-        
-        next_index = (current_index + 1) % num_players
-        # The next active user is for both: phase and turn
-        game.active_phase_player = players_list[next_index]
-        game.active_turn_player = players_list[next_index]
-        game.phase = GameManager.ROLL_THE_DICES
-
-        game.save()
- 
-    @classmethod
-    def _propose_trade(cls, game: Game,  user: CustomUser,action: ActionTradeProposal) -> None:
-        if action.player != user or action.offered_money < 0 or action.asked_money < 0:
-            raise MaliciousUserInput(user, "cannot do operation")
-        if action.destination_user not in game.players.all():
-            # FIXME: Change to internal order so that it handles player change to AI
-            raise MaliciousUserInput(user, "referenced a player that is not in game")
-
-        asked_properties_list = action.asked_properties.all()
-        asked_count = PropertyRelationship.objects.filter(
-            game=game, 
-            owner=action.destination_user,
-            id__in=action.asked_properties.all()
-        ).count()
-
-        if asked_count != asked_properties_list.count():
-            raise MaliciousUserInput(user, "destination does not have enough properties")
-
-        offered_properties_list = action.offered_properties.all()
-        offered_count = PropertyRelationship.objects.filter(
-            game=game, 
-            owner=action.player,
-            id__in=offered_properties_list
-        ).count()
-
-        if offered_count != offered_properties_list.count():
-            raise MaliciousUserInput(user, "offer does not have enough properties")
-
-        all_trade_properties = list(asked_properties_list) + list(offered_properties_list)
-        for rel in all_trade_properties:
-            real_sq = rel.square.get_real_instance()
-            if isinstance(real_sq, PropertySquare):
-                group_has_houses = PropertyRelationship.objects.filter(
-                    game=game, 
-                    square__propertysquare__group=real_sq.group,
-                    houses__gt=0
-                ).exists()
-                if group_has_houses:
-                    raise MaliciousUserInput(user, "cannot trade properties from a group with constructions")
-
-        game.phase = GameManager.PROPOSAL_ACCEPTANCE
-        game.active_phase_player = action.destination_user
-        game.proposal = action # type: ignore
-        game.save()
-
-    @classmethod
-    def _bankrupt_player(cls, game: Game, user: CustomUser) -> None:
-        properties = PropertyRelationship.objects.filter(game=game, owner=user)
-        
-        #reset all properties
-        for rel in properties:
-            rel.owner = None 
-            rel.houses = -1  
-            rel.mortgage = False
-            rel.save()
-            
-
-        game.money[str(user.pk)] = 0
-
-        # next_turns fails if we dont do this sh
-        if game.active_turn_player == user:
-            cls._next_turn(game, user)
-
-        game.players.remove(user)
-        #TODO: quitar de la lista de jugadores ordenados
-        game.save()
-        
-        # TODO: if only one left -> he wins
+    ############################################################

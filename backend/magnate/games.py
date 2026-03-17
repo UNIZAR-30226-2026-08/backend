@@ -1195,7 +1195,7 @@ class GameManager:
             dest_square_id = action.destinations[0]
             game.positions[str(user.pk)] = dest_square_id
             square = _get_square_by_custom_id(dest_square_id).get_real_instance()
-            if isinstance(square, GoToJailSquare):
+            if isinstance(square, JailSquare):
                 if game.money[str(user.pk)] < 0:
                     game.phase = GameManager.LIQUIDATION
                 else:

@@ -1235,20 +1235,28 @@ class GameManager:
         game.save()
 
     @classmethod
-    def _next_turn(cls, game, user) -> None:
-        # TODO: cambiar el order, meter json de jugadores ordenados
-        players_list = list(game.players.all().order_by('id')) 
+    def _next_turn(cls, game: Game, user: CustomUser) -> None:
+        players_list = list(game.players.all()) 
         num_players = len(players_list)
         current_index = -1
-        for i, p in enumerate(players_list):
+        current_player_id = -1
+        for p in players_list:
             if p == game.active_turn_player:
-                current_index = i
+                current_player_id = p.pk
+                current_index = game.ordered_players.index(current_player_id)
                 break
+            
+        if current_index == -1:
+            raise GameLogicError('current player not found')
         
         next_index = (current_index + 1) % num_players
         # The next active user is for both: phase and turn
-        game.active_phase_player = players_list[next_index]
-        game.active_turn_player = players_list[next_index]
+        next_player = game.players.filter(custom_id=game.ordered_players[next_index]).first()
+        if next_player is None:
+            raise GameLogicError('next player is None')
+
+        game.active_phase_player = next_player
+        game.active_turn_player = next_player
         game.phase = GameManager.ROLL_THE_DICES
 
         game.save()

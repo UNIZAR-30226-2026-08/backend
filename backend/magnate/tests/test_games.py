@@ -45,11 +45,10 @@ class GamesTest(TestCase):
         }
         self.game.positions = {
             str(self.player1.pk): self.property_square.custom_id, 
-            str(self.player2.pk): "000",
-            str(self.player3.pk): "000"
+            str(self.player2.pk): "001",
+            str(self.player3.pk): "001"
         }
         self.game.save()
-
     ##########################
     ###### JAIL TESTS ##########
     ##########################
@@ -405,8 +404,8 @@ class GamesTest(TestCase):
         
         self.game.refresh_from_db()
 
-        # expected rent
-        expected_rent = self.property_square.rent_prices[2]
+        # expected rent: 1 house is index 1
+        expected_rent = self.property_square.rent_prices[1]
         
         self.assertEqual(self.game.money[str(self.player2.pk)], 1500 - expected_rent)
         self.assertEqual(self.game.money[str(self.player1.pk)], 1500 + expected_rent)
@@ -684,9 +683,8 @@ class GamesTest(TestCase):
         8. P1 buys, ends turn -> P2 turn
         """
         # --- FIRST ROLL: DOUBLES ---
-        # d1=2, d2=2, d3=6 (bus icon non-numeric). Path options: 2, 2, 4. 
-        # For simplicity, let's use numeric bus so it's only 1 destination and we go directly to MANAGEMENT.
-        mock_randint.side_effect = [2, 2, 1] # 2+2+1 = 5 steps. Numeric bus.
+        # d1=1, d2=1, d3=2. 1+1+2 = 4 steps. 0 -> 4 is PropertySquare (003)
+        mock_randint.side_effect = [1, 1, 2] # 4 steps. Numeric bus.
 
         self.game.phase = GameManager.ROLL_THE_DICES
         self.game.save()
@@ -710,7 +708,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.streak, 1)
 
         # --- SECOND ROLL: DOUBLES ---
-        mock_randint.side_effect = [3, 3, 2] # 3+3+2 = 8 steps. Streak 1 -> 2
+        mock_randint.side_effect = [1, 2, 1] # 2+2+0 = 4 steps. 4 -> 8 (PropertySquare 008)
 
         action = ActionThrowDices(game=self.game, player=self.player1)
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)
@@ -735,7 +733,7 @@ class GamesTest(TestCase):
         
 
         # --- THIRD ROLL: NO DOUBLES ---
-        mock_randint.side_effect = [1, 2, 2] # 1+2+2 = 5 steps. Streak 2 -> 0
+        mock_randint.side_effect = [1, 3, 2] # 1+3+2 = 6 steps. 8 -> 14 (PropertySquare 014)
 
         action = ActionThrowDices(game=self.game, player=self.player1)
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)
@@ -756,3 +754,66 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.active_turn_player, self.player2)
         self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES)
         self.assertEqual(self.game.streak, 0)
+
+    ##########################
+    ###### FANTASY TESTS ######
+    ##########################
+
+    @patch('magnate.games.FantasyEventFactory.generate')
+    def test_fantasy_choose_first(self, mock_generate):
+        """Landa on fantasy square and choose the first card offered"""
+        # Setup initial event
+        initial_event = FantasyEvent.objects.create(
+            fantasy_type='winPlainMoney', 
+            values={'money': 100}, 
+            card_cost=50
+        )
+        
+        self.game.phase = GameManager.CHOOSE_FANTASY
+        self.game.fantasy_event = initial_event
+        self.game.save()
+        
+        initial_money = self.game.money[str(self.player1.pk)]
+        
+        # Action: choose the first card (chosen_card=True)
+        action = ActionChooseCard.objects.create(game=self.game, player=self.player1, chosen_card=True)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+        
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money + 100)
+        self.assertEqual(self.game.phase, GameManager.BUSINESS)
+        self.assertIsNone(self.game.fantasy_event)
+
+    @patch('magnate.games.FantasyEventFactory.generate')
+    def test_fantasy_choose_other(self, mock_generate):
+        """Land on fantasy square and choose to get another card"""
+        # Setup initial event (this one should NOT be applied)
+        initial_event = FantasyEvent.objects.create(
+            fantasy_type='losePlainMoney', 
+            values={'money': 100}, 
+            card_cost=50
+        )
+        
+        # Mock the "other" event that will be generated
+        other_event = FantasyEvent(
+            fantasy_type='winPlainMoney', 
+            values={'money': 200}, 
+            card_cost=50
+        )
+        mock_generate.return_value = other_event
+        
+        self.game.phase = GameManager.CHOOSE_FANTASY
+        self.game.fantasy_event = initial_event
+        self.game.save()
+        
+        initial_money = self.game.money[str(self.player1.pk)]
+        
+        # Action: choose the other card (chosen_card=False)
+        action = ActionChooseCard.objects.create(game=self.game, player=self.player1, chosen_card=False)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+        
+        self.game.refresh_from_db()
+        # Should have applied other_event (win 200) instead of initial_event (lose 100)
+        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money + 200)
+        self.assertEqual(self.game.phase, GameManager.BUSINESS)
+        self.assertIsNone(self.game.fantasy_event)

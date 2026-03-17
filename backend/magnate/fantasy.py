@@ -3,7 +3,7 @@ from channels.db import database_sync_to_async
 from collections import defaultdict
 import random
 
-from magnate.games import _build_square, _demolish_square, _get_jail_square, _unset_mortgage
+from magnate.game_utils import _build_square, _demolish_square, _get_jail_square, _unset_mortgage
 
 class FantasyEventFactory:
     @staticmethod
@@ -147,7 +147,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             raise Exception('FantasyEvent values is None')
         
         money_to_add = fantasy_event.values['money']
-        game.money[user.pk] += money_to_add
+        game.money[str(user.pk)] += money_to_add
         game.save()
 
         return FantasyResult(
@@ -160,7 +160,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             raise Exception('FantasyEvent values is None')
 
         ratio_to_add = fantasy_event.values['money']
-        game.money[user.pk] = int(game.money[user.pk] * (1 + ratio_to_add/100))
+        game.money[str(user.pk)] = int(game.money[str(user.pk)] * (1 + ratio_to_add/100))
         game.save()
 
         return FantasyResult(
@@ -173,7 +173,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             raise Exception('FantasyEvent values is None')
         
         money_to_sub = fantasy_event.values['money']
-        game.money[user.pk] -= money_to_sub
+        game.money[str(user.pk)] -= money_to_sub
         game.save()
 
         return FantasyResult(
@@ -186,7 +186,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             raise Exception('FantasyEvent values is None')
 
         ratio_to_sub = fantasy_event.values['money']
-        game.money[user.pk] = int(game.money[user.pk] * (1 - ratio_to_sub/100))
+        game.money[str(user.pk)] = int(game.money[str(user.pk)] * (1 - ratio_to_sub/100))
         game.save()
 
         return FantasyResult(
@@ -284,9 +284,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
         ids.remove(id_jail)
         for player in game.players.all():
-            if game.positions[player.pk] != id_jail:
-                rand_square_id = random.choice([n for n in ids if n != game.positions[player.pk]])
-                game.positions[player.pk] = rand_square_id
+            if game.positions[str(player.pk)] != id_jail:
+                rand_square_id = random.choice([n for n in ids if n != game.positions[str(player.pk)]])
+                game.positions[str(player.pk)] = rand_square_id
 
         game.save()
 
@@ -297,11 +297,11 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     
     elif fantasy_event.fantasy_type == 'moveAnywhereRandom':
         id_jail = _get_jail_square().custom_id
-        if(game.positions[user.pk] != id_jail):
+        if(game.positions[str(user.pk)] != id_jail):
             ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
             ids.remove(id_jail)
-            rand_square_id = random.choice([n for n in ids if n != game.positions[user.pk]])
-            game.positions[user.pk] = rand_square_id
+            rand_square_id = random.choice([n for n in ids if n != game.positions[str(user.pk)]])
+            game.positions[str(user.pk)] = rand_square_id
             game.save()
 
         return FantasyResult(
@@ -316,11 +316,11 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         target_player = random.choice(list(opponents)) #con un order by ? tambien rularia
 
         id_jail = _get_jail_square().custom_id
-        if(game.positions[target_player.pk] != id_jail):
+        if(game.positions[str(target_player.pk)] != id_jail):
             ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
             ids.remove(id_jail)
-            rand_square_id = random.choice([n for n in ids if n != game.positions[target_player.pk]])
-            game.positions[target_player.pk] = rand_square_id
+            rand_square_id = random.choice([n for n in ids if n != game.positions[str(target_player.pk)]])
+            game.positions[str(target_player.pk)] = rand_square_id
             game.save()
 
         return FantasyResult(
@@ -339,9 +339,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         opponents_count = len(opponents_list)
 
         for player in opponents_list:
-            game.money[player.pk] += money_to_share
+            game.money[str(player.pk)] += money_to_share
 
-        game.money[user.pk] -= money_to_share*opponents_count
+        game.money[str(user.pk)] -= money_to_share*opponents_count
 
         game.save()
 
@@ -391,8 +391,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     
     elif fantasy_event.fantasy_type == 'goToJail':
         jail_id = _get_jail_square().custom_id
-        game.positions[user.pk] = jail_id
-        game.jail_remaining_turns[user.pk] = 3
+        game.positions[str(user.pk)] = jail_id
+        game.jail_remaining_turns[str(user.pk)] = 3
         game.save()
 
         return FantasyResult(
@@ -403,8 +403,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     elif fantasy_event.fantasy_type == 'sendToJail':
         target_user = random.choice(game.players.exclude(pk=user.pk))
         jail_id = _get_jail_square().custom_id
-        game.positions[target_user.pk] = jail_id
-        game.jail_remaining_turns[target_user.pk] = 3
+        game.positions[str(target_user.pk)] = jail_id
+        game.jail_remaining_turns[str(target_user.pk)] = 3
         game.save()
 
         return FantasyResult(
@@ -415,8 +415,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     elif fantasy_event.fantasy_type == 'everybodyToJail':
         jail_id = _get_jail_square().custom_id
         for player in game.players.all():
-            game.positions[player.pk] = jail_id
-            game.jail_remaining_turns[player.pk] = 3
+            game.positions[str(player.pk)] = jail_id
+            game.jail_remaining_turns[str(player.pk)] = 3
 
         game.save()
 
@@ -428,9 +428,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     elif fantasy_event.fantasy_type == 'doubleOrNothing':
         r = random.choice([True,False])
         if r:
-            game.money[user.pk] *= 2
+            game.money[str(user.pk)] *= 2
         else:
-            game.money[user.pk] = 0
+            game.money[str(user.pk)] = 0
         game.save()
 
         return FantasyResult(
@@ -440,7 +440,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         
     
     elif fantasy_event.fantasy_type == 'getParkingMoney':
-        game.money[user.pk] += game.parking_money
+        game.money[str(user.pk)] += game.parking_money
         game.parking_money = 0
         game.save()
 
@@ -507,9 +507,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         opponents_count = len(opponents_list)
 
         for player in opponents_list:
-            game.money[player.pk] -= money_to_share
+            game.money[str(player.pk)] -= money_to_share
 
-        game.money[user.pk] += money_to_share*opponents_count
+        game.money[str(user.pk)] += money_to_share*opponents_count
 
         game.save()
 
@@ -520,10 +520,10 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     
     elif fantasy_event.fantasy_type == 'magnetism':
         id_jail = _get_jail_square().custom_id
-        target_id = game.positions[user.pk]
+        target_id = game.positions[str(user.pk)]
         for player in game.players.all(): #no caso especial para el que lanza, se moverá al mismo sitio
-            if(game.positions[player.pk] != id_jail):
-                game.positions[player.pk] = target_id
+            if(game.positions[str(player.pk)] != id_jail):
+                game.positions[str(player.pk)] = target_id
 
         game.save()
 
@@ -538,9 +538,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         if start_square is None:
             raise Exception('No encuentra casilla de salida')
         
-        if(game.positions[user.pk] != id_jail):
-            game.positions[user.pk] = start_square.custom_id
-            game.money[user.pk] += start_square.init_money
+        if(game.positions[str(user.pk)] != id_jail):
+            game.positions[str(user.pk)] = start_square.custom_id
+            game.money[str(user.pk)] += start_square.init_money
             game.save()
 
         return FantasyResult(

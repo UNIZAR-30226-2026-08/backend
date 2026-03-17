@@ -855,13 +855,11 @@ class GameManager:
                     new_property.houses = -1
                 new_property.save()
 
-                game.phase = GameManager.BUSINESS
             elif isinstance(current_square, ServerSquare):
                 game.money[str(user.pk)] -= current_square.buy_price
                 new_property = PropertyRelationship(game=game, square=current_square, owner=user)
                 new_property.save()
 
-                game.phase = GameManager.BUSINESS
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionDropPurchase):
@@ -883,18 +881,22 @@ class GameManager:
                 else:
                     raise MaliciousUserInput(user, "tried to take a tram to a non tram square")
 
-                game.phase = GameManager.BUSINESS
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionDoNotTakeTram):
-            game.phase = GameManager.BUSINESS
+            pass
         elif isinstance(action, ActionNextPhase): # TODO: remove
-            game.phase = GameManager.BUSINESS
+            pass
         else:
             raise MaliciousUserInputAction(game, user, action)
 
-        game.save()
+        if game.phase == GameManager.MANAGEMENT:
+            if game.streak == 0:
+                game.phase = GameManager.BUSINESS
+            else:
+                game.phase = GameManager.ROLL_THE_DICES
 
+        game.save()
         # FIXME
         return Response()
 
@@ -937,6 +939,7 @@ class GameManager:
         elif isinstance(action, ActionNextPhase):
             current_money = game.money[str(user.pk)]
             
+        
             if game.phase == GameManager.BUSINESS:
                 if current_money >= 0:
                     GameManager._next_turn(game, user)
@@ -1110,7 +1113,11 @@ class GameManager:
 
         # no one bid
         if not bids:
-            game.phase = GameManager.BUSINESS
+
+            if game.streak == 0:
+                game.phase = GameManager.BUSINESS
+            else:
+                game.phase = GameManager.ROLL_THE_DICES
             game.auction_state = {}
             game.save()
 
@@ -1120,7 +1127,10 @@ class GameManager:
         winners = [k for k, v in bids.items() if v == max_bid]
         
         if len(winners) > 1:
-            game.phase = GameManager.BUSINESS
+            if game.streak == 0:
+                game.phase = GameManager.BUSINESS
+            else:
+                game.phase = GameManager.ROLL_THE_DICES
             game.auction_state = {}
             game.save()
             return {"winner": None, "square_id": square_id, "amount": 0, "tie": True}
@@ -1150,7 +1160,10 @@ class GameManager:
             
         new_property.save()
 
-        game.phase = GameManager.BUSINESS
+        if game.streak == 0:
+            game.phase = GameManager.BUSINESS
+        else:
+            game.phase = GameManager.ROLL_THE_DICES
         game.auction_state = {}
         game.save()
 
@@ -1251,7 +1264,7 @@ class GameManager:
         
         next_index = (current_index + 1) % num_players
         # The next active user is for both: phase and turn
-        next_player = game.players.filter(custom_id=game.ordered_players[next_index]).first()
+        next_player = game.players.filter(pk=game.ordered_players[next_index]).first()
         if next_player is None:
             raise GameLogicError('next player is None')
 

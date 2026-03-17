@@ -3,7 +3,7 @@ from django.core.management import call_command
 from magnate.exceptions import *
 from magnate.models import *
 from magnate.games import *
-from magnate.games import _calculate_rent_price
+from magnate.games import _calculate_rent_price, _get_user_square
 from magnate.serializers import *
 from django.utils import timezone
 from asgiref.sync import async_to_sync
@@ -29,6 +29,8 @@ class GamesTest(TestCase):
         )
 
         self.game.players.set([self.player1, self.player2, self.player3])
+        self.game.ordered_players = [self.player1.pk, self.player2.pk, self.player3.pk]
+        self.game.save()
 
         self.property_square = PropertySquare.objects.filter(buy_price__gt=0).first()
         if self.property_square is None:
@@ -668,3 +670,89 @@ class GamesTest(TestCase):
         # process_action should catch it and raise MaliciousUserInput
         with self.assertRaises(MaliciousUserInput):
             async_to_sync(GameManager.process_action)(self.game, self.player1, proposal)
+
+    @patch('magnate.games.random.randint')
+    def test_doubles_streak_full_flow(self, mock_randint):
+        """
+        1. P1 rolls doubles (streak 0 -> 1)
+        2. P1 buys the square (MANAGEMENT -> BUSINESS)
+        3. P1 ends business phase, should go back to ROLL_THE_DICES (same player)
+        4. P1 rolls doubles again (streak 1 -> 2)
+        5. P1 buys another square
+        6. P1 ends business, back to ROLL_THE_DICES
+        7. P1 rolls NO doubles (streak 2 -> 0)
+        8. P1 buys, ends turn -> P2 turn
+        """
+        # --- FIRST ROLL: DOUBLES ---
+        # d1=2, d2=2, d3=6 (bus icon non-numeric). Path options: 2, 2, 4. 
+        # For simplicity, let's use numeric bus so it's only 1 destination and we go directly to MANAGEMENT.
+        mock_randint.side_effect = [2, 2, 1] # 2+2+1 = 5 steps. Numeric bus.
+
+        self.game.phase = GameManager.ROLL_THE_DICES
+        self.game.save()
+
+        action = ActionThrowDices(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.streak, 1)
+        self.assertEqual(self.game.phase, GameManager.MANAGEMENT)
+        self.assertEqual(self.game.active_turn_player, self.player1)
+
+        # Buy the square. Because streak > 0, it should return to ROLL_THE_DICES for P1
+        current_sq = _get_user_square(self.game, self.player1).get_real_instance()
+        buy_action = ActionBuySquare(game=self.game, player=self.player1, square=current_sq)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, buy_action)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES)
+        self.assertEqual(self.game.active_turn_player, self.player1)
+        self.assertEqual(self.game.streak, 1)
+
+        # --- SECOND ROLL: DOUBLES ---
+        mock_randint.side_effect = [3, 3, 2] # 3+3+2 = 8 steps. Streak 1 -> 2
+
+        action = ActionThrowDices(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.streak, 2)
+        self.assertEqual(self.game.phase, GameManager.MANAGEMENT)
+
+        # Drop purchase to go to Auction (or just NextPhase)
+        current_sq = _get_user_square(self.game, self.player1).get_real_instance()
+        drop_action = ActionDropPurchase(game=self.game, player=self.player1, square=current_sq)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, drop_action)
+
+        # After auction, it goes back to ROLL_THE_DICES directly if streak > 0
+        self.assertEqual(self.game.phase, GameManager.AUCTION)
+        async_to_sync(GameManager._end_auction)(self.game)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.streak, 2)
+        self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES)
+        self.assertEqual(self.game.active_turn_player, self.player1)
+        
+
+        # --- THIRD ROLL: NO DOUBLES ---
+        mock_randint.side_effect = [1, 2, 2] # 1+2+2 = 5 steps. Streak 2 -> 0
+
+        action = ActionThrowDices(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.streak, 0)
+        self.assertEqual(self.game.phase, GameManager.MANAGEMENT)
+
+        # End turn
+        next_phase_action = ActionNextPhase(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, next_phase_action) # MANAGEMENT -> BUSINESS
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.phase, GameManager.BUSINESS)
+
+        async_to_sync(GameManager.process_action)(self.game, self.player1, next_phase_action) # BUSINESS -> NEXT PLAYER
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.active_turn_player, self.player2)
+        self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES)
+        self.assertEqual(self.game.streak, 0)

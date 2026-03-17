@@ -177,6 +177,7 @@ class Game(models.Model):
 
     phase = models.CharField(choices=GamePhase, max_length=20, default='roll_the_dices')
     players = models.ManyToManyField('CustomUser', related_name='active_playing')
+    ordered_players = models.JSONField(default=list)
     streak = models.IntegerField(default=0)
     possible_destinations = models.JSONField(default=list, blank=True)
     parking_money = models.PositiveIntegerField(default=0)

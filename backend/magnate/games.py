@@ -442,6 +442,10 @@ def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
     Raises:
         GameDesignError: If a successor square cannot be found or the jail doesn't exist.
     """
+    if curr is None:
+        raise GameLogicError('current square is None')
+        return None
+    
     path_log = [curr]
     passed_go = False
 
@@ -450,15 +454,23 @@ def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
         
         # TODO: dinero al pasar por la casilla de salida
         if isinstance(curr, BridgeSquare):
+            if curr.out_successor is None:
+                raise GameDesignError('bridge without out successor')
+            if curr.in_successor is None:
+                raise GameDesignError('bridge without in successor')
             # depending on steps 
             if total_steps % 2 == 0:
                 curr = curr.out_successor
             else:
                 curr = curr.in_successor
         elif isinstance(curr, ExitSquare):
+            if curr.in_successor is None:
+                raise GameDesignError('exit square without in successor')
             passed_go = True
             curr = curr.in_successor
         else:
+            if curr.in_successor is None:
+                raise GameDesignError('square without in successor')
             curr = curr.in_successor
         
         if curr is None:
@@ -467,7 +479,10 @@ def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
         path_log.append(curr.custom_id)
 
     if isinstance(curr, GoToJailSquare):
-        curr = JailSquare.objects.first()
+        jail = JailSquare.objects.first()
+        if jail is None:
+            raise GameDesignError('no jail in game')
+        curr = jail
         if curr is None:
             raise GameDesignError(f"no jail square")
         return {"final_id": curr.custom_id, 
@@ -1146,5 +1161,165 @@ class GameManager:
             "amount": highest_bid
         }
     
+    ###########################################################################
+    # Updaters
+    ###########################################################################
+
+    @classmethod
+    def _update_game_state_dices(cls, game: Game, user: CustomUser, action: ActionThrowDices) -> None:
+        """
+        Persiste la ActionThrowDices en BD usando su serializer y actualiza el
+        estado de la partida (destinos posibles almacenados en el JSON del
+        juego).
+        """
+
+        game.possible_destinations = action.destinations if len(action.destinations) > 1 else []
+        game.streak = action.streak
+
+        if len(action.destinations) > 1:
+            game.phase = GameManager.CHOOSE_SQUARE
+        elif len(action.destinations) == 1:
+            dest_square_id = action.destinations[0]
+            game.positions[str(user.pk)] = dest_square_id
+            square = _get_square_by_custom_id(dest_square_id).get_real_instance()
+            if isinstance(square, JailSquare):
+                if game.money[str(user.pk)] < 0:
+                    game.phase = GameManager.LIQUIDATION
+                else:
+                    GameManager._next_turn(game, user)
+            else:
+                if isinstance(square, ParkingSquare):
+                    game.money[str(user.pk)] += game.parking_money # recently added
+                    game.parking_money = 0
+                game.phase = GameManager.MANAGEMENT
+            # TODO: Casilla inicial
+
+        game.save()
+
+    @classmethod
+    def _update_game_state_square_chosen(cls, game: Game, user: CustomUser, action: ActionMoveTo) -> None:
+        """
+        Persiste la ActionMoveTo en BD usando su serializer y actualiza
+        la posición del jugador en la partida.
+        """
+
+        game.positions[str(user.pk)] = action.square.custom_id
+        game.possible_destinations = []
+
+        pay_price = _calculate_rent_price(game, user, action.square)
+        if pay_price > 0:
+            rel = _get_relationship(game, action.square)
+            if rel is None:
+                raise GameLogicError(f"no user owns this square")
+
+            game.money[str(user.pk)] -= pay_price
+            game.money[str(rel.owner.pk)] += pay_price
+
+        # TODO: Check rules for this
+
+        if isinstance(action.square, JailSquare):
+            if game.money[str(user.pk)] < 0:
+                game.phase = GameManager.LIQUIDATION
+            else:
+                GameManager._next_turn(game, user)
+        elif isinstance(action.square, ParkingSquare):
+            game.money[str(user.pk)] += game.parking_money
+            game.parking_money = 0
+        elif game.money[str(user.pk)] < 0:
+            game.phase = GameManager.LIQUIDATION
+        elif game.streak > 0:
+            game.phase = GameManager.ROLL_THE_DICES
+        else:
+            game.phase = GameManager.MANAGEMENT
+
+        game.save()
+
+    @classmethod
+    def _next_turn(cls, game, user) -> None:
+        # TODO: cambiar el order, meter json de jugadores ordenados
+        players_list = list(game.players.all().order_by('id')) 
+        num_players = len(players_list)
+        current_index = -1
+        for i, p in enumerate(players_list):
+            if p == game.active_turn_player:
+                current_index = i
+                break
+        
+        next_index = (current_index + 1) % num_players
+        # The next active user is for both: phase and turn
+        game.active_phase_player = players_list[next_index]
+        game.active_turn_player = players_list[next_index]
+        game.phase = GameManager.ROLL_THE_DICES
+
+        game.save()
+ 
+    @classmethod
+    def _propose_trade(cls, game: Game,  user: CustomUser,action: ActionTradeProposal) -> None:
+        if action.player != user or action.offered_money < 0 or action.asked_money < 0:
+            raise MaliciousUserInput(user, "cannot do operation")
+        if action.destination_user not in game.players.all():
+            # FIXME: Change to internal order so that it handles player change to AI
+            raise MaliciousUserInput(user, "referenced a player that is not in game")
+
+        asked_properties_list = action.asked_properties.all()
+        asked_count = PropertyRelationship.objects.filter(
+            game=game, 
+            owner=action.destination_user,
+            id__in=action.asked_properties.all()
+        ).count()
+
+        if asked_count != asked_properties_list.count():
+            raise MaliciousUserInput(user, "destination does not have enough properties")
+
+        offered_properties_list = action.offered_properties.all()
+        offered_count = PropertyRelationship.objects.filter(
+            game=game, 
+            owner=action.player,
+            id__in=offered_properties_list
+        ).count()
+
+        if offered_count != offered_properties_list.count():
+            raise MaliciousUserInput(user, "offer does not have enough properties")
+
+        all_trade_properties = list(asked_properties_list) + list(offered_properties_list)
+        for rel in all_trade_properties:
+            real_sq = rel.square.get_real_instance()
+            if isinstance(real_sq, PropertySquare):
+                group_has_houses = PropertyRelationship.objects.filter(
+                    game=game, 
+                    square__propertysquare__group=real_sq.group,
+                    houses__gt=0
+                ).exists()
+                if group_has_houses:
+                    raise MaliciousUserInput(user, "cannot trade properties from a group with constructions")
+
+        game.phase = GameManager.PROPOSAL_ACCEPTANCE
+        game.active_phase_player = action.destination_user
+        game.proposal = action # type: ignore
+        game.save()
+
+    @classmethod
+    def _bankrupt_player(cls, game: Game, user: CustomUser) -> None:
+        properties = PropertyRelationship.objects.filter(game=game, owner=user)
+        
+        #reset all properties
+        for rel in properties:
+            rel.owner = None 
+            rel.houses = -1  
+            rel.mortgage = False
+            rel.save()
+            
+
+        game.money[str(user.pk)] = 0
+
+        # next_turns fails if we dont do this sh
+        if game.active_turn_player == user:
+            cls._next_turn(game, user)
+
+        game.players.remove(user)
+        #TODO: quitar de la lista de jugadores ordenados
+        game.save()
+        
+        # TODO: if only one left -> he wins
 
     ############################################################

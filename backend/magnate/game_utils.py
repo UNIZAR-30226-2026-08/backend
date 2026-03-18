@@ -73,13 +73,18 @@ def _build_square(game: Game,
 
     relationship.houses += number_built
     relationship.save()
-    
+
+    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+    stats.built_houses += number_built
+
     if not free_build:
         coste = building_square.build_price * number_built
-        
 
         game.money[str(user.pk)] -= coste
         game.save()
+        stats.lost_money += coste
+
+    stats.save()
 
     return relationship  #ack
 
@@ -143,12 +148,18 @@ def _demolish_square(game: Game,
     # demolish
     relationship.houses -= number_demolished
     relationship.save()
+
+    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+    stats.demolished_houses += number_demolished
     
     if not free_demolish:
         coste = demolition_square.build_price
         
         game.money[str(user.pk)] += coste // 2 * number_demolished
         game.save()
+        stats.won_money += coste // 2 * number_demolished
+
+    stats.save()
 
     return relationship
 
@@ -213,6 +224,9 @@ def _unset_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, fre
         mortgage_value = target_square.buy_price // 2
         game.money[str(user.pk)] -= mortgage_value
         game.save()
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.lost_money += mortgage_value
+        
 
     return relationship
 

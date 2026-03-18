@@ -15,7 +15,12 @@ class CustomUser(AbstractUser):
     role = models.CharField(choices=Roles, max_length=10, default='regular')
 
     owned_items = models.ManyToManyField('Item', blank=True, related_name='owners')
-    played_games = models.ManyToManyField('Game', blank=True, related_name='played_by')
+    played_games = models.ManyToManyField(
+        'Game', 
+        through='PlayerGameStatistic', 
+        blank=True, 
+        related_name='played_by'
+    )
 
     active_game: "Game | None" = models.ForeignKey('Game', 
                                     on_delete=models.SET_NULL,
@@ -280,3 +285,26 @@ class ActionBid(Action):
 class Response(models.Model):
     # TODO: Complete
     pass
+
+
+# la relacion jugador-partida ahora es esto (django pilota)
+# y puedo añadir info adicional además de la relación, las stats
+class PlayerGameStatistic(models.Model):
+    user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
+    game = models.ForeignKey('Game', on_delete=models.CASCADE)
+    
+    walked_squares = models.PositiveIntegerField(default=0)
+    won_money = models.PositiveIntegerField(default=0)
+    lost_money = models.PositiveIntegerField(default=0)
+    num_fantasy_events = models.PositiveIntegerField(default=0)
+    built_houses = models.PositiveIntegerField(default=0)
+    demolished_houses = models.PositiveIntegerField(default=0)
+    times_in_jail = models.PositiveIntegerField(default=0)
+    turns_in_jail = models.PositiveIntegerField(default=0)
+    num_paid_rents = models.PositiveIntegerField(default=0)
+    num_trades = models.PositiveIntegerField(default=0)
+    num_mortgages = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+        # 1 player and game for each stats
+        unique_together = ('user', 'game')

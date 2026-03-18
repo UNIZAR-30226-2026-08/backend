@@ -9,7 +9,7 @@ or malicious actions performed by users.
 from rest_framework.exceptions import APIException
 from rest_framework import status
 from channels.exceptions import DenyConnection
-from .models import CustomUser, Action, Game
+from .models import *
 
 class GameLogicError(Exception):
     """

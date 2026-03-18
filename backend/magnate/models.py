@@ -144,11 +144,6 @@ class FantasyEvent(models.Model):
     values = models.JSONField(null=True)
     card_cost = models.IntegerField(default=0)
 
-    def __init__(self, fantasy_type, values, card_cost):
-        self.fantasy_type = fantasy_type
-        self.values = values
-        self.card_cost = card_cost
-
 class FantasyResult(models.Model):
     fantasy_type = models.CharField(choices=FantasyEvent.FantasyType, max_length=40)
     values = models.JSONField(null=True)
@@ -168,6 +163,7 @@ class Game(models.Model):
     class GamePhase(models.TextChoices):
         roll_the_dices = 'roll_the_dices'
         choose_square = 'choose_square'
+        choose_fantasy = 'choose_fantasy'
         management = 'management'
         liquidation = 'liquidation'
         business = 'business'
@@ -187,6 +183,9 @@ class Game(models.Model):
     proposal = models.ForeignKey('ActionTradeProposal', on_delete=models.SET_NULL, null=True, blank=True, related_name='trade_proposal')
 
     auction_state = models.JSONField(default=dict, blank=True)
+
+    fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.SET_NULL, null=True, blank=True, related_name='fantasy_event')
+
 
 
 class PropertyRelationship(models.Model):

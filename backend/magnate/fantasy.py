@@ -141,6 +141,9 @@ class FantasyEventFactory:
 
 #@database_sync_to_async
 def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent) -> FantasyResult:
+    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+    stats.num_fantasy_events += 1
+    stats.save()
 
     if fantasy_event.fantasy_type == 'winPlainMoney':
         if fantasy_event.values is None:
@@ -149,6 +152,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         money_to_add = fantasy_event.values['money']
         game.money[str(user.pk)] += money_to_add
         game.save()
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.won_money += money_to_add
+        stats.save()
 
         return FantasyResult(
             fantasy_type = fantasy_event.fantasy_type,
@@ -160,8 +166,12 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             raise Exception('FantasyEvent values is None')
 
         ratio_to_add = fantasy_event.values['money']
+        previous_money = game.money[str(user.pk)]
         game.money[str(user.pk)] = int(game.money[str(user.pk)] * (1 + ratio_to_add/100))
         game.save()
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.won_money += game.money[str(user.pk)] - previous_money
+        stats.save()
 
         return FantasyResult(
             fantasy_type = fantasy_event.fantasy_type,
@@ -175,6 +185,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         money_to_sub = fantasy_event.values['money']
         game.money[str(user.pk)] -= money_to_sub
         game.save()
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.lost_money += money_to_sub
+        stats.save()
 
         return FantasyResult(
             fantasy_type = fantasy_event.fantasy_type,
@@ -186,8 +199,12 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             raise Exception('FantasyEvent values is None')
 
         ratio_to_sub = fantasy_event.values['money']
+        previous_money = game.money[str(user.pk)]
         game.money[str(user.pk)] = int(game.money[str(user.pk)] * (1 - ratio_to_sub/100))
         game.save()
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.lost_money += previous_money - game.money[str(user.pk)]
+        stats.save()
 
         return FantasyResult(
             fantasy_type = fantasy_event.fantasy_type,
@@ -340,8 +357,15 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         for player in opponents_list:
             game.money[str(player.pk)] += money_to_share
+            stats = PlayerGameStatistic.objects.get(user=player,game=game)
+            stats.won_money += money_to_share
+            stats.save()
+
 
         game.money[str(user.pk)] -= money_to_share*opponents_count
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.lost_money += money_to_share*opponents_count
+        stats.save()
 
         game.save()
 
@@ -395,6 +419,10 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         game.jail_remaining_turns[str(user.pk)] = 3
         game.save()
 
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.times_in_jail += 1
+        stats.save()
+
         return FantasyResult(
             fantasy_type=fantasy_event.fantasy_type,
             values=None
@@ -407,6 +435,10 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         game.jail_remaining_turns[str(target_user.pk)] = 3
         game.save()
 
+        stats = PlayerGameStatistic.objects.get(user=target_user,game=game)
+        stats.times_in_jail += 1
+        stats.save()
+
         return FantasyResult(
             fantasy_type=fantasy_event.fantasy_type,
             values={'target_user':target_user.pk}
@@ -417,6 +449,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         for player in game.players.all():
             game.positions[str(player.pk)] = jail_id
             game.jail_remaining_turns[str(player.pk)] = 3
+            stats = PlayerGameStatistic.objects.get(user=player,game=game)
+            stats.times_in_jail += 1
+            stats.save()
 
         game.save()
 
@@ -428,8 +463,14 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     elif fantasy_event.fantasy_type == 'doubleOrNothing':
         r = random.choice([True,False])
         if r:
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.won_money += game.money[str(user.pk)]
+            stats.save()
             game.money[str(user.pk)] *= 2
         else:
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.lost_money += game.money[str(user.pk)]
+            stats.save()
             game.money[str(user.pk)] = 0
         game.save()
 
@@ -441,6 +482,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     
     elif fantasy_event.fantasy_type == 'getParkingMoney':
         game.money[str(user.pk)] += game.parking_money
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.won_money += game.parking_money
+        stats.save()
         game.parking_money = 0
         game.save()
 
@@ -485,8 +529,6 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         demolished_houses = []
 
         for prop in properties:
-            #prop.houses -= 1 #python no tiene --, tocate los *******
-            #prop.save(update_fields=['houses'])
             result_property = _demolish_square(game=game, user=prop.owner, demolition_square=prop.square,
                          number_demolished=1, free_demolish=True)
             demolished_houses.append(result_property.square.custom_id)
@@ -508,8 +550,14 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         for player in opponents_list:
             game.money[str(player.pk)] -= money_to_share
+            stats = PlayerGameStatistic.objects.get(user=player,game=game)
+            stats.lost_money += money_to_share
+            stats.save()
 
         game.money[str(user.pk)] += money_to_share*opponents_count
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.won_money += money_to_share*opponents_count
+        stats.save()
 
         game.save()
 
@@ -541,6 +589,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         if(game.positions[str(user.pk)] != id_jail):
             game.positions[str(user.pk)] = start_square.custom_id
             game.money[str(user.pk)] += start_square.init_money
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.won_money += start_square.init_money
+            stats.save()
             game.save()
 
         return FantasyResult(

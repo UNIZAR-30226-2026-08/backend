@@ -184,11 +184,17 @@ def _set_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_
     
     relationship.mortgage = True
     relationship.save()
+    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+    stats.num_mortgages += 1
 
     if not free_mortgage:
         mortgage_value = target_square.buy_price // 2
         game.money[str(user.pk)] += mortgage_value
+        
+        stats.won_money += mortgage_value
         game.save()
+
+    stats.save()
 
     return relationship
 
@@ -471,6 +477,10 @@ class GameManager:
         game.money[str(user.pk)] -= bail_price
         game.jail_remaining_turns[str(user.pk)] = 0
         game.save()
+
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.lost_money += bail_price
+        stats.save()
         # roll the dices -> continue normally
 
         return Response()
@@ -512,6 +522,10 @@ class GameManager:
                     game.money[str(user.pk)] -= jail_sq.bail_price
                     game.jail_remaining_turns[str(user.pk)] = 0
                     game.save()
+                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                    stats.turns_in_jail += 1
+                    stats.lost_money += jail_sq.bail_price
+                    stats.save()
 
                 else:
                     if doubles:
@@ -525,6 +539,9 @@ class GameManager:
                         game.jail_remaining_turns[str(user.pk)] -= 1
                         game.phase = GameManager.BUSINESS
                         game.save()
+                        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                        stats.turns_in_jail += 1
+                        stats.save()
                         
                         fantasy = GameManager._update_game_state_dices(game, user, action, {})
                         return Response(fantasy)
@@ -549,6 +566,10 @@ class GameManager:
                 game.positions[str(user.pk)] = jail_square.custom_id
                 game.jail_remaining_turns[str(user.pk)] = 3
                 game.save()
+
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.times_in_jail += 1
+                stats.save()
                 
                 fantasy = GameManager._update_game_state_dices(game, user, action, {})
                 return Response(fantasy)
@@ -653,6 +674,9 @@ class GameManager:
             if isinstance(current_square, PropertySquare):
                 # TODO: Check money
                 game.money[str(user.pk)] -= current_square.buy_price
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.lost_money += current_square.buy_price
+                stats.save()
                 new_property = PropertyRelationship(game=game, square=current_square, owner=user)
                 user_properties = PropertyRelationship.objects.filter(game=game, owner=user)
                 user_same_group_properties = user_properties.filter(square__propertysquare__group=current_square.group)
@@ -668,6 +692,9 @@ class GameManager:
 
             elif isinstance(current_square, ServerSquare):
                 game.money[str(user.pk)] -= current_square.buy_price
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.lost_money += current_square.buy_price
+                stats.save()
                 new_property = PropertyRelationship(game=game, square=current_square, owner=user)
                 new_property.save()
 
@@ -688,6 +715,9 @@ class GameManager:
 
                 if square.custom_id in tram_squares_ids: # confirms its valid
                     game.money[str(user.pk)] -= square.buy_price
+                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                    stats.lost_money += square.buy_price
+                    stats.save()
                     game.positions[str(user.pk)] = square.custom_id
                 else:
                     raise MaliciousUserInput(user, "tried to take a tram to a non tram square")
@@ -816,9 +846,21 @@ class GameManager:
 
                 game.money[str(offering.pk)] -= offered_money
                 game.money[str(offering.pk)] += asked_money
+
+                stats = PlayerGameStatistic.objects.get(user=offering,game=game)
+                stats.lost_money += offered_money
+                stats.won_money += asked_money
+                stats.num_trades += 1
+                stats.save()
                 
                 game.money[str(user.pk)] -= asked_money
                 game.money[str(user.pk)] += offered_money
+
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.lost_money += asked_money
+                stats.won_money += offered_money
+                stats.num_trades += 1
+                stats.save()
 
                 game.save()
 
@@ -952,6 +994,9 @@ class GameManager:
         winner = CustomUser.objects.get(pk=highest_bidder_id)
         
         game.money[str(winner.pk)] -= highest_bid
+        stats = PlayerGameStatistic.objects.get(user=winner,game=game)
+        stats.lost_money += highest_bid
+        stats.save()
         
         new_property = PropertyRelationship(game=game, square=square, owner=winner)
         
@@ -1011,6 +1056,9 @@ class GameManager:
                 exit_square = ExitSquare.objects.first()
                 if exit_square is not None:
                     game.money[str(user.pk)] += exit_square.init_money
+                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                    stats.won_money += exit_square.init_money
+                    stats.save()
 
             if isinstance(square, JailSquare):
                 if game.money[str(user.pk)] < 0:
@@ -1028,6 +1076,9 @@ class GameManager:
             else:
                 if isinstance(square, ParkingSquare):
                     game.money[str(user.pk)] += game.parking_money # recently added
+                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                    stats.won_money += game.parking_money
+                    stats.save()
                     game.parking_money = 0
                 game.phase = GameManager.MANAGEMENT
             # TODO: Casilla inicial
@@ -1053,6 +1104,13 @@ class GameManager:
 
             game.money[str(user.pk)] -= pay_price
             game.money[str(rel.owner.pk)] += pay_price
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.lost_money += pay_price
+            stats.num_paid_rents += 1
+            stats.save()
+            stats = PlayerGameStatistic.objects.get(user=rel.owner,game=game)
+            stats.won_money += pay_price
+            stats.save()
 
         # check if passed go
         prev_square = _get_square_by_custom_id(prev_square_id).get_real_instance()  
@@ -1074,6 +1132,9 @@ class GameManager:
             exit_square = ExitSquare.objects.first()
             if exit_square is not None:
                 game.money[str(user.pk)] += exit_square.init_money
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.won_money += exit_square.init_money
+                stats.save()
 
         if isinstance(action.square, JailSquare):
             if game.money[str(user.pk)] < 0:
@@ -1082,6 +1143,9 @@ class GameManager:
                 GameManager._next_turn(game, user)
         elif isinstance(action.square, ParkingSquare):
             game.money[str(user.pk)] += game.parking_money
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.won_money += game.parking_money
+            stats.save()
             game.parking_money = 0
         elif game.money[str(user.pk)] < 0:
             game.phase = GameManager.LIQUIDATION

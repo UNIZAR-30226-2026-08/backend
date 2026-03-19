@@ -32,6 +32,10 @@ class GamesTest(TestCase):
         self.game.ordered_players = [self.player1.pk, self.player2.pk, self.player3.pk]
         self.game.save()
 
+        # Create statistics for each player
+        for player in [self.player1, self.player2, self.player3]:
+            PlayerGameStatistic.objects.create(user=player, game=self.game)
+
         self.property_square = PropertySquare.objects.filter(buy_price__gt=0).first()
         if self.property_square is None:
             raise GameLogicError("no property square")

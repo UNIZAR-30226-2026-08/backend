@@ -756,7 +756,28 @@ class GameManager:
         Persiste la ActionMoveTo en BD usando su serializer y actualiza
         la posición del jugador en la partida.
         """
-        prev_square_id = game.positions[str(user.pk)] 
+        current_pos_id = game.positions[str(user.pk)]
+        current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
+
+        # Recalculate passed_go by re-simulating moves from the last dice roll
+        last_action = ActionThrowDices.objects.filter(game=game, player=user).order_by("-id").first()
+        passed_go = False
+        
+        if last_action:
+            d1 = last_action.dice1
+            d2 = last_action.dice2
+            d3 = last_action.dice_bus
+            
+            if d3 <= 3:
+                dice_combinations = [d1 + d2 + d3]
+            else:
+                dice_combinations = [d1, d2, d1 + d2]
+            
+            for steps in dice_combinations:
+                result = _move_player_logic(current_pos_square, steps)
+                if result["final_id"] == action.square.custom_id:
+                    passed_go = passed_go or result["passed_go"]
+
         game.positions[str(user.pk)] = action.square.custom_id
         game.possible_destinations = []
 
@@ -776,23 +797,7 @@ class GameManager:
             stats.won_money += pay_price
             stats.save()
 
-        # check if passed go
-        prev_square = _get_square_by_custom_id(prev_square_id).get_real_instance()  
-        check = prev_square
-        passed_go = False
-        visited = set()
-        while True:
-            if check.custom_id in visited:
-                break
-            visited.add(check.custom_id)
-            if isinstance(check, ExitSquare):
-                passed_go = True
-            next_sq = check.in_successor
-            if next_sq is None or next_sq.custom_id == action.square.custom_id:
-                break
-            check = next_sq.get_real_instance()
-
-        if passed_go and not isinstance(action.square.get_real_instance(), ExitSquare):
+        if passed_go:
             exit_square = ExitSquare.objects.first()
             if exit_square is not None:
                 game.money[str(user.pk)] += exit_square.init_money
@@ -800,17 +805,19 @@ class GameManager:
                 stats.won_money += exit_square.init_money
                 stats.save()
 
-        if isinstance(action.square, JailSquare):
+        square = action.square.get_real_instance()
+        if isinstance(square, JailSquare):
             if game.money[str(user.pk)] < 0:
                 game.phase = GameManager.LIQUIDATION
             else:
                 GameManager._next_turn(game, user)
-        elif isinstance(action.square, ParkingSquare):
+        elif isinstance(square, ParkingSquare):
             game.money[str(user.pk)] += game.parking_money
             stats = PlayerGameStatistic.objects.get(user=user,game=game)
             stats.won_money += game.parking_money
             stats.save()
             game.parking_money = 0
+            game.phase = GameManager.MANAGEMENT
         elif game.money[str(user.pk)] < 0:
             game.phase = GameManager.LIQUIDATION
         elif game.streak > 0:

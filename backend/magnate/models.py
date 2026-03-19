@@ -187,11 +187,17 @@ class Game(models.Model):
     jail_remaining_turns = models.JSONField(default=dict, blank=True)
     proposal = models.ForeignKey('ActionTradeProposal', on_delete=models.SET_NULL, null=True, blank=True, related_name='trade_proposal')
 
-    auction_state = models.JSONField(default=dict, blank=True)
-
     fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.SET_NULL, null=True, blank=True, related_name='fantasy_event')
 
+    current_auction = models.ForeignKey('Auction', on_delete=models.SET_NULL, null=True, blank=True, related_name='active_game')
 
+class Auction(models.Model):
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='auctions')
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='auctioned_in')
+    winner = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='won_auctions')
+    final_amount = models.PositiveIntegerField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    is_tie = models.BooleanField(default=False)
 
 class PropertyRelationship(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='PropertyRelationship_in_game')
@@ -278,13 +284,31 @@ class ActionNextPhase(Action):
     pass
 
 class ActionBid(Action):
+    auction = models.ForeignKey('Auction', on_delete=models.CASCADE, related_name='bids', null=True, blank=True)
     amount = models.PositiveIntegerField(default=0)
 
 ###############################################################################
 
 class Response(models.Model):
-    # TODO: Complete
     pass
+
+class ResponseAuction(Response):
+    auction = models.OneToOneField('Auction', on_delete=models.CASCADE, related_name='response')
+
+    @property
+    def winner(self):
+        return self.auction.winner
+    
+    @property
+    def final_amount(self):
+        return self.auction.final_amount
+    
+    @property
+    def is_tie(self):
+        return self.auction.is_tie
+
+class ResponseFantasy(Response):
+    fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.CASCADE, related_name='response')
 
 
 # la relacion jugador-partida ahora es esto (django pilota)

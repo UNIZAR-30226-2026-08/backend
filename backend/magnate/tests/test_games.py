@@ -263,7 +263,7 @@ class GamesTest(TestCase):
 
         self.game.refresh_from_db()
         self.assertEqual(self.game.phase, GameManager.AUCTION)
-        self.assertEqual(self.game.auction_state["square_id"], self.property_square.custom_id)
+        self.assertEqual(self.game.current_auction.square, self.property_square)
 
         # 2. Pujas ocultas de los jugadores
         bid_p1 = ActionBid(game=self.game, player=self.player1, amount=100)
@@ -275,16 +275,18 @@ class GamesTest(TestCase):
         async_to_sync(GameManager.process_action)(self.game, self.player3, bid_p3)
 
         self.game.refresh_from_db()
-        bids = self.game.auction_state["bids"]
-        self.assertIn(str(self.player1.pk), bids)
-        self.assertIn(str(self.player2.pk), bids)
-        self.assertIn(str(self.player3.pk), bids)
-        self.assertEqual(bids[str(self.player2.pk)], 300)
+        auction = self.game.current_auction
+        bids = auction.bids.all()
+        self.assertEqual(bids.count(), 3)
+        self.assertEqual(auction.bids.get(player=self.player2).amount, 300)
 
-        result_dict = async_to_sync(GameManager._end_auction)(self.game)
+        result = async_to_sync(GameManager._end_auction)(self.game)
 
-        self.assertEqual(result_dict["winner"], self.player2.pk)
-        self.assertEqual(result_dict["amount"], 300)
+        if not isinstance(result, ResponseAuction):
+            raise GameLogicError("Wrong type")
+        
+        self.assertEqual(result.winner.pk, self.player2.pk)
+        self.assertEqual(result.final_amount, 300)
 
         self.game.refresh_from_db()
         self.assertEqual(self.game.phase, GameManager.BUSINESS)
@@ -298,18 +300,22 @@ class GamesTest(TestCase):
             raise GameLogicError("no server square")
 
         GameManager._initiate_auction(self.game, self.server_square)
-        
+
         self.game.refresh_from_db()
         self.assertEqual(self.game.phase, GameManager.AUCTION)
 
-        result_dict = async_to_sync(GameManager._end_auction)(self.game)
+        result = async_to_sync(GameManager._end_auction)(self.game)
 
-        self.assertIsNone(result_dict["winner"])
-        self.assertEqual(result_dict["amount"], 0)
+        if not isinstance(result, ResponseAuction):
+            raise GameLogicError("Wrong type")
+        
+        self.assertIsNone(result.winner)
+        self.assertEqual(result.final_amount, 0)
 
         self.game.refresh_from_db()
         self.assertEqual(self.game.phase, GameManager.BUSINESS)
-        self.assertEqual(self.game.auction_state, {})
+        self.assertIsNone(self.game.current_auction)
+
         
         with self.assertRaises(PropertyRelationship.DoesNotExist):
             PropertyRelationship.objects.get(game=self.game, square=self.server_square)
@@ -327,10 +333,13 @@ class GamesTest(TestCase):
         async_to_sync(GameManager.process_action)(self.game, self.player1, bid_p1)
         async_to_sync(GameManager.process_action)(self.game, self.player2, bid_p2)
 
-        result_dict = async_to_sync(GameManager._end_auction)(self.game)
+        result = async_to_sync(GameManager._end_auction)(self.game)
 
-        self.assertIsNone(result_dict["winner"])
-        self.assertTrue(result_dict.get("tie"))
+        if not isinstance(result, ResponseAuction):
+            raise GameLogicError("Wrong type")
+        
+        self.assertIsNone(result.winner)
+        self.assertTrue(result.is_tie)
         
         with self.assertRaises(PropertyRelationship.DoesNotExist):
             PropertyRelationship.objects.get(game=self.game, square=self.property_square)

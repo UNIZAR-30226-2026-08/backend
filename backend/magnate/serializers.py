@@ -213,7 +213,18 @@ class ActionPayBailSerializer(ActionSerializer):
 class ActionBidSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
         model = ActionBid
-        fields = ActionSerializer.Meta.fields + ['amount']
+        fields = ActionSerializer.Meta.fields + ['amount', 'auction']
+
+class AuctionSerializer(serializers.ModelSerializer):
+    square = SquareCustomIdField()
+    bids = serializers.SerializerMethodField()
+    class Meta:
+        model = Auction
+        fields = ['id', 'square', 'winner', 'final_amount', 'is_active', 'is_tie', 'bids']
+    
+    def get_bids(self, obj):
+        # Return dict of user_id -> amount to maintain frontend compatibility
+        return {str(bid.player.pk): bid.amount for bid in obj.bids.all()}
 
         
 
@@ -308,3 +319,37 @@ class FantasyResultSerializer(serializers.ModelSerializer):
     class Meta:
         model = FantasyResult
         fields = ['fantasy_type','values']
+
+######################################################################### Response serializers
+class ResponseSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+    class Meta:
+        model = Response
+        fields = ['type']
+    def get_type(self, obj):
+        return obj.__class__.__name__
+
+class ResponseAuctionSerializer(ResponseSerializer):
+    auction = AuctionSerializer()
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseAuction
+        fields = ResponseSerializer.Meta.fields + ['auction']
+
+class ResponseFantasySerializer(ResponseSerializer):
+    fantasy_event = FantasyEventSerializer()
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseFantasy
+        fields = ResponseSerializer.Meta.fields + ['fantasy_event']
+
+class GeneralResponseSerializer(serializers.ModelSerializer):
+    def to_representation(self, instance):
+        if isinstance(instance, ResponseAuction):
+            return ResponseAuctionSerializer(instance, context=self.context).data
+        elif isinstance(instance, ResponseFantasy):
+            return ResponseFantasySerializer(instance, context=self.context).data
+        
+        return ResponseSerializer(instance, context=self.context).data
+
+    class Meta:
+        model = Response
+        fields = '__all__'

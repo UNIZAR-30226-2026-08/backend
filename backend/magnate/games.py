@@ -12,7 +12,7 @@ import random
 import json
 from tokenize import group
 from django.db import transaction
-
+from django.db.models import Max
 from magnate.serializers import *
 from .models import *
 from .fantasy import *
@@ -208,7 +208,7 @@ class GameManager:
                         stats.save()
                         
                         fantasy = GameManager._update_game_state_dices(game, user, action, {})
-                        return Response(fantasy)
+                        return ResponseFantasy(fantasy_event=fantasy)
 
         if triples:
             action.triple = True
@@ -217,7 +217,7 @@ class GameManager:
             action.destinations = [s.custom_id for s in all_squares] #TODO: quitar carcel real
             
             fantasy = GameManager._update_game_state_dices(game, user, action, {})
-            return Response(fantasy)
+            return ResponseFantasy(fantasy_event=fantasy)
 
         elif doubles and not is_jailed: # doubles streak only if not getting out of jail via doubles
             if game.streak >= 2:
@@ -236,7 +236,7 @@ class GameManager:
                 stats.save()
                 
                 fantasy = GameManager._update_game_state_dices(game, user, action, {})
-                return Response(fantasy)
+                return ResponseFantasy(fantasy_event=fantasy)
             else:
                 action.streak = game.streak + 1
         else:
@@ -254,7 +254,7 @@ class GameManager:
         action.destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
         fantasy = GameManager._update_game_state_dices(game, user, action, passed_go_map)
 
-        return Response(fantasy)
+        return ResponseFantasy(fantasy_event=fantasy)
 
 
     @staticmethod
@@ -284,7 +284,7 @@ class GameManager:
         fantasy_event = GameManager._update_game_state_square_chosen(game, user, action)
         
         if fantasy_event:
-            return Response(fantasy_event)
+            return ResponseFantasy(fantasy_event=fantasy_event)
         
         return Response()
     
@@ -311,7 +311,7 @@ class GameManager:
         game.save()
             
         if new_fantasy is not None:
-            return Response(new_fantasy)
+            return ResponseFantasy(fantasy_event=new_fantasy)
         else:
             return Response()
        
@@ -553,12 +553,9 @@ class GameManager:
         """
         game.phase = GameManager.AUCTION
 
-        game.auction_state = {
-            "square_id": square.custom_id,
-            "bids": {} 
-        }
+        auction = Auction.objects.create(game=game, square=square)
+        game.current_auction = auction
         game.save()
-        
 
         return Response()
         
@@ -582,11 +579,12 @@ class GameManager:
         if not isinstance(action, ActionBid):
             raise MaliciousUserInputAction(game, user, action)
 
-        if not game.auction_state or "bids" not in game.auction_state:
-            raise GameLogicError("Auction state is missing or corrupted")
+        auction = game.current_auction
+        if not auction:
+            raise GameLogicError("No active auction")
 
         # user has not bid yet
-        if user.pk in game.auction_state["bids"]:
+        if auction.bids.filter(player=user).exists():
             raise MaliciousUserInput(user, "User already placed a bid in this auction")
 
         # user has enough money -> compulsory for auctions
@@ -595,14 +593,15 @@ class GameManager:
             raise MaliciousUserInput(user, "Bid amount exceeds current balance")
 
         # resgister bid
-        game.auction_state["bids"][str(user.pk)] = amount
-        game.save()
+        action.auction = auction
+        action.save()
 
         return Response()
     
     @staticmethod
     @database_sync_to_async
-    def _end_auction(game: Game) -> dict:
+    def _end_auction(game: Game) -> Response:
+        #TODO: change this auction inoto a response auction whose father is general response -> normalization
         """
         Ends an active auction, resolves the winner based on the highest bid, 
         handles ties, and transitions the game state back to BUSINESS.
@@ -611,8 +610,7 @@ class GameManager:
             game (Game): The current game instance.
 
         Returns:
-            dict: Results of the auction containing winner ID, username, square ID, 
-            amount, and tie status if applicable.
+            Auction: The finalized auction object.
 
         Raises:
             GameLogicError: If not in AUCTION phase or state is missing square ID.
@@ -622,43 +620,53 @@ class GameManager:
         if game.phase != GameManager.AUCTION:
             raise GameLogicError("Tried to end auction but game is not in auction phase")
 
-        auction_state = game.auction_state
-        bids = auction_state.get("bids", {})
-        square_id = auction_state.get("square_id")
+        auction = game.current_auction
+        if not auction:
+            raise GameLogicError("Game is in AUCTION phase but no auction object found")
 
-        if not square_id:
-            raise GameLogicError("Auction state missing square_id")
-
-        square = _get_square_by_custom_id(square_id).get_real_instance()
+        square = auction.square.get_real_instance()
+        bids = auction.bids.all()
 
         # no one bid
-        if not bids:
-
+        if not bids.exists():
             if game.streak == 0:
                 game.phase = GameManager.BUSINESS
             else:
                 game.phase = GameManager.ROLL_THE_DICES
-            game.auction_state = {}
+            
+            auction.is_active = False
+            auction.winner = None
+            auction.final_amount = 0
+            auction.is_tie = False
+            auction.save()
+
+            game.current_auction = None
             game.save()
 
-            return {"winner": None, "square_id": square_id, "amount": 0}
+            return ResponseAuction(auction=auction)
 
-        max_bid = max(bids.values())
-        winners = [k for k, v in bids.items() if v == max_bid]
+        max_bid_amount = bids.aggregate(Max('amount'))['amount__max']
+        winners = bids.filter(amount=max_bid_amount)
         
-        if len(winners) > 1:
+        if winners.count() > 1:
             if game.streak == 0:
                 game.phase = GameManager.BUSINESS
             else:
                 game.phase = GameManager.ROLL_THE_DICES
-            game.auction_state = {}
-            game.save()
-            return {"winner": None, "square_id": square_id, "amount": 0, "tie": True}
+            
+            auction.is_active = False
+            auction.winner = None
+            auction.final_amount = max_bid_amount
+            auction.is_tie = True
+            auction.save()
 
-        highest_bidder_id = winners[0]
-        highest_bid = max_bid
-        
-        winner = CustomUser.objects.get(pk=highest_bidder_id)
+            game.current_auction = None
+            game.save()
+            return ResponseAuction(auction=auction)
+
+        winner_action = winners.first()
+        winner = winner_action.player
+        highest_bid = winner_action.amount
         
         game.money[str(winner.pk)] -= highest_bid
         stats = PlayerGameStatistic.objects.get(user=winner,game=game)
@@ -683,19 +691,21 @@ class GameManager:
             
         new_property.save()
 
+        auction.winner = winner
+        auction.final_amount = highest_bid
+        auction.is_active = False
+        auction.is_tie = False
+        auction.save()
+
         if game.streak == 0:
             game.phase = GameManager.BUSINESS
         else:
             game.phase = GameManager.ROLL_THE_DICES
-        game.auction_state = {}
+        
+        game.current_auction = None
         game.save()
 
-        return {
-            "winner": winner.pk,
-            "winner_username": winner.username,
-            "square_id": square_id,
-            "amount": highest_bid
-        }
+        return ResponseAuction(auction=auction)
     
     ###########################################################################
     # Updaters
@@ -726,7 +736,7 @@ class GameManager:
                 return fantasy_event
 
             # If it's a JailSquare, _handle_square_arrival might have set it to LIQUIDATION
-            # If it didn't, we should end the turn.
+            # If it didn't, we should end the turn.2
             real_sq = square.get_real_instance()
             if isinstance(real_sq, JailSquare):
                 if game.phase != GameManager.LIQUIDATION:
@@ -746,7 +756,7 @@ class GameManager:
         current_pos_id = game.positions[str(user.pk)]
         current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
 
-        # Recalculate passed_go by re-simulating moves from the last dice roll
+        # recalculate passed_go 
         last_action = ActionThrowDices.objects.filter(game=game, player=user).order_by("-id").first()
         passed_go = False
         
@@ -784,7 +794,7 @@ class GameManager:
             stats.won_money += pay_price
             stats.save()
 
-        # Centralized logic for Go, Parking, Fantasy and Jail effects
+        # centralized logic for Go, Parking, Fantasy and Jail effects
         fantasy_event = _handle_square_arrival(game, user, action.square, passed_go)
 
         if fantasy_event:

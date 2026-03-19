@@ -656,13 +656,16 @@ class GameConsumer(AsyncWebsocketConsumer):
     def get_game_state(self, game_id, user):
         game = Game.objects.get(pk=game_id)
         # Envías la info vital para pintar el tablero inicial
-        return {
+        state = {
             "phase": game.phase,
             "money": game.money,
             "positions": game.positions,
             "active_turn_player": game.active_turn_player.username if game.active_turn_player else None,
             "streak": game.streak
         }
+        if game.current_auction:
+            state["auction"] = AuctionSerializer(game.current_auction).data
+        return state
     
     @database_sync_to_async
     def get_game(self, game_id):

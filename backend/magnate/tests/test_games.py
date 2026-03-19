@@ -3,7 +3,7 @@ from django.core.management import call_command
 from magnate.exceptions import *
 from magnate.models import *
 from magnate.games import *
-from magnate.games import _calculate_rent_price, _get_user_square
+from magnate.game_utils import _calculate_rent_price, _get_user_square, _build_square, _demolish_square, _calculate_net_worth
 from magnate.serializers import *
 from django.utils import timezone
 from asgiref.sync import async_to_sync
@@ -377,7 +377,7 @@ class GamesTest(TestCase):
         self.game.save()
         
         # Expected: 1000 + 100 + (2 * 50) = 1200
-        nw = calculate_net_worth(self.game, self.player1)
+        nw = _calculate_net_worth(self.game, self.player1)
         expected = 1000 + self.property_square.buy_price + (2 * self.property_square.build_price)
         self.assertEqual(nw, expected)
 

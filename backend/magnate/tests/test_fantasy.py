@@ -39,6 +39,10 @@ class FantasyTest(TestCase):
 
         self.game.save()
 
+        # Create statistics for each player
+        for player in self.players:
+            PlayerGameStatistic.objects.create(user=player, game=self.game)
+
         ################################## set up propertyRelationships
         self.propRelation1 = PropertyRelationship.objects.create(
             game=self.game,owner=self.player1,

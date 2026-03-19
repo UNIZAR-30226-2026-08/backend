@@ -454,13 +454,10 @@ def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
         raise GameLogicError('current square is None')
         return None
     
-    path_log = [curr]
+    path_log = [curr.custom_id]
     passed_go = False
 
     for i in range(total_steps):
-        next_id = None
-        
-        # TODO: dinero al pasar por la casilla de salida
         if isinstance(curr, BridgeSquare):
             if curr.out_successor is None:
                 raise GameDesignError('bridge without out successor')
@@ -471,18 +468,13 @@ def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
                 curr = curr.out_successor
             else:
                 curr = curr.in_successor
-        elif isinstance(curr, ExitSquare):
-            if curr.in_successor is None:
-                raise GameDesignError('exit square without in successor')
-            passed_go = True
-            curr = curr.in_successor
         else:
             if curr.in_successor is None:
-                raise GameDesignError('square without in successor')
+                raise GameDesignError(f'square {curr.custom_id} without in successor')
             curr = curr.in_successor
         
-        if curr is None:
-            raise GameDesignError(f"no succesor found")
+        if isinstance(curr, ExitSquare):
+            passed_go = True
         
         path_log.append(curr.custom_id)
 

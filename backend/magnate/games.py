@@ -214,8 +214,10 @@ class GameManager:
             action.triple = True
             square = _get_user_square(game, user)
             all_squares = BaseSquare.objects.filter(board=square.board)
-            action.destinations = [s.custom_id for s in all_squares] #TODO: quitar carcel real
-            
+            action.destinations = [s.custom_id for s in all_squares]
+            id_jail = _get_jail_square().custom_id
+            action.destinations.remove(id_jail)
+
             fantasy = GameManager._update_game_state_dices(game, user, action, {})
             return ResponseFantasy(fantasy_event=fantasy)
 
@@ -388,7 +390,7 @@ class GameManager:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionDoNotTakeTram):
             pass
-        elif isinstance(action, ActionNextPhase): # TODO: remove
+        elif isinstance(action, ActionNextPhase):
             pass
         else:
             raise MaliciousUserInputAction(game, user, action)
@@ -596,7 +598,6 @@ class GameManager:
     @staticmethod
     @database_sync_to_async
     def _end_auction(game: Game) -> Response:
-        #TODO: change this auction inoto a response auction whose father is general response -> normalization
         """
         Ends an active auction, resolves the winner based on the highest bid, 
         handles ties, and transitions the game state back to BUSINESS.
@@ -875,7 +876,7 @@ class GameManager:
             cls._next_turn(game, user)
 
         game.players.remove(user)
-        #TODO: quitar de la lista de jugadores ordenados
+        game.ordered_players.remove(str(user.pk))
         game.save()
         
         # TODO: if only one left -> he wins

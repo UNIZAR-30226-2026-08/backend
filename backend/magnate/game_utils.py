@@ -581,3 +581,53 @@ def _calculate_net_worth(game: Game, user: CustomUser) -> int:
     return total_value
 
 
+def _handle_square_arrival(game: Game, user: CustomUser, square: BaseSquare, passed_go: bool) -> Optional[FantasyEvent]:
+    """
+    Centralizes the logic for landing on squares: awarding money (Go/Parking), 
+    generating Fantasy events, and managing Jail landings.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The acting user.
+        square (BaseSquare): The square where the user arrived.
+        passed_go (bool): Whether the move path included the ExitSquare.
+
+    Returns:
+        Optional[FantasyEvent]: A generated fantasy event if the user landed on a FantasySquare.
+    """
+    # 1. Handle passing/landing on Exit (Go)
+    if passed_go:
+        exit_square = ExitSquare.objects.first()
+        if exit_square is not None:
+            game.money[str(user.pk)] += exit_square.init_money
+            stats = PlayerGameStatistic.objects.get(user=user, game=game)
+            stats.won_money += exit_square.init_money
+            stats.save()
+
+    # 2. Handle landing effects
+    real_square = square.get_real_instance()
+
+    # Parking logic
+    if isinstance(real_square, ParkingSquare):
+        game.money[str(user.pk)] += game.parking_money
+        stats = PlayerGameStatistic.objects.get(user=user, game=game)
+        stats.won_money += game.parking_money
+        stats.save()
+        game.parking_money = 0
+    
+    # Fantasy logic
+    elif isinstance(real_square, FantasySquare):
+        from .fantasy import FantasyEventFactory
+        fantasy_event = FantasyEventFactory.generate()
+        fantasy_event.save()
+        game.phase = Game.GamePhase.choose_fantasy
+        game.fantasy_event = fantasy_event
+        return fantasy_event
+
+    # Jail logic (landing on it, not being sent to it)
+    elif isinstance(real_square, JailSquare):
+        if game.money[str(user.pk)] < 0:
+            game.phase = Game.GamePhase.liquidation
+        # Note: Turn transition is handled by the caller to avoid circular imports
+    
+    return None

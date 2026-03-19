@@ -16,7 +16,7 @@ from django.db import transaction
 from magnate.serializers import *
 from .models import *
 from .fantasy import *
-from .game_utils import _build_square, _demolish_square, _get_jail_square,_set_mortgage,  _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id
+from .game_utils import _move_player_logic, _build_square, _demolish_square, _get_jail_square,_set_mortgage,  _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id, _handle_square_arrival
 from channels.db import database_sync_to_async
 
 from magnate.exceptions import *
@@ -281,8 +281,11 @@ class GameManager:
         if square.custom_id not in game.possible_destinations:
             raise MaliciousUserInput(user, "tried to move to an illegal square")
 
-        GameManager._update_game_state_square_chosen(game, user, action)
-        # FIXME
+        fantasy_event = GameManager._update_game_state_square_chosen(game, user, action)
+        
+        if fantasy_event:
+            return Response(fantasy_event)
+        
         return Response()
     
     @staticmethod
@@ -714,44 +717,28 @@ class GameManager:
         elif len(action.destinations) == 1:
             dest_square_id = action.destinations[0]
             game.positions[str(user.pk)] = dest_square_id
-            square = _get_square_by_custom_id(dest_square_id).get_real_instance()
+            square = _get_square_by_custom_id(dest_square_id)
 
-            if passed_go_map.get(dest_square_id, False):
-                exit_square = ExitSquare.objects.first()
-                if exit_square is not None:
-                    game.money[str(user.pk)] += exit_square.init_money
-                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
-                    stats.won_money += exit_square.init_money
-                    stats.save()
-
-            if isinstance(square, JailSquare):
-                if game.money[str(user.pk)] < 0:
-                    game.phase = GameManager.LIQUIDATION
-                else:
-                    GameManager._next_turn(game, user)
-            elif isinstance(square,FantasySquare):
-                fantasy_event = FantasyEventFactory.generate()
-                fantasy_event.save()
-                game.phase = GameManager.CHOOSE_FANTASY
-                game.fantasy_event = fantasy_event
+            fantasy_event = _handle_square_arrival(game, user, square, passed_go_map.get(dest_square_id, False))
+            
+            if fantasy_event:
                 game.save()
                 return fantasy_event
 
+            # If it's a JailSquare, _handle_square_arrival might have set it to LIQUIDATION
+            # If it didn't, we should end the turn.
+            real_sq = square.get_real_instance()
+            if isinstance(real_sq, JailSquare):
+                if game.phase != GameManager.LIQUIDATION:
+                    GameManager._next_turn(game, user)
             else:
-                if isinstance(square, ParkingSquare):
-                    game.money[str(user.pk)] += game.parking_money # recently added
-                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
-                    stats.won_money += game.parking_money
-                    stats.save()
-                    game.parking_money = 0
                 game.phase = GameManager.MANAGEMENT
-            # TODO: Casilla inicial
 
         game.save()
-        
+        return None
 
     @classmethod
-    def _update_game_state_square_chosen(cls, game: Game, user: CustomUser, action: ActionMoveTo) -> None:
+    def _update_game_state_square_chosen(cls, game: Game, user: CustomUser, action: ActionMoveTo) -> None | FantasyEvent:
         """
         Persiste la ActionMoveTo en BD usando su serializer y actualiza
         la posición del jugador en la partida.
@@ -797,27 +784,17 @@ class GameManager:
             stats.won_money += pay_price
             stats.save()
 
-        if passed_go:
-            exit_square = ExitSquare.objects.first()
-            if exit_square is not None:
-                game.money[str(user.pk)] += exit_square.init_money
-                stats = PlayerGameStatistic.objects.get(user=user,game=game)
-                stats.won_money += exit_square.init_money
-                stats.save()
+        # Centralized logic for Go, Parking, Fantasy and Jail effects
+        fantasy_event = _handle_square_arrival(game, user, action.square, passed_go)
 
-        square = action.square.get_real_instance()
-        if isinstance(square, JailSquare):
-            if game.money[str(user.pk)] < 0:
-                game.phase = GameManager.LIQUIDATION
-            else:
+        if fantasy_event:
+            game.save()
+            return fantasy_event
+
+        real_sq = action.square.get_real_instance()
+        if isinstance(real_sq, JailSquare):
+            if game.phase != GameManager.LIQUIDATION:
                 GameManager._next_turn(game, user)
-        elif isinstance(square, ParkingSquare):
-            game.money[str(user.pk)] += game.parking_money
-            stats = PlayerGameStatistic.objects.get(user=user,game=game)
-            stats.won_money += game.parking_money
-            stats.save()
-            game.parking_money = 0
-            game.phase = GameManager.MANAGEMENT
         elif game.money[str(user.pk)] < 0:
             game.phase = GameManager.LIQUIDATION
         elif game.streak > 0:
@@ -826,6 +803,7 @@ class GameManager:
             game.phase = GameManager.MANAGEMENT
 
         game.save()
+        return None
 
     @classmethod
     def _next_turn(cls, game: Game, user: CustomUser) -> None:

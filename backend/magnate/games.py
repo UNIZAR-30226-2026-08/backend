@@ -16,7 +16,7 @@ from django.db.models import Max
 from magnate.serializers import *
 from .models import *
 from .fantasy import *
-from .game_utils import _move_player_logic, _build_square, _demolish_square, _get_jail_square,_set_mortgage,  _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id, _handle_square_arrival
+from .game_utils import _calculate_passed_go, _apply_square_arrival, _compute_dice_combinations, _move_player_logic, _build_square, _demolish_square, _get_jail_square,_set_mortgage,  _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id
 from channels.db import database_sync_to_async
 
 from magnate.exceptions import *
@@ -243,12 +243,7 @@ class GameManager:
             action.streak = 0
             game.streak = 0
 
-        if bus_is_numeric:
-            dice_combinations = [d1 + d2 + d3]
-        else: 
-            dice_combinations = [d1, d2, d1 + d2]
-
-        dice_combinations = list(set(dice_combinations))
+        dice_combinations = _compute_dice_combinations(d1,d2,d3)
 
 
         action.destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
@@ -729,13 +724,13 @@ class GameManager:
             game.positions[str(user.pk)] = dest_square_id
             square = _get_square_by_custom_id(dest_square_id)
 
-            fantasy_event = _handle_square_arrival(game, user, square, passed_go_map.get(dest_square_id, False))
+            fantasy_event = _apply_square_arrival(game, user, square, passed_go_map.get(dest_square_id, False))
             
             if fantasy_event:
                 game.save()
                 return fantasy_event
 
-            # If it's a JailSquare, _handle_square_arrival might have set it to LIQUIDATION
+            # If it's a JailSquare, _apply_square_arrival might have set it to LIQUIDATION
             # If it didn't, we should end the turn.2
             real_sq = square.get_real_instance()
             if isinstance(real_sq, JailSquare):
@@ -761,41 +756,15 @@ class GameManager:
         passed_go = False
         
         if last_action:
-            d1 = last_action.dice1
-            d2 = last_action.dice2
-            d3 = last_action.dice_bus
-            
-            if d3 <= 3:
-                dice_combinations = [d1 + d2 + d3]
-            else:
-                dice_combinations = [d1, d2, d1 + d2]
-            
-            for steps in dice_combinations:
-                result = _move_player_logic(current_pos_square, steps)
-                if result["final_id"] == action.square.custom_id:
-                    passed_go = passed_go or result["passed_go"]
+            passed_go = _calculate_passed_go(current_pos_square, action.square.custom_id,
+                                             last_action.dice1, last_action.dice2,
+                                             last_action.dice_bus)
 
         game.positions[str(user.pk)] = action.square.custom_id
         game.possible_destinations = []
 
-        pay_price = _calculate_rent_price(game, user, action.square)
-        if pay_price > 0:
-            rel = _get_relationship(game, action.square)
-            if rel is None:
-                raise GameLogicError(f"no user owns this square")
-
-            game.money[str(user.pk)] -= pay_price
-            game.money[str(rel.owner.pk)] += pay_price
-            stats = PlayerGameStatistic.objects.get(user=user,game=game)
-            stats.lost_money += pay_price
-            stats.num_paid_rents += 1
-            stats.save()
-            stats = PlayerGameStatistic.objects.get(user=rel.owner,game=game)
-            stats.won_money += pay_price
-            stats.save()
-
-        # centralized logic for Go, Parking, Fantasy and Jail effects
-        fantasy_event = _handle_square_arrival(game, user, action.square, passed_go)
+        # centralized logic for rent, Go, Parking, Fantasy and Jail effects
+        fantasy_event = _apply_square_arrival(game, user, action.square, passed_go)
 
         if fantasy_event:
             game.save()

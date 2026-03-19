@@ -580,11 +580,18 @@ def _calculate_net_worth(game: Game, user: CustomUser) -> int:
             
     return total_value
 
-
-def _handle_square_arrival(game: Game, user: CustomUser, square: BaseSquare, passed_go: bool) -> Optional[FantasyEvent]:
+def _apply_square_arrival(
+    game: Game,
+    user: CustomUser,
+    square: BaseSquare,
+    passed_go: bool,
+    streak: int = 0,
+) -> Optional[FantasyEvent]:
     """
-    Centralizes the logic for landing on squares: awarding money (Go/Parking), 
-    generating Fantasy events, and managing Jail landings.
+    Centralizes all side-effects of a player arriving at a square
+
+    Does NOT update game.positions nor decide the next phase.
+    Does NOT call game.save()
 
     Args:
         game (Game): The current game instance.
@@ -595,7 +602,9 @@ def _handle_square_arrival(game: Game, user: CustomUser, square: BaseSquare, pas
     Returns:
         Optional[FantasyEvent]: A generated fantasy event if the user landed on a FantasySquare.
     """
-    # 1. Handle passing/landing on Exit (Go)
+    real_square = square.get_real_instance()
+
+    # 1. Passing/landing on Go
     if passed_go:
         exit_square = ExitSquare.objects.first()
         if exit_square is not None:
@@ -604,18 +613,31 @@ def _handle_square_arrival(game: Game, user: CustomUser, square: BaseSquare, pas
             stats.won_money += exit_square.init_money
             stats.save()
 
-    # 2. Handle landing effects
-    real_square = square.get_real_instance()
+    # 2. Rent
+    pay_price = _calculate_rent_price(game, user, square)
+    if pay_price > 0:
+        rel = _get_relationship(game, square)
+        if rel is None:
+            raise GameLogicError("no user owns this square")
+        game.money[str(user.pk)] -= pay_price
+        game.money[str(rel.owner.pk)] += pay_price
+        stats = PlayerGameStatistic.objects.get(user=user, game=game)
+        stats.lost_money += pay_price
+        stats.num_paid_rents += 1
+        stats.save()
+        stats = PlayerGameStatistic.objects.get(user=rel.owner, game=game)
+        stats.won_money += pay_price
+        stats.save()
 
-    # Parking logic
-    if isinstance(real_square, ParkingSquare):
+    # 3. Parking
+    elif isinstance(real_square, ParkingSquare):
         game.money[str(user.pk)] += game.parking_money
         stats = PlayerGameStatistic.objects.get(user=user, game=game)
         stats.won_money += game.parking_money
         stats.save()
         game.parking_money = 0
-    
-    # Fantasy logic
+
+    # 4. Fantasy
     elif isinstance(real_square, FantasySquare):
         from .fantasy import FantasyEventFactory
         fantasy_event = FantasyEventFactory.generate()
@@ -624,10 +646,46 @@ def _handle_square_arrival(game: Game, user: CustomUser, square: BaseSquare, pas
         game.fantasy_event = fantasy_event
         return fantasy_event
 
-    # Jail logic (landing on it, not being sent to it)
+    # 5. Jail (landing on it, not being sent to it)
     elif isinstance(real_square, JailSquare):
         if game.money[str(user.pk)] < 0:
             game.phase = Game.GamePhase.liquidation
-        # Note: Turn transition is handled by the caller to avoid circular imports
-    
+        # Phase transition (next turn) is handled by the caller
+
     return None
+
+@staticmethod
+def _compute_dice_combinations(d1: int, d2: int, d3: int) -> list[int]:
+    """
+    Returns the possible move amounts given three dice values.
+    d3 <= 3 means the bus die is numeric (sum all three),
+    otherwise the player can move d1, d2, or d1+d2.
+
+    Not to use with triples
+    """
+    if d3 <= 3:
+        return [d1 + d2 + d3]
+    return list(set([d1, d2, d1 + d2]))
+
+def _calculate_passed_go(current_square: BaseSquare, target_custom_id: int, d1: int, d2: int, d3: int) -> bool:
+    """
+    Not handling triples
+
+    Args:
+        current_square (BaseSquare): The square the player is moving from.
+        target_custom_id (int): The custom_id of the destination square.
+        d1 (int): First die value.
+        d2 (int): Second die value.
+        d3 (int): Bus die value.
+
+    Returns:
+        bool: True if the player passed Go on any valid path to the destination.
+    """
+    dice_combinations = _compute_dice_combinations(d1, d2, d3)
+    
+    for steps in dice_combinations:
+        result = _move_player_logic(current_square, steps)
+        if result["final_id"] == target_custom_id:
+            if result["passed_go"]:
+                return True
+    return False

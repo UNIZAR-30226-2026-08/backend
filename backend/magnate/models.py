@@ -225,7 +225,6 @@ class ActionThrowDices(Action):
     streak = models.IntegerField(default=0)
 
 class ActionMoveTo(Action):
-    # Custom ID or real ID ? Mario opina que custom ID
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='move_to')
 
 class ActionTakeTram(Action):

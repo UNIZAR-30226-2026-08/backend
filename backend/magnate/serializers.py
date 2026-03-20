@@ -317,12 +317,9 @@ class FantasyResultSerializer(serializers.ModelSerializer):
 
 ######################################################################### Response serializers
 class ResponseSerializer(serializers.ModelSerializer):
-    type = serializers.SerializerMethodField()
     class Meta:
         model = Response
-        fields = ['type']
-    def get_type(self, obj):
-        return obj.__class__.__name__
+        fields = []
 
 class ResponseAuctionSerializer(ResponseSerializer):
     auction = AuctionSerializer()
@@ -335,12 +332,10 @@ class ResponseMovementSerializer(serializers.ModelSerializer):
         model = ResponseMovement
         fields = '__all__'
 
-
 class ResponseThrowDicesSerializer(serializers.ModelSerializer):
     class Meta:
         model = ResponseThrowDices
         fields = '__all__'
-
 
 class ResponseChooseSquareSerializer(serializers.ModelSerializer):
     class Meta:
@@ -353,19 +348,26 @@ class ResponseChooseFantasySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class GeneralResponseSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
     def to_representation(self, instance):
         if isinstance(instance, ResponseAuction):
-            return ResponseAuctionSerializer(instance, context=self.context).data
-        elif isinstance(instance, ResponseMovement):
-            return ResponseMovementSerializer(instance, context=self.context).data
+            data = ResponseAuctionSerializer(instance, context=self.context).data
         elif isinstance(instance, ResponseThrowDices):
-            return ResponseThrowDicesSerializer(instance, context=self.context).data
+            data = ResponseThrowDicesSerializer(instance, context=self.context).data
         elif isinstance(instance, ResponseChooseSquare):
-            return ResponseChooseSquareSerializer(instance, context=self.context).data
+            data = ResponseChooseSquareSerializer(instance, context=self.context).data
+        elif isinstance(instance, ResponseMovement):
+            data = ResponseMovementSerializer(instance, context=self.context).data
         elif isinstance(instance, ResponseChooseFantasy):
-            return ResponseChooseFantasySerializer(instance, context=self.context).data
+            data = ResponseChooseFantasySerializer(instance, context=self.context).data
         else:
-            return ResponseSerializer(instance, context=self.context).data
+            data = ResponseSerializer(instance, context=self.context).data
+
+        return {
+            "type": instance.__class__.__name__,
+            **data
+        }
+
     class Meta:
         model = Response
         fields = '__all__'

@@ -28,7 +28,6 @@ class Agent:
             return self._random_action(game)
         return self._heuristic_action(game)
 
-
     def _random_action(self, game: Game) -> Action | None:
         phase = game.phase
 
@@ -267,7 +266,7 @@ class Agent:
         )
 
 
-    def _random_auction(self, game: Game) -> Action | None:
+    def _random_auction(self, game: Game) -> Action:
         auction = game.current_auction
         # checking
         if auction is None:
@@ -282,12 +281,10 @@ class Agent:
         dropped = ActionDropPurchase.objects.filter(game=game, player=self.user, square=auction.square).exists()
 
         if dropped or money <= 0 or is_jailed or already_bid:
-            # bid 0 not to raise exception
             return None
 
         if random.random() < 0.5:
-            # bid 0 not to raise exception
-            return ActionBid(game=game, player=self.user, auction=auction, amount=0)
+            return None
 
         amount = random.randint(1, money)
         return ActionBid(game=game, player=self.user, auction=auction, amount=amount)

@@ -24,10 +24,7 @@ class SerializerTest(TestCase):
                                                                          square=BaseSquare.objects.get(custom_id=8),
                                                                          houses=3)
 
-        cls.actionThrowDices = ActionThrowDices.objects.create(game=cls.game,player=cls.player,
-                                                               dice1=1,dice2=2,dice_bus=3,
-                                                               destinations=[20,21,22],triple=False,
-                                                               path=[11,12,13,14,15,16,17,18,19])
+        cls.actionThrowDices = ActionThrowDices.objects.create(game=cls.game, player=cls.player)
         
         cls.actionMoveTo = ActionMoveTo.objects.create(game=cls.game,player=cls.player,
                                                        square=BaseSquare.objects.get(custom_id=12))
@@ -176,30 +173,13 @@ class SerializerTest(TestCase):
     def test_action_throw_dices(self):
         data = GeneralActionSerializer(self.actionThrowDices).data
         assert isinstance(data,dict)
-        self.assertEqual(data["dice1"],1)
-        self.assertEqual(data["dice2"],2)
-        self.assertEqual(data["dice_bus"],3)
-        self.assertEqual(data["destinations"],[20,21,22])
-        self.assertEqual(data["triple"],False)
-        self.assertEqual(data["path"],[11,12,13,14,15,16,17,18,19])
-
         json_in = {"type": "ActionThrowDices",
                    "game":self.game.pk,
-                   "player":self.player.pk,
-                   "dice1":4,"dice2":5,"dice_bus":6,
-                   "destinations":[1,2,3],"triple":False,
-                   "path":[21,22,23,24]}
+                   "player":self.player.pk}
         instance = action_from_json(json_in)
         assert isinstance(instance,ActionThrowDices)
         self.assertEqual(instance.player,self.player)
         self.assertEqual(instance.game,self.game)
-        self.assertEqual(instance.dice1,4)
-        self.assertEqual(instance.dice2,5)
-        self.assertEqual(instance.dice_bus,6)
-        self.assertEqual(instance.destinations,[1,2,3])
-        self.assertEqual(instance.triple,False)
-        self.assertEqual(instance.path,[21,22,23,24])
-
 
     def test_action_move_to(self):
         data = GeneralActionSerializer(self.actionMoveTo).data

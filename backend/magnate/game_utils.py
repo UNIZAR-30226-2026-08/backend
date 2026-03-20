@@ -583,10 +583,10 @@ def _calculate_net_worth(game: Game, user: CustomUser) -> int:
 def _apply_square_arrival(
     game: Game,
     user: CustomUser,
+    response: ResponseMovement,
     square: BaseSquare,
     passed_go: bool,
-    streak: int = 0,
-) -> Optional[FantasyEvent]:
+    streak: int = 0) -> ResponseMovement:
     """
     Centralizes all side-effects of a player arriving at a square
 
@@ -644,7 +644,7 @@ def _apply_square_arrival(
         fantasy_event.save()
         game.phase = Game.GamePhase.choose_fantasy
         game.fantasy_event = fantasy_event
-        return fantasy_event
+        response.fantasy_event = fantasy_event
 
     # 5. Jail (landing on it, not being sent to it)
     elif isinstance(real_square, JailSquare):
@@ -652,7 +652,7 @@ def _apply_square_arrival(
             game.phase = Game.GamePhase.liquidation
         # Phase transition (next turn) is handled by the caller
 
-    return None
+    return response
 
 @staticmethod
 def _compute_dice_combinations(d1: int, d2: int, d3: int) -> list[int]:

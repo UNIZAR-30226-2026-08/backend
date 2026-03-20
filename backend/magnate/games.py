@@ -9,17 +9,21 @@ of a player's turn.
 
 from asyncio import Server
 import random 
-import json
 from tokenize import group
 from django.db import transaction
 from django.db.models import Max
-from magnate.serializers import *
+from .serializers import *
 from .models import *
 from .fantasy import *
-from .game_utils import _calculate_passed_go, _apply_square_arrival, _compute_dice_combinations, _move_player_logic, _build_square, _demolish_square, _get_jail_square,_set_mortgage,  _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id
+from .game_utils import (
+    _calculate_passed_go, _apply_square_arrival, _compute_dice_combinations, 
+    _move_player_logic, _build_square, _demolish_square, _get_jail_square,_set_mortgage,  
+    _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, 
+    _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id
+)
 from channels.db import database_sync_to_async
 
-from magnate.exceptions import *
+from .exceptions import *
 
 from typing import Optional
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
@@ -74,38 +78,48 @@ class GameManager:
         if user != game.active_phase_player and not isinstance(action, ActionBid): # if aucction there are no turns
             raise MaliciousUserInput(user, "is not the active player")
 
+        response: Response = Response()
+
         if game.phase == cls.ROLL_THE_DICES:
             if isinstance(action, ActionPayBail):
-                return cls._pay_bail_logic(game, user, action)
-            if not isinstance(action, ActionThrowDices):
+                response = cls._pay_bail_logic(game, user, action)
+            elif isinstance(action, ActionThrowDices):
+                response = cls._roll_dices_logic(game, user, action)
+            else:
                 raise MaliciousUserInputAction(game, user, action)
-            return cls._roll_dices_logic(game, user, action)
         elif game.phase == cls.CHOOSE_SQUARE:
             if not isinstance(action, ActionMoveTo):
                 raise MaliciousUserInputAction(game, user, action)
-            return cls._square_chosen_logic(game, user, action)
+            response=  cls._square_chosen_logic(game, user, action)
         elif game.phase == cls.CHOOSE_FANTASY:
             if not isinstance(action, ActionChooseCard):
                 raise MaliciousUserInputAction(game, user, action)
-            return cls._choose_fantasy_logic(game, user, action)
+            response = cls._choose_fantasy_logic(game, user, action)
         elif game.phase == cls.MANAGEMENT:
             if not isinstance(action, (ActionBuySquare, ActionDropPurchase, ActionTakeTram, ActionDoNotTakeTram, ActionNextPhase)):
                 raise MaliciousUserInputAction(game, user, action)
-            return cls._management_logic(game, user, action)
+            response = cls._management_logic(game, user, action)
         elif game.phase == cls.BUSINESS or game.phase == cls.LIQUIDATION:
             if not isinstance(action, (ActionBuild, ActionDemolish, ActionTradeProposal, ActionMortgageSet, ActionMortgageUnset, ActionNextPhase)):
                 raise MaliciousUserInputAction(game, user, action)
-            return cls._business_logic(game, user, action)
+            response = cls._business_logic(game, user, action)
         elif game.phase == cls.ANSWER_TRADE_PROPOSAL:
             if not isinstance(action, ActionTradeAnswer):
                 raise MaliciousUserInputAction(game, user, action)
-            return cls._answer_trade_proposal_logic(game, user, action)
+            response = cls._answer_trade_proposal_logic(game, user, action)
         elif game.phase == cls.AUCTION:
             if not isinstance(action, ActionBid):
                 raise MaliciousUserInputAction(game, user, action)
-            return cls._bid_property_auction_logic(game, user, action)
-        
-        raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
+            response = cls._bid_property_auction_logic(game, user, action)
+        else: 
+            raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
+
+        response.money = game.money
+        response.active_phase_player = game.active_phase_player
+        response.active_turn_player = game.active_turn_player
+        response.phase = game.phase
+
+        return response
 
     @staticmethod
     def _pay_bail_logic(game: Game, user: CustomUser, action: ActionPayBail) -> Response:
@@ -162,18 +176,18 @@ class GameManager:
         Returns:
             Response: Standard response.
         """
+        response: ResponseThrowDices = ResponseThrowDices()
+
         d1 = random.randint(1,6)
         d2 = random.randint(1,6)
         d3 = random.randint(1,6) # 4-6 are the bus faces
 
-        bus_is_numeric = d3 <= 3
+        response.dice1, response.dice2, response.dice_bus = d1, d2, d3
 
-        action.dice1 = d1
-        action.dice2 = d2
-        action.dice_bus = d3
-
-        triples = bus_is_numeric and (d1 == d2 == d3)
+        triples = d3 <= 3 and (d1 == d2 == d3)
         doubles = (d1 == d2 or d2 == d3 or d1 == d3) and not triples
+
+        response.triple = triples
 
         # jail logic
         remaining_jail_turns = game.jail_remaining_turns.get(str(user.pk), 0)
@@ -185,50 +199,45 @@ class GameManager:
                 if remaining_jail_turns == 1:
                     game.money[str(user.pk)] -= jail_sq.bail_price
                     game.jail_remaining_turns[str(user.pk)] = 0
-                    game.save()
                     stats = PlayerGameStatistic.objects.get(user=user,game=game)
                     stats.turns_in_jail += 1
                     stats.lost_money += jail_sq.bail_price
-                    stats.save()
-
+                elif doubles:
+                    game.jail_remaining_turns[str(user.pk)] = 0
+                    game.streak = 0
                 else:
-                    if doubles:
-                        # get out, moves out
-                        game.jail_remaining_turns[str(user.pk)] = 0
-                        action.streak = 0
-                        game.streak = 0
-                        game.save()
-                    else:
-                        # stays in jail
-                        game.jail_remaining_turns[str(user.pk)] -= 1
-                        game.phase = GameManager.BUSINESS
-                        game.save()
-                        stats = PlayerGameStatistic.objects.get(user=user,game=game)
-                        stats.turns_in_jail += 1
-                        stats.save()
-                        
-                        fantasy = GameManager._update_game_state_dices(game, user, action, {})
-                        return ResponseFantasy(fantasy_event=fantasy)
+                    # stays in jail
+                    game.jail_remaining_turns[str(user.pk)] -= 1
+                    game.phase = GameManager.BUSINESS
+                    game.save()
+                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                    stats.turns_in_jail += 1
+                    stats.save()
+                    return response
+            else:
+                raise GameLogicError(f"Cannot be in jail status and not in jail square")
 
+        # Not jailed
         if triples:
-            action.triple = True
+            response.triple = True
             square = _get_user_square(game, user)
             all_squares = BaseSquare.objects.filter(board=square.board)
-            action.destinations = [s.custom_id for s in all_squares]
-            id_jail = _get_jail_square().custom_id
-            action.destinations.remove(id_jail)
-
-            fantasy = GameManager._update_game_state_dices(game, user, action, {})
-            return ResponseFantasy(fantasy_event=fantasy)
-
-        elif doubles and not is_jailed: # doubles streak only if not getting out of jail via doubles
+            # All squares are suitable destinations
+            possible_destinations = [s.custom_id for s in all_squares]
+            possible_destinations.remove(_get_jail_square().custom_id)
+            game.possible_destinations = possible_destinations
+            response.destinations = possible_destinations
+            game.phase = GameManager.CHOOSE_SQUARE
+            game.save()
+            return response
+        elif doubles: # doubles streak only if not getting out of jail via doubles
             if game.streak >= 2:
+                # Go to jail
                 jail_square = _get_jail_square()
-                action.destinations = [jail_square.custom_id]
+                response.destinations = [jail_square.custom_id]
                 game.streak = 0
-                action.streak = 0
+                response.streak = game.streak
                 
-                # directly to jail 
                 game.positions[str(user.pk)] = jail_square.custom_id
                 game.jail_remaining_turns[str(user.pk)] = 3
                 game.save()
@@ -236,22 +245,35 @@ class GameManager:
                 stats = PlayerGameStatistic.objects.get(user=user,game=game)
                 stats.times_in_jail += 1
                 stats.save()
+
+                game.phase = GameManager.LIQUIDATION
                 
-                fantasy = GameManager._update_game_state_dices(game, user, action, {})
-                return ResponseFantasy(fantasy_event=fantasy)
-            else:
-                action.streak = game.streak + 1
+                return response
+            elif not is_jailed:
+                game.streak = game.streak + 1
         else:
-            action.streak = 0
             game.streak = 0
 
-        dice_combinations = _compute_dice_combinations(d1,d2,d3)
+        response.streak = game.streak
 
+        # Hasn't gone to jail
+        dice_combinations = _compute_dice_combinations(d1, d2, d3)
 
-        action.destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
-        fantasy = GameManager._update_game_state_dices(game, user, action, passed_go_map)
+        game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
+        response.destinations = game.possible_destinations
+        if len(game.possible_destinations) > 1:
+            game.phase = GameManager.CHOOSE_SQUARE
+        else:
+            dest_square_id = game.possible_destinations[0]
+            game.positions[str(user.pk)] = dest_square_id
+            square = _get_square_by_custom_id(dest_square_id)
 
-        return ResponseFantasy(fantasy_event=fantasy)
+            response = _apply_square_arrival(game, user, response, square, passed_go_map.get(dest_square_id, False))
+            
+            game.phase = GameManager.MANAGEMENT
+
+        game.save()
+        return response
 
 
     @staticmethod
@@ -270,6 +292,8 @@ class GameManager:
         Raises:
             MaliciousUserInput: If the chosen square is not in `possible_destinations`.
         """
+        response: ResponseChooseSquare = ResponseChooseSquare()
+
         if not isinstance(action, ActionMoveTo):
             raise MaliciousUserInputAction(game, user, action)
 
@@ -278,39 +302,61 @@ class GameManager:
         if square.custom_id not in game.possible_destinations:
             raise MaliciousUserInput(user, "tried to move to an illegal square")
 
-        fantasy_event = GameManager._update_game_state_square_chosen(game, user, action)
+        current_pos_id = game.positions[str(user.pk)]
+        current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
+
+        game.positions[str(user.pk)] = action.square.custom_id
+        game.possible_destinations = []
+
+        last_action = ActionThrowDices.objects.filter(game=game, player=user).order_by("-id").first()
+        passed_go = False
         
-        if fantasy_event:
-            return ResponseFantasy(fantasy_event=fantasy_event)
-        
-        return Response()
+        if last_action:
+            passed_go: bool = _calculate_passed_go(current_pos_square, action.square.custom_id,
+                                                 last_action.dice1, last_action.dice2,
+                                                 last_action.dice_bus)
+
+        response = _apply_square_arrival(game, user, response, action.square, passed_go)
+
+        real_sq = action.square.get_real_instance()
+        if isinstance(real_sq, JailSquare):
+            if game.phase != GameManager.LIQUIDATION:
+                GameManager._next_turn(game, user)
+        elif game.money[str(user.pk)] < 0:
+            game.phase = GameManager.LIQUIDATION
+        elif game.streak > 0:
+            game.phase = GameManager.ROLL_THE_DICES
+        else:
+            game.phase = GameManager.MANAGEMENT
+
+        game.save()
+        return response
     
     @staticmethod
     def _choose_fantasy_logic(game: Game, user: CustomUser, action: ActionChooseCard) -> Response:
+        response = ResponseChooseFantasy()
         fantasy_event = game.fantasy_event
         generate = not action.chosen_card
         new_fantasy = None
 
-
         if not generate:
             apply_fantasy_event(game, user, fantasy_event)
             game.fantasy_event = None
-            
+            response.fantasy_event = fantasy_event
         else:
             new_fantasy = FantasyEventFactory.generate()
             apply_fantasy_event(game, user, new_fantasy)
             game.fantasy_event = None
+            response.fantasy_event = new_fantasy
         
         if game.streak == 0:
             game.phase = GameManager.BUSINESS
         else:
             game.phase = GameManager.ROLL_THE_DICES
+
         game.save()
             
-        if new_fantasy is not None:
-            return ResponseFantasy(fantasy_event=new_fantasy)
-        else:
-            return Response()
+        return response
        
     @staticmethod
     def _management_logic(game: Game, user: CustomUser, action: Action) -> Response:
@@ -402,7 +448,6 @@ class GameManager:
                 game.phase = GameManager.ROLL_THE_DICES
 
         game.save()
-        # FIXME
         return Response()
 
     @staticmethod
@@ -702,88 +747,6 @@ class GameManager:
         game.save()
 
         return ResponseAuction(auction=auction)
-    
-    ###########################################################################
-    # Updaters
-    ###########################################################################
-
-    @classmethod
-    def _update_game_state_dices(cls, game: Game, user: CustomUser, action: ActionThrowDices, passed_go_map: dict) -> None | FantasyEvent:
-        """
-        Persiste la ActionThrowDices en BD usando su serializer y actualiza el
-        estado de la partida (destinos posibles almacenados en el JSON del
-        juego).
-        """
-
-        game.possible_destinations = action.destinations if len(action.destinations) > 1 else []
-        game.streak = action.streak
-
-        if len(action.destinations) > 1:
-            game.phase = GameManager.CHOOSE_SQUARE
-        elif len(action.destinations) == 1:
-            dest_square_id = action.destinations[0]
-            game.positions[str(user.pk)] = dest_square_id
-            square = _get_square_by_custom_id(dest_square_id)
-
-            fantasy_event = _apply_square_arrival(game, user, square, passed_go_map.get(dest_square_id, False))
-            
-            if fantasy_event:
-                game.save()
-                return fantasy_event
-
-            # If it's a JailSquare, _apply_square_arrival might have set it to LIQUIDATION
-            # If it didn't, we should end the turn.2
-            real_sq = square.get_real_instance()
-            if isinstance(real_sq, JailSquare):
-                if game.phase != GameManager.LIQUIDATION:
-                    GameManager._next_turn(game, user)
-            else:
-                game.phase = GameManager.MANAGEMENT
-
-        game.save()
-        return None
-
-    @classmethod
-    def _update_game_state_square_chosen(cls, game: Game, user: CustomUser, action: ActionMoveTo) -> None | FantasyEvent:
-        """
-        Persiste la ActionMoveTo en BD usando su serializer y actualiza
-        la posición del jugador en la partida.
-        """
-        current_pos_id = game.positions[str(user.pk)]
-        current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
-
-        # recalculate passed_go 
-        last_action = ActionThrowDices.objects.filter(game=game, player=user).order_by("-id").first()
-        passed_go = False
-        
-        if last_action:
-            passed_go = _calculate_passed_go(current_pos_square, action.square.custom_id,
-                                             last_action.dice1, last_action.dice2,
-                                             last_action.dice_bus)
-
-        game.positions[str(user.pk)] = action.square.custom_id
-        game.possible_destinations = []
-
-        # centralized logic for rent, Go, Parking, Fantasy and Jail effects
-        fantasy_event = _apply_square_arrival(game, user, action.square, passed_go)
-
-        if fantasy_event:
-            game.save()
-            return fantasy_event
-
-        real_sq = action.square.get_real_instance()
-        if isinstance(real_sq, JailSquare):
-            if game.phase != GameManager.LIQUIDATION:
-                GameManager._next_turn(game, user)
-        elif game.money[str(user.pk)] < 0:
-            game.phase = GameManager.LIQUIDATION
-        elif game.streak > 0:
-            game.phase = GameManager.ROLL_THE_DICES
-        else:
-            game.phase = GameManager.MANAGEMENT
-
-        game.save()
-        return None
 
     @classmethod
     def _next_turn(cls, game: Game, user: CustomUser) -> None:

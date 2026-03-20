@@ -407,11 +407,19 @@ class GameManager:
                 stats.save()
                 new_property = PropertyRelationship(game=game, square=current_square, owner=user)
                 new_property.save()
+            
+            elif isinstance(current_square, BridgeSquare):
+                game.money[str(user.pk)] -= current_square.buy_price
+                stats = PlayerGameStatistic.objects.get(user=user, game=game)
+                stats.lost_money += current_square.buy_price
+                stats.save()
+                new_property = PropertyRelationship(game=game, square=current_square, owner=user)
+                new_property.save()
 
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionDropPurchase):
-            if isinstance(action.square, (PropertySquare, ServerSquare)):
+            if isinstance(action.square, (PropertySquare, ServerSquare, BridgeSquare)):
                 GameManager._initiate_auction(game, action.square)
             else:
                 raise MaliciousUserInputAction(game, user, action)
@@ -628,6 +636,11 @@ class GameManager:
         # user has not bid yet
         if auction.bids.filter(player=user).exists():
             raise MaliciousUserInput(user, "User already placed a bid in this auction")
+        
+        # user who started the bid cant bid
+        dropped = ActionDropPurchase.objects.filter(game=game, player=user, square=auction.square).exists()
+        if dropped:
+            raise MaliciousUserInput(user, "cannot bid in an auction they triggered")
 
         # user has enough money -> compulsory for auctions
         amount = action.amount
@@ -835,11 +848,13 @@ class GameManager:
         game.money[str(user.pk)] = 0
 
         # next_turns fails if we dont do this sh
+        game.ordered_players = [pk for pk in game.ordered_players if pk != user.pk]
+        game.save()
+
         if game.active_turn_player == user:
             cls._next_turn(game, user)
 
         game.players.remove(user)
-        game.ordered_players.remove(str(user.pk))
         game.save()
         
         # TODO: if only one left -> he wins

@@ -93,3 +93,15 @@ class MaliciousUserInputAction(MaliciousUserInput):
         """
         self.message = f"cannot perform action {action} in phase {game.phase}"
         super().__init__(user, self.message)
+
+class InvalidBotLevel(Exception):
+    def __init__(self, game: Game, level: str):
+        """
+        Initializes the InvalidBotLevel exception.
+
+        Args:
+            game (Game): Th current game intance where the violation ocurred.
+            level (str): The invalid bot level.
+        """
+        self.message = f"invalid bot level {level} in game {game.pk}"
+        super().__init__(self.message)

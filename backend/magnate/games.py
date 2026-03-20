@@ -78,8 +78,6 @@ class GameManager:
         if user != game.active_phase_player and not isinstance(action, ActionBid): # if aucction there are no turns
             raise MaliciousUserInput(user, "is not the active player")
 
-        response: Response = Response()
-
         if game.phase == cls.ROLL_THE_DICES:
             if isinstance(action, ActionPayBail):
                 response = cls._pay_bail_logic(game, user, action)
@@ -118,6 +116,9 @@ class GameManager:
         response.active_phase_player = game.active_phase_player
         response.active_turn_player = game.active_turn_player
         response.phase = game.phase
+
+        # TODO: This is necesary for polymorphism
+        response.save()
 
         return response
 
@@ -308,13 +309,14 @@ class GameManager:
         game.positions[str(user.pk)] = action.square.custom_id
         game.possible_destinations = []
 
-        last_action = ActionThrowDices.objects.filter(game=game, player=user).order_by("-id").first()
+        # FIXME
+        # last_action = ActionThrowDices.objects.filter(game=game, player=user).order_by("-id").first()
         passed_go = False
-        
-        if last_action:
-            passed_go: bool = _calculate_passed_go(current_pos_square, action.square.custom_id,
-                                                 last_action.dice1, last_action.dice2,
-                                                 last_action.dice_bus)
+        # 
+        # if last_action:
+        #     passed_go: bool = _calculate_passed_go(current_pos_square, action.square.custom_id,
+        #                                          last_action.dice1, last_action.dice2,
+        #                                          last_action.dice_bus)
 
         response = _apply_square_arrival(game, user, response, action.square, passed_go)
 

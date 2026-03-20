@@ -517,7 +517,7 @@ def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinatio
         passed_go_map[dest_id] = passed_go_map.get(dest_id, False) or result["passed_go"]
 
 
-    return sorted(list(set(destination_ids))), passed_go_map
+    return list(set(destination_ids)), passed_go_map
 
 
 

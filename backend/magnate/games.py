@@ -194,13 +194,13 @@ class GameManager:
         if is_jailed:
             jail_sq = _get_user_square(game, user).get_real_instance()
             if isinstance(jail_sq, JailSquare):
-                if remaining_jail_turns == 1:
+                if remaining_jail_turns == 1: #obligado a salir
                     game.money[str(user.pk)] -= jail_sq.bail_price
                     game.jail_remaining_turns[str(user.pk)] = 0
                     stats = PlayerGameStatistic.objects.get(user=user,game=game)
                     stats.turns_in_jail += 1
                     stats.lost_money += jail_sq.bail_price
-                elif doubles:
+                elif doubles: #sale gratis
                     game.jail_remaining_turns[str(user.pk)] = 0
                     game.streak = 0
                 else:
@@ -255,13 +255,15 @@ class GameManager:
         response.streak = game.streak
 
         # Hasn't gone to jail
-        dice_combinations = _compute_dice_combinations(d1, d2, d3)
-
-        game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
+        game.dice_combinations = _compute_dice_combinations(d1, d2, d3)
+        game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, game.dice_combinations)
         response.destinations = game.possible_destinations
         if len(game.possible_destinations) > 1:
             game.phase = GameManager.CHOOSE_SQUARE
         else:
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.walked_squares += game.dice_combinations[0]
+            stats.save()
             dest_square_id = game.possible_destinations[0]
             game.positions[str(user.pk)] = dest_square_id
             square = _get_square_by_custom_id(dest_square_id)
@@ -304,7 +306,14 @@ class GameManager:
         current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
 
         game.positions[str(user.pk)] = action.square.custom_id
+
+        index = game.possible_destinations.index(square.custom_id)
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.walked_squares += game.dice_combinations[index]
+        stats.save()
+
         game.possible_destinations = []
+        game.dice_combinations = []
 
         # FIXME
         # last_action = ActionThrowDices.objects.filter(game=game, player=user).order_by("-id").first()

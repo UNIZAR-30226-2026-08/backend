@@ -315,7 +315,7 @@ def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -> i
     """
     # If it is not owned or is owned by the same user, no rent is paid
     prop_rel = _get_relationship(game, square)
-    if not prop_rel or prop_rel.owner == user:
+    if not prop_rel or prop_rel.owner == user or prop_rel.mortgage: 
         return 0
 
     houses = prop_rel.houses

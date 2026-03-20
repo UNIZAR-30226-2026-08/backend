@@ -182,6 +182,7 @@ class Game(models.Model):
     ordered_players = models.JSONField(default=list)
     streak = models.IntegerField(default=0)
     possible_destinations = models.JSONField(default=list, blank=True)
+    dice_combinations = models.JSONField(default=list, blank=True)
     parking_money = models.PositiveIntegerField(default=0)
     # Maps user_id -> uint
     jail_remaining_turns = models.JSONField(default=dict, blank=True)

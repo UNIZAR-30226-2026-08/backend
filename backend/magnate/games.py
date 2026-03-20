@@ -240,14 +240,14 @@ class GameManager:
                 
                 game.positions[str(user.pk)] = jail_square.custom_id
                 game.jail_remaining_turns[str(user.pk)] = 3
-                game.save()
 
                 stats = PlayerGameStatistic.objects.get(user=user,game=game)
                 stats.times_in_jail += 1
                 stats.save()
 
                 game.phase = GameManager.LIQUIDATION
-                
+
+                game.save()
                 return response
             elif not is_jailed:
                 game.streak = game.streak + 1
@@ -776,7 +776,7 @@ class GameManager:
         game.save()
  
     @classmethod
-    def _propose_trade(cls, game: Game,  user: CustomUser,action: ActionTradeProposal) -> None:
+    def _propose_trade(cls, game: Game, user: CustomUser, action: ActionTradeProposal) -> None:
         if action.player != user or action.offered_money < 0 or action.asked_money < 0:
             raise MaliciousUserInput(user, "cannot do operation")
         if action.destination_user not in game.players.all():

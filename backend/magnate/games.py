@@ -117,9 +117,6 @@ class GameManager:
         response.active_turn_player = game.active_turn_player
         response.phase = game.phase
 
-        # TODO: This is necesary for polymorphism
-        response.save()
-
         return response
 
     @staticmethod

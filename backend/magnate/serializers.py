@@ -100,12 +100,7 @@ class ActionSerializer(serializers.ModelSerializer):
 class ActionThrowDicesSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
         model = ActionThrowDices
-        fields = ActionSerializer.Meta.fields + ['dice1','dice2','dice_bus','destinations','triple','path']
-        extra_kwargs = {
-            'dice1': {'min_value': 1, 'max_value': 6},
-            'dice2': {'min_value': 1, 'max_value': 6},
-            'dice_bus': {'min_value': 1, 'max_value': 6},
-        }
+        fields = ActionSerializer.Meta.fields
 
 class ActionMoveToSerializer(ActionSerializer):
     square = SquareCustomIdField()
@@ -335,21 +330,42 @@ class ResponseAuctionSerializer(ResponseSerializer):
         model = ResponseAuction
         fields = ResponseSerializer.Meta.fields + ['auction']
 
-class ResponseFantasySerializer(ResponseSerializer):
-    fantasy_event = FantasyEventSerializer()
-    class Meta(ResponseSerializer.Meta):
-        model = ResponseFantasy
-        fields = ResponseSerializer.Meta.fields + ['fantasy_event']
+class ResponseMovementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResponseMovement
+        fields = '__all__'
+
+
+class ResponseThrowDicesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResponseThrowDices
+        fields = '__all__'
+
+
+class ResponseChooseSquareSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResponseChooseSquare
+        fields = '__all__'
+
+class ResponseChooseFantasySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResponseChooseFantasy
+        fields = '__all__'
 
 class GeneralResponseSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         if isinstance(instance, ResponseAuction):
             return ResponseAuctionSerializer(instance, context=self.context).data
-        elif isinstance(instance, ResponseFantasy):
-            return ResponseFantasySerializer(instance, context=self.context).data
-        
-        return ResponseSerializer(instance, context=self.context).data
-
+        elif isinstance(instance, ResponseMovement):
+            return ResponseMovementSerializer(instance, context=self.context).data
+        elif isinstance(instance, ResponseThrowDices):
+            return ResponseThrowDicesSerializer(instance, context=self.context).data
+        elif isinstance(instance, ResponseChooseSquare):
+            return ResponseChooseSquareSerializer(instance, context=self.context).data
+        elif isinstance(instance, ResponseChooseFantasy):
+            return ResponseChooseFantasySerializer(instance, context=self.context).data
+        else:
+            return ResponseSerializer(instance, context=self.context).data
     class Meta:
         model = Response
         fields = '__all__'

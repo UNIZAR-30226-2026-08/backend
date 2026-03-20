@@ -215,14 +215,7 @@ class Action(models.Model):
     player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='made_by')
 
 class ActionThrowDices(Action):
-    dice1 = models.PositiveIntegerField(default=0)
-    dice2 = models.PositiveIntegerField(default=0)
-    # One of them is bus
-    dice_bus = models.PositiveIntegerField(default=0)
-    destinations = models.JSONField(default=list, blank=True)
-    triple = models.BooleanField(default=False)
-    path = models.JSONField(default=list, blank=True)
-    streak = models.IntegerField(default=0)
+    pass
 
 class ActionMoveTo(Action):
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='move_to')
@@ -289,7 +282,28 @@ class ActionBid(Action):
 ###############################################################################
 
 class Response(models.Model):
+    money = models.JSONField(default=dict, blank=True)
+    active_phase_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_phase_to_play')
+    active_turn_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_turns_to_play')
+    phase = models.CharField(choices=Game.GamePhase, max_length=20)
+
+class ResponseMovement(Response):
+    path = models.JSONField(default=list, blank=True)
+    fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.CASCADE, null=True, blank=True)
+
+class ResponseThrowDices(ResponseMovement):
+    dice1 = models.PositiveIntegerField(default=0)
+    dice2 = models.PositiveIntegerField(default=0)
+    dice_bus = models.PositiveIntegerField(default=0)
+    destinations = models.JSONField(default=list, blank=True)
+    triple = models.BooleanField(default=False)
+    streak = models.IntegerField(default=0)
+
+class ResponseChooseSquare(ResponseMovement):
     pass
+
+class ResponseChooseFantasy(Response):
+    fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.CASCADE, null=True, blank=True)
 
 class ResponseAuction(Response):
     auction = models.OneToOneField('Auction', on_delete=models.CASCADE, related_name='response')
@@ -306,9 +320,7 @@ class ResponseAuction(Response):
     def is_tie(self):
         return self.auction.is_tie
 
-class ResponseFantasy(Response):
-    fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.CASCADE, related_name='response')
-
+###############################################################################
 
 # la relacion jugador-partida ahora es esto (django pilota)
 # y puedo añadir info adicional además de la relación, las stats

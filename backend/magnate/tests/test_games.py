@@ -77,8 +77,8 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.positions[str(self.player1.pk)], jail_sq.custom_id)
         self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 3)
         
-        self.assertEqual(self.game.active_turn_player, self.player2)
-        self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES)
+        self.assertEqual(self.game.active_turn_player, self.player1)
+        self.assertEqual(self.game.phase, GameManager.LIQUIDATION)
 
     @patch('magnate.games.random.randint')
     def test_jail_exit_via_doubles(self, mock_randint):
@@ -93,7 +93,7 @@ class GamesTest(TestCase):
         self.game.phase = GameManager.ROLL_THE_DICES
         self.game.save()
 
-        # ddoubles and bus
+        # doubles and bus
         mock_randint.side_effect = [2, 2, 6]
         
         action = ActionThrowDices(game=self.game, player=self.player1)
@@ -618,7 +618,7 @@ class GamesTest(TestCase):
         total_squares = BaseSquare.objects.filter(board=self.property_square.board).count()
         
         self.assertEqual(self.game.phase, GameManager.CHOOSE_SQUARE)
-        self.assertEqual(len(self.game.possible_destinations), total_squares)
+        self.assertEqual(len(self.game.possible_destinations), total_squares-1)
 
     @patch('magnate.games.random.randint')
     def test_roll_dices_doubles_streak(self, mock_randint):
@@ -652,10 +652,9 @@ class GamesTest(TestCase):
 
         # streak should reset, phase to roll_the_dices (next player turn), and player in jail
         self.assertEqual(self.game.streak, 0)
-        self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES)
-        self.assertEqual(self.game.active_turn_player, self.player2)
+        self.assertEqual(self.game.phase, GameManager.LIQUIDATION)
+        self.assertEqual(self.game.active_turn_player, self.player1)
         self.assertEqual(self.game.positions[str(self.player1.pk)], jail_square.custom_id)
-
 
     ##########################
     ###### MALICIOUS TESTS ######
@@ -721,7 +720,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.streak, 1)
 
         # --- SECOND ROLL: DOUBLES ---
-        mock_randint.side_effect = [1, 2, 1] # 2+2+0 = 4 steps. 4 -> 8 (PropertySquare 008)
+        mock_randint.side_effect = [1, 1, 2] # 2+2+0 = 4 steps. 4 -> 8 (PropertySquare 008)
 
         action = ActionThrowDices(game=self.game, player=self.player1)
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)

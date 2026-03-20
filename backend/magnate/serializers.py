@@ -131,11 +131,6 @@ class ActionSellSquareSerializer(ActionSerializer):
         model = ActionSellSquare
         fields = ActionSerializer.Meta.fields + ['square']
 
-class ActionGoToJailSerializer(ActionSerializer):
-    class Meta(ActionSerializer.Meta):
-        model = ActionGoToJail
-        fields = ActionSerializer.Meta.fields
-
 class ActionBuildSerializer(ActionSerializer):
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
@@ -237,8 +232,6 @@ class GeneralActionSerializer(serializers.ModelSerializer):
             return ActionBuySquareSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionSellSquare):
             return ActionSellSquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionGoToJail):
-            return ActionGoToJailSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionBuild):
             return ActionBuildSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionDemolish):
@@ -276,7 +269,6 @@ def action_from_json(data, context=None):
         'ActionDoNotTakeTram': ActionDoNotTakeTramSerializer,
         'ActionBuySquare': ActionBuySquareSerializer,
         'ActionSellSquare': ActionSellSquareSerializer,
-        'ActionGoToJail': ActionGoToJailSerializer,
         'ActionBuild': ActionBuildSerializer,
         'ActionDemolish': ActionDemolishSerializer,
         'ActionChooseCard': ActionChooseCardSerializer,

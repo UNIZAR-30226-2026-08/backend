@@ -18,6 +18,8 @@ nav:
   - Home: index.md
   - Integration:
     - WebSockets (Real-time): websockets.md
+    - Actions: actions.md
+    - Responses: responses.md
   - Technical reference:
     - Game logic: games.md
     # - Exceptions: exceptions.md

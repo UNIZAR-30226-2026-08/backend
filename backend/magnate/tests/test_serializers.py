@@ -40,8 +40,6 @@ class SerializerTest(TestCase):
         cls.actionSellSquare = ActionSellSquare.objects.create(game=cls.game,player=cls.player,
                                                                square=BaseSquare.objects.get(custom_id=15))
         
-        cls.actionGoToJail = ActionGoToJail.objects.create(game=cls.game,player=cls.player)
-
         cls.actionBuild = ActionBuild.objects.create(game=cls.game,player=cls.player,
                                                      square=BaseSquare.objects.get(custom_id=17),
                                                      houses=3)
@@ -253,20 +251,6 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.player,self.player)
         self.assertEqual(instance.game,self.game)
         self.assertEqual(instance.square.custom_id,104)
-
-    def test_action_go_to_jail(self):
-        data = GeneralActionSerializer(self.actionGoToJail).data
-        assert isinstance(data,dict)
-        self.assertEqual(data["player"],self.player.pk)
-
-        json_in = {"type": "ActionGoToJail",
-                   "game":self.game.pk,
-                   "player":self.player.pk,
-                   "square":103}
-        instance = action_from_json(json_in)
-        assert isinstance(instance,ActionGoToJail)
-        self.assertEqual(instance.player,self.player)
-        self.assertEqual(instance.game,self.game)
 
     def test_action_build(self):
         data = GeneralActionSerializer(self.actionBuild).data

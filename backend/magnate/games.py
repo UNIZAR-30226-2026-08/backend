@@ -185,7 +185,7 @@ class GameManager:
         response.dice1, response.dice2, response.dice_bus = d1, d2, d3
 
         triples = d3 <= 3 and (d1 == d2 == d3)
-        doubles = (d1 == d2 or d2 == d3 or d1 == d3) and not triples
+        doubles = (d1 == d2) and not triples
 
         response.triple = triples
 

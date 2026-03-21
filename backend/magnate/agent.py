@@ -77,7 +77,7 @@ class Agent:
         if not destinations:
             raise GameLogicError("Agent: choose_square phase but no possible_destinations")
 
-        chosen_id = random.choice(destinations)
+        chosen_id = random.choice(list(destinations.keys()))
         square = _get_square_by_custom_id(chosen_id)
         return ActionMoveTo(game=game, player=self.user, square=square)
 

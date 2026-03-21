@@ -11,6 +11,7 @@ num de tradeos
 visitas a la cárcel
 turnos en la cárcel
 num de alquileres pagados
+casillas recorridas
 
 TODO:
-casillas recorridas
+

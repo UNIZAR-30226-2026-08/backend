@@ -491,7 +491,7 @@ def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
     return {"final_id": curr.custom_id, 
             "path": path_log, "passed_go": passed_go, "jailed": False}
 
-def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinations: list[int]) ->tuple[list[int], dict[int, bool]]:
+def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinations: list[int]) ->tuple[dict[int,int], dict[int, bool]]:
     """
     Calculates all possible destination square IDs based on dice combinations.
 
@@ -503,9 +503,9 @@ def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinatio
     Returns:
         list[int]: A sorted list of unique destination custom_ids.
     """
-    destination_ids = []
+    destination_ids = dict()
     current_pos_id = game.positions[str(user.pk)]
-    passed_go_map: dict[int, bool] = {}
+    passed_go_map: dict[str, bool] = {}
     current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
 
     for steps in dice_combinations:
@@ -513,11 +513,11 @@ def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinatio
         # We need a way to pass the jailed flag if there's only one destination
         # For now, let's just return the ids. _update_game_state_dices will have to re-check
         dest_id = result["final_id"]
-        destination_ids.append(result["final_id"])
-        passed_go_map[dest_id] = passed_go_map.get(dest_id, False) or result["passed_go"]
+        destination_ids[str(dest_id)] = steps
+        passed_go_map[str(dest_id)] = passed_go_map.get(dest_id, False) or result["passed_go"]
 
 
-    return sorted(list(set(destination_ids))), passed_go_map
+    return destination_ids, passed_go_map
 
 
 

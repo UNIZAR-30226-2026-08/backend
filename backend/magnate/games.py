@@ -223,7 +223,7 @@ class GameManager:
             # All squares are suitable destinations
             possible_destinations = [s.custom_id for s in all_squares]
             possible_destinations.remove(_get_jail_square().custom_id)
-            game.possible_destinations = possible_destinations
+            game.possible_destinations = {str(c_id): 0 for c_id in possible_destinations}
             response.destinations = possible_destinations
             game.phase = GameManager.CHOOSE_SQUARE
             game.save()
@@ -255,16 +255,17 @@ class GameManager:
         response.streak = game.streak
 
         # Hasn't gone to jail
-        game.dice_combinations = _compute_dice_combinations(d1, d2, d3)
-        game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, game.dice_combinations)
-        response.destinations = game.possible_destinations
+        dice_combinations = _compute_dice_combinations(d1, d2, d3)
+        game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
+
+        response.destinations = list(game.possible_destinations.keys())
         if len(game.possible_destinations) > 1:
             game.phase = GameManager.CHOOSE_SQUARE
         else:
             stats = PlayerGameStatistic.objects.get(user=user,game=game)
-            stats.walked_squares += game.dice_combinations[0]
+            stats.walked_squares += dice_combinations[0]
             stats.save()
-            dest_square_id = game.possible_destinations[0]
+            dest_square_id = next(iter(game.possible_destinations))
             game.positions[str(user.pk)] = dest_square_id
             square = _get_square_by_custom_id(dest_square_id)
 
@@ -299,21 +300,23 @@ class GameManager:
 
         square = action.square
 
-        if square.custom_id not in game.possible_destinations:
+        print('AAAAAAAAAAAAAAAAAAAAAAAASAASSSSSSSSSSSSSSSSSSSSSS')
+        print(game.possible_destinations)
+        print(square.custom_id)
+
+        if str(square.custom_id) not in game.possible_destinations:
             raise MaliciousUserInput(user, "tried to move to an illegal square")
 
         current_pos_id = game.positions[str(user.pk)]
         current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
 
-        game.positions[str(user.pk)] = action.square.custom_id
+        game.positions[str(user.pk)] = square.custom_id
 
-        index = game.possible_destinations.index(square.custom_id)
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
-        stats.walked_squares += game.dice_combinations[index]
+        stats.walked_squares += game.possible_destinations[str(square.custom_id)]
         stats.save()
 
-        game.possible_destinations = []
-        game.dice_combinations = []
+        game.possible_destinations = dict()
 
         # FIXME
         # last_action = ActionThrowDices.objects.filter(game=game, player=user).order_by("-id").first()

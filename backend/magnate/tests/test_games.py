@@ -408,7 +408,7 @@ class GamesTest(TestCase):
         
         self.game.phase = GameManager.CHOOSE_SQUARE
         self.game.active_phase_player = self.player2
-        self.game.possible_destinations = [self.property_square.custom_id]
+        self.game.possible_destinations = {str(self.property_square.custom_id): 0}
         self.game.save()
 
         # movement

@@ -829,3 +829,203 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.money[str(self.player1.pk)], initial_money + 200)
         self.assertEqual(self.game.phase, GameManager.BUSINESS)
         self.assertIsNone(self.game.fantasy_event)
+
+
+    ##########################
+    ###### STATS TESTS ######
+    ##########################
+
+    def test_stats_walked_squares(self):
+        """P1 moves to a square, walked_squares should increment"""
+        self.game.phase = GameManager.CHOOSE_SQUARE
+        self.game.possible_destinations = {str(self.property_square.custom_id): 5}
+        self.game.save()
+
+        action = ActionMoveTo(game=self.game, player=self.player1, square=self.property_square)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        self.assertEqual(stats.walked_squares, 5)
+
+    def test_stats_lost_money_on_buy(self):
+        """P1 buys a property, lost_money should increment by buy_price"""
+        self.game.phase = GameManager.MANAGEMENT
+        self.game.save()
+
+        action = ActionBuySquare(game=self.game, player=self.player1, square=self.property_square)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        self.assertEqual(stats.lost_money, self.property_square.buy_price)
+
+    def test_stats_rent_paid_and_received(self):
+        """P2 lands on P1 property: P2 lost_money and num_paid_rents increment, P1 won_money increments"""
+        PropertyRelationship.objects.create(
+            game=self.game, owner=self.player1, square=self.property_square, houses=-1
+        )
+        self.game.phase = GameManager.CHOOSE_SQUARE
+        self.game.active_phase_player = self.player2
+        self.game.possible_destinations = {str(self.property_square.custom_id): 0}
+        self.game.save()
+
+        action = ActionMoveTo(game=self.game, player=self.player2, square=self.property_square)
+        async_to_sync(GameManager.process_action)(self.game, self.player2, action)
+
+        expected_rent = self.property_square.rent_prices[0]
+
+        stats_p2 = PlayerGameStatistic.objects.get(user=self.player2, game=self.game)
+        stats_p1 = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+
+        self.assertEqual(stats_p2.lost_money, expected_rent)
+        self.assertEqual(stats_p2.num_paid_rents, 1)
+        self.assertEqual(stats_p1.won_money, expected_rent)
+
+    def test_stats_built_and_demolished_houses(self):
+        """P1 builds 1 house then demolishes it: built_houses=1, demolished_houses=1"""
+        group_squares = PropertySquare.objects.filter(group=self.property_square.group)
+        for sq in group_squares:
+            PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=sq, houses=0)
+
+        self.game.phase = GameManager.BUSINESS
+        self.game.save()
+
+        build_action = ActionBuild(game=self.game, player=self.player1, square=self.property_square, houses=1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, build_action)
+
+        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        self.assertEqual(stats.built_houses, 1)
+
+        demolish_action = ActionDemolish(game=self.game, player=self.player1, square=self.property_square, houses=1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, demolish_action)
+
+        stats.refresh_from_db()
+        self.assertEqual(stats.demolished_houses, 1)
+
+    def test_stats_times_and_turns_in_jail(self):
+        """P1 goes to jail via third double: times_in_jail=1. Then stays one turn: turns_in_jail=1"""
+        self.game.streak = 2
+        self.game.phase = GameManager.ROLL_THE_DICES
+        self.game.save()
+
+        with patch('magnate.games.random.randint', side_effect=[4, 4, 5]):
+            action = ActionThrowDices(game=self.game, player=self.player1)
+            async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        self.assertEqual(stats.times_in_jail, 1)
+
+        # Now stays in jail one turn (no doubles)
+        self.game.refresh_from_db()
+        self.game.phase = GameManager.ROLL_THE_DICES
+        self.game.save()
+
+        with patch('magnate.games.random.randint', side_effect=[1, 2, 3]):
+            action = ActionThrowDices(game=self.game, player=self.player1)
+            async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        stats.refresh_from_db()
+        self.assertEqual(stats.turns_in_jail, 1)
+
+    def test_stats_turns_in_jail_forced_payment(self):
+        """P1 on last jail turn pays bail: turns_in_jail increments"""
+        jail_sq = JailSquare.objects.first()
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+
+        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
+        self.game.jail_remaining_turns[str(self.player1.pk)] = 1
+        self.game.phase = GameManager.ROLL_THE_DICES
+        self.game.save()
+
+        with patch('magnate.games.random.randint', side_effect=[1, 2, 3]):
+            action = ActionThrowDices(game=self.game, player=self.player1)
+            async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        self.assertEqual(stats.turns_in_jail, 1)
+        self.assertEqual(stats.lost_money, jail_sq.bail_price)
+
+    def test_stats_lost_money_on_bail_payment(self):
+        """P1 manually pays bail: lost_money increments by bail_price"""
+        jail_sq = JailSquare.objects.first()
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+
+        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
+        self.game.jail_remaining_turns[str(self.player1.pk)] = 2
+        self.game.phase = GameManager.ROLL_THE_DICES
+        self.game.save()
+
+        action = ActionPayBail(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        self.assertEqual(stats.lost_money, jail_sq.bail_price)
+
+    def test_stats_trades(self):
+        """P1 and P2 complete a trade: num_trades increments for both"""
+        squares = PropertySquare.objects.filter(buy_price__gt=0)[:2]
+        rel1 = PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=squares[0], houses=-1)
+        rel2 = PropertyRelationship.objects.create(game=self.game, owner=self.player2, square=squares[1], houses=-1)
+
+        self.game.phase = GameManager.BUSINESS
+        self.game.save()
+
+        proposal = ActionTradeProposal.objects.create(
+            game=self.game, player=self.player1, destination_user=self.player2,
+            offered_money=10, asked_money=50
+        )
+        proposal.offered_properties.add(rel1)
+        proposal.asked_properties.add(rel2)
+
+        async_to_sync(GameManager.process_action)(self.game, self.player1, proposal)
+        self.game.refresh_from_db()
+
+        answer = ActionTradeAnswer.objects.create(
+            game=self.game, player=self.player2, proposal=proposal, choose=True
+        )
+        async_to_sync(GameManager.process_action)(self.game, self.player2, answer)
+
+        stats_p1 = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        stats_p2 = PlayerGameStatistic.objects.get(user=self.player2, game=self.game)
+        self.assertEqual(stats_p1.num_trades, 1)
+        self.assertEqual(stats_p2.num_trades, 1)
+        self.assertEqual(stats_p1.lost_money, 10)
+        self.assertEqual(stats_p1.won_money, 50)
+        self.assertEqual(stats_p2.lost_money, 50)
+        self.assertEqual(stats_p2.won_money, 10)
+    
+    def test_stats_num_mortgages(self):
+        """P1 sets and unsets mortgage: num_mortgages=2"""
+        PropertyRelationship.objects.create(
+            game=self.game, owner=self.player1, square=self.property_square, houses=-1
+        )
+        self.game.phase = GameManager.BUSINESS
+        self.game.save()
+
+        action_set = ActionMortgageSet(game=self.game, player=self.player1, square=self.property_square)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action_set)
+
+        action_unset = ActionMortgageUnset(game=self.game, player=self.player1, square=self.property_square)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action_unset)
+
+        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        self.assertEqual(stats.num_mortgages, 1)
+
+    def test_stats_num_fantasy_events(self):
+        """P1 triggers a fantasy event: num_fantasy_events increments"""
+        event = FantasyEvent.objects.create(
+            fantasy_type='winPlainMoney',
+            values={'money': 100},
+            card_cost=50
+        )
+        self.game.phase = GameManager.CHOOSE_FANTASY
+        self.game.fantasy_event = event
+        self.game.save()
+
+        action = ActionChooseCard.objects.create(game=self.game, player=self.player1, chosen_card=True)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
+
+        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        self.assertEqual(stats.num_fantasy_events, 1)
+

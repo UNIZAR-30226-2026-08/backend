@@ -200,6 +200,7 @@ class GameManager:
                     stats = PlayerGameStatistic.objects.get(user=user,game=game)
                     stats.turns_in_jail += 1
                     stats.lost_money += jail_sq.bail_price
+                    stats.save()
                 elif doubles: #sale gratis
                     game.jail_remaining_turns[str(user.pk)] = 0
                     game.streak = 0
@@ -299,10 +300,6 @@ class GameManager:
             raise MaliciousUserInputAction(game, user, action)
 
         square = action.square
-
-        print('AAAAAAAAAAAAAAAAAAAAAAAASAASSSSSSSSSSSSSSSSSSSSSS')
-        print(game.possible_destinations)
-        print(square.custom_id)
 
         if str(square.custom_id) not in game.possible_destinations:
             raise MaliciousUserInput(user, "tried to move to an illegal square")

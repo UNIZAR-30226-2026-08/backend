@@ -491,7 +491,7 @@ def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
     return {"final_id": curr.custom_id, 
             "path": path_log, "passed_go": passed_go, "jailed": False}
 
-def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinations: list[int]) ->tuple[dict[int,int], dict[int, bool]]:
+def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinations: list[int]) ->tuple[dict[int,int], dict[str, bool]]:
     """
     Calculates all possible destination square IDs based on dice combinations.
 

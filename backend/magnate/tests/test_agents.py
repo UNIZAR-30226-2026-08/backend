@@ -66,6 +66,9 @@ class AgentsTest(TestCase):
             s_action = GeneralActionSerializer(action).data
             print(f" ├─ Action:   {s_action}")
             
+            if not isinstance(action, Action):
+                raise GameLogicError("Wrong type")
+            
             response = async_to_sync(GameManager.process_action)(self.game, active_player, action)
             
             s_response = GeneralResponseSerializer(response).data

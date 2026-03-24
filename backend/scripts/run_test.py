@@ -1,0 +1,42 @@
+import argparse
+import subprocess
+import sys
+import platform
+import os
+
+def launch_terminal(command_args):
+    command_str = " ".join(command_args)
+    
+    full_command = f"{command_str}; echo '\n--- Process Finished ---'; read"
+    
+    try:
+        subprocess.Popen(["kitty", "sh", "-c", full_command])
+    except FileNotFoundError:
+        try:
+            subprocess.Popen(["foot", "sh", "-c", full_command]) 
+        except FileNotFoundError:
+            print(f"Could not launch Kitty. Run manually: {command_str}")
+def main():
+    parser = argparse.ArgumentParser(description="Run two CLI clients for testing")
+    parser.add_argument("--url", default="ws://localhost:8000", help="WebSocket URL")
+    parser.add_argument("--session1", help="Session ID cookie for Player 1", required=True)
+    parser.add_argument("--session2", help="Session ID cookie for Player 2", required=True)
+    args = parser.parse_args()
+
+    # Build the commands to run client.py
+    cmd1 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session1]
+    cmd2 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session2]
+
+    print("Launching Player 1 client...")
+    launch_terminal(cmd1)
+
+    print("Launching Player 2 client...")
+    launch_terminal(cmd2)
+
+    print("\nTwo terminal windows should have opened.")
+    print("If they didn't, open two new terminal tabs and run the following commands manually:")
+    print(f"Player 1: {' '.join(cmd1)}")
+    print(f"Player 2: {' '.join(cmd2)}")
+
+if __name__ == "__main__":
+    main()

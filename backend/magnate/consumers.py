@@ -539,11 +539,11 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
         ##### THIS IS HERE JUST FOR DEBUG IN CLIENT.PY
-        await self.send(text_data=json.dumps({
-            'action': 'init_identity',
-            'player_id': self.user.pk,
-            'username': self.user.username
-        }))
+        #await self.send(text_data=json.dumps({
+        #    'action': 'init_identity',
+        #    'player_id': self.user.pk,
+        #    'username': self.user.username
+        #}))
 
         # TODO: Game state includes all info bout the game start. Talk with the boys to dicuss it.
         game_state = await self.get_game_state(self.game_id, self.user)

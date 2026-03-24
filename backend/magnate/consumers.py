@@ -7,6 +7,7 @@ from .models import  PublicQueuePosition, PrivateRoom, Game, CustomUser
 from .games import *
 import os
 import asyncio
+from magnate.serializers import GeneralResponseSerializer
 
 try:
     with open('config.json') as f:
@@ -537,6 +538,13 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        ##### THIS IS HERE JUST FOR DEBUG IN CLIENT.PY
+        #await self.send(text_data=json.dumps({
+        #    'action': 'init_identity',
+        #    'player_id': self.user.pk,
+        #    'username': self.user.username
+        #}))
+
         # TODO: Game state includes all info bout the game start. Talk with the boys to dicuss it.
         game_state = await self.get_game_state(self.game_id, self.user)
 
@@ -569,8 +577,8 @@ class GameConsumer(AsyncWebsocketConsumer):
                 return
             
             
-
-            if game.active_turn_player != self.user:
+            is_turn = await self.check_turn(game, self.user)
+            if not is_turn:
                 await self.send_error("No es tu turno.")
                 return
 
@@ -589,7 +597,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     await self.send_error("Acción no válida en la fase actual.")
                     return
                 
-                response_data = await database_sync_to_async(lambda: GeneralActionSerializer(action).data)()
+                response_data = await database_sync_to_async(lambda: GeneralResponseSerializer(response).data)()
                 
                 await self.channel_layer.group_send(
                     self.game_group_name,
@@ -599,16 +607,17 @@ class GameConsumer(AsyncWebsocketConsumer):
                     }
                 )
 
-            except MaliciousUserInput:
+            except MaliciousUserInput as e:
                 await database_sync_to_async(action.delete)() 
-                # TODO: remove user and ban
-                pass
-            except GameLogicError:
+                raise 
+                
+            except GameLogicError as e:
                 await database_sync_to_async(action.delete)()
-                pass
-            except GameDesignError:
+                raise
+                
+            except GameDesignError as e:
                 await database_sync_to_async(action.delete)()
-                pass
+                raise
             except Exception as e:
                 await database_sync_to_async(action.delete)()
                 print(f"Error procesando turno: {e}")
@@ -673,5 +682,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             return Game.objects.get(pk=game_id)
         except Game.DoesNotExist:
             return None
+        
+    @database_sync_to_async
+    def check_turn(self, game, user):
+        return game.active_turn_player == user
 
 

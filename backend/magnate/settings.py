@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles', 
-    'magnate'
+    'polymorphic',
+    'magnate',
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,56 @@
+==========================================================
+          MAGNATE CLI - OFFICIAL PLAYER GUIDE
+==========================================================
+
+1. GETTING STARTED
+------------------
+* Launch the client using the session IDs provided by the 
+  generator script.
+* Wait for the "Match found!" message.
+* Look at the JSON blob and find your "Player ID" (the 
+  numeric key in the "money" or "positions" dictionary).
+* When prompted, enter that integer.
+
+2. THE GAME LOOP
+----------------
+A turn in Magnate typically follows this flow:
+1. START: Check if 'active_turn_player' is YOU.
+2. MOVE: Type 'throw' to roll and move.
+3. ACTION: Depending on where you land, 'buy', 'take_tram', 
+   or 'choose_card'.
+4. END: Type 'next' to pass the turn to the next player.
+
+3. COMMAND REFERENCE
+--------------------
+| Command      | Description                               |
+|--------------|-------------------------------------------|
+| throw        | Rolls 3 dice and moves your token.        |
+| buy          | Purchases the current square (needs ID).  |
+| next         | Ends your current turn/phase.             |
+| move         | Move to a specific square ID.             |
+| build        | Add houses (Needs Square ID & count).     |
+| demolish     | Remove houses for cash.                   |
+| mortgage     | Mortgage a property for a loan.           |
+| unmortgage   | Pay off a mortgage to resume rent.        |
+| take_tram    | Travel to another station.                |
+| skip_tram    | Stay at the current station.              |
+| bail         | Pay $50 to exit Jail immediately.         |
+| trade        | Propose a deal to another player.         |
+| trade_answer | Accept (y) or Decline (n) a trade.        |
+| exit         | Disconnect from the game.                 |
+
+4. HOW TO READ THE JSON STATE
+-----------------------------
+* "phase": 1 (Roll), 2 (Buy/Action), 3 (Auction).
+* "positions": Shows where everyone is (Square IDs 0-39).
+* "money": Your current purchasing power.
+* "active_turn_player": If this isn't you, WAIT.
+
+5. FORCED CRASH TESTING (DEBUG MODE)
+------------------------------------
+To verify the 'MaliciousUserInput' logic:
+1. Wait until the OTHER player is 'active_turn_player'.
+2. Type 'throw' in YOUR console.
+3. The server will detect the out-of-turn move, raise an 
+   exception, and kill your connection.
+==========================================================

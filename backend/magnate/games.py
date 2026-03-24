@@ -187,12 +187,15 @@ class GameManager:
 
         response.triple = triples
 
+        current_pos_square = _get_user_square(game, user).get_real_instance()
+        current_pos_id = current_pos_square.custom_id
+
         # jail logic
         remaining_jail_turns = game.jail_remaining_turns.get(str(user.pk), 0)
         is_jailed = remaining_jail_turns > 0
         
         if is_jailed:
-            jail_sq = _get_user_square(game, user).get_real_instance()
+            jail_sq = current_pos_square
             if isinstance(jail_sq, JailSquare):
                 if remaining_jail_turns == 1: #obligado a salir
                     game.money[str(user.pk)] -= jail_sq.bail_price
@@ -212,14 +215,16 @@ class GameManager:
                     stats = PlayerGameStatistic.objects.get(user=user,game=game)
                     stats.turns_in_jail += 1
                     stats.save()
+                    response.path = [current_pos_id]
                     return response
             else:
                 raise GameLogicError(f"Cannot be in jail status and not in jail square")
 
         # Not jailed
         if triples:
+            # path current -> decided in chosen
             response.triple = True
-            square = _get_user_square(game, user)
+            square = current_pos_square
             all_squares = BaseSquare.objects.filter(board=square.board)
             # All squares are suitable destinations
             possible_destinations = [s.custom_id for s in all_squares]
@@ -227,11 +232,12 @@ class GameManager:
             game.possible_destinations = {str(c_id): 0 for c_id in possible_destinations}
             response.destinations = possible_destinations
             game.phase = GameManager.CHOOSE_SQUARE
+            response.path = [current_pos_id]
             game.save()
             return response
         elif doubles: # doubles streak only if not getting out of jail via doubles
             if game.streak >= 2:
-                # Go to jail
+                # path -> current and jail
                 jail_square = _get_jail_square()
                 response.destinations = [jail_square.custom_id]
                 game.streak = 0
@@ -239,6 +245,7 @@ class GameManager:
                 
                 game.positions[str(user.pk)] = jail_square.custom_id
                 game.jail_remaining_turns[str(user.pk)] = 3
+                response.path = [current_pos_id, jail_square.custom_id]
 
                 stats = PlayerGameStatistic.objects.get(user=user,game=game)
                 stats.times_in_jail += 1
@@ -261,21 +268,37 @@ class GameManager:
 
         response.destinations = list(game.possible_destinations.keys())
         if len(game.possible_destinations) > 1:
+            # path in square chosen logic
             game.phase = GameManager.CHOOSE_SQUARE
+            response.path = [current_pos_id]
         else:
             stats = PlayerGameStatistic.objects.get(user=user,game=game)
             stats.walked_squares += dice_combinations[0]
             stats.save()
             dest_square_id = next(iter(game.possible_destinations))
-            game.positions[str(user.pk)] = dest_square_id
-            square = _get_square_by_custom_id(dest_square_id)
-
-            _apply_square_arrival(game, user, response, square, passed_go_map.get(dest_square_id, False))
+            steps = game.possible_destinations[dest_square_id]
             
-            game.phase = GameManager.MANAGEMENT
+            # Use _move_player_logic to get the traversed path and check for "Go to Jail" or "Passing Go".
+            move_result = _move_player_logic(current_pos_square, steps)
+            response.path = move_result["path"]
+
+            if move_result["jailed"]:
+                # landing in go to jail; update state to jail the player.
+                game.positions[str(user.pk)] = move_result["final_id"]
+                game.jail_remaining_turns[str(user.pk)] = 3
+                game.phase = GameManager.LIQUIDATION
+                stats = PlayerGameStatistic.objects.get(user=user, game=game)
+                stats.times_in_jail += 1
+                stats.save()
+            else:
+                game.positions[str(user.pk)] = dest_square_id
+                square = _get_square_by_custom_id(dest_square_id)
+                _apply_square_arrival(game, user, response, square, move_result["passed_go"])
+                game.phase = GameManager.MANAGEMENT
 
         game.save()
         return response
+
 
 
     @staticmethod
@@ -307,24 +330,25 @@ class GameManager:
         current_pos_id = game.positions[str(user.pk)]
         current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
 
+        steps = game.possible_destinations.get(str(square.custom_id), 0)
+        
+        move_result = _move_player_logic(current_pos_square, steps)
+        
+        if steps == 0:
+            response.path = [current_pos_id, square.custom_id]
+        else:
+            response.path = move_result["path"]
+
         game.positions[str(user.pk)] = square.custom_id
 
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
-        stats.walked_squares += game.possible_destinations[str(square.custom_id)]
+        stats.walked_squares += steps
         stats.save()
 
         game.possible_destinations = dict()
 
-        # FIXME
-        # last_action = ActionThrowDices.objects.filter(game=game, player=user).order_by("-id").first()
-        passed_go = False
-        # 
-        # if last_action:
-        #     passed_go: bool = _calculate_passed_go(current_pos_square, action.square.custom_id,
-        #                                          last_action.dice1, last_action.dice2,
-        #                                          last_action.dice_bus)
-
-        _apply_square_arrival(game, user, response, action.square, passed_go)
+        # Use the passed_go flag correctly computed by _move_player_logic.
+        _apply_square_arrival(game, user, response, action.square, move_result["passed_go"])
 
         real_sq = action.square.get_real_instance()
         if isinstance(real_sq, JailSquare):

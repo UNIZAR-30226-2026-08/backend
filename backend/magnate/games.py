@@ -270,7 +270,7 @@ class GameManager:
             game.positions[str(user.pk)] = dest_square_id
             square = _get_square_by_custom_id(dest_square_id)
 
-            response = _apply_square_arrival(game, user, response, square, passed_go_map.get(dest_square_id, False))
+            _apply_square_arrival(game, user, response, square, passed_go_map.get(dest_square_id, False))
             
             game.phase = GameManager.MANAGEMENT
 
@@ -324,7 +324,7 @@ class GameManager:
         #                                          last_action.dice1, last_action.dice2,
         #                                          last_action.dice_bus)
 
-        response = _apply_square_arrival(game, user, response, action.square, passed_go)
+        _apply_square_arrival(game, user, response, action.square, passed_go)
 
         real_sq = action.square.get_real_instance()
         if isinstance(real_sq, JailSquare):

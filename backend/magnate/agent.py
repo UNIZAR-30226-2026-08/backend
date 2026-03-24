@@ -266,7 +266,7 @@ class Agent:
         )
 
 
-    def _random_auction(self, game: Game) -> Action:
+    def _random_auction(self, game: Game) -> Action | None: # TODO: None?
         auction = game.current_auction
         # checking
         if auction is None:

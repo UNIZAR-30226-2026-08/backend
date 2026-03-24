@@ -837,6 +837,9 @@ class GamesTest(TestCase):
 
     def test_stats_walked_squares(self):
         """P1 moves to a square, walked_squares should increment"""
+        if self.property_square is None:
+            raise GameLogicError("no property square")
+
         self.game.phase = GameManager.CHOOSE_SQUARE
         self.game.possible_destinations = {str(self.property_square.custom_id): 5}
         self.game.save()
@@ -849,6 +852,9 @@ class GamesTest(TestCase):
 
     def test_stats_lost_money_on_buy(self):
         """P1 buys a property, lost_money should increment by buy_price"""
+        if self.property_square is None:
+            raise GameLogicError("no property square")
+
         self.game.phase = GameManager.MANAGEMENT
         self.game.save()
 
@@ -860,6 +866,9 @@ class GamesTest(TestCase):
 
     def test_stats_rent_paid_and_received(self):
         """P2 lands on P1 property: P2 lost_money and num_paid_rents increment, P1 won_money increments"""
+        if self.property_square is None:
+            raise GameLogicError("no property square")
+
         PropertyRelationship.objects.create(
             game=self.game, owner=self.player1, square=self.property_square, houses=-1
         )
@@ -882,6 +891,9 @@ class GamesTest(TestCase):
 
     def test_stats_built_and_demolished_houses(self):
         """P1 builds 1 house then demolishes it: built_houses=1, demolished_houses=1"""
+        if self.property_square is None:
+            raise GameLogicError("no property square")
+
         group_squares = PropertySquare.objects.filter(group=self.property_square.group)
         for sq in group_squares:
             PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=sq, houses=0)

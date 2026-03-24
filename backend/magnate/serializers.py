@@ -357,7 +357,7 @@ class GeneralResponseSerializer(serializers.ModelSerializer):
 
         return {
             "type": instance.__class__.__name__,
-            **data
+            **dict(data)
         }
 
     class Meta:

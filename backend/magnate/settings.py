@@ -146,3 +146,4 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
+# TODO: celery configuration -> timezone, broken url -> investigate

@@ -86,6 +86,9 @@ if 'test' in sys.argv:
             "BACKEND": "channels.layers.InMemoryChannelLayer",
         },
     }
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_STORE_EAGER_RESULT = True
+    CELERY_BROKER_URL = "memory://" 
 else:
     CHANNEL_LAYERS = {
         "default": {
@@ -95,6 +98,8 @@ else:
             },
         },
     }
+    CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
+    CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -146,4 +151,3 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-# TODO: celery configuration -> timezone, broken url -> investigate

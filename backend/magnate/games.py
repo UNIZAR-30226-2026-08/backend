@@ -28,6 +28,13 @@ from .exceptions import *
 from typing import Optional
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 
+from celery import shared_task
+
+@shared_task
+def auction_callback(game_pk: int):
+    game = Game.objects.get(pk=game_pk)
+    GameManager._end_auction(game)
+
 class GameManager:
     """
     State machine and core processor for Game Actions.
@@ -649,6 +656,11 @@ class GameManager:
         game.current_auction = auction
         game.save()
 
+        # TODO: Remove magic number
+        auction_callback.apply_async(args=[game.pk], countdown=5)
+        # TODO: Remove in production
+        game.refresh_from_db()
+
         return Response()
         
     @staticmethod
@@ -696,7 +708,6 @@ class GameManager:
         return Response()
     
     @staticmethod
-    @database_sync_to_async
     def _end_auction(game: Game) -> Response:
         """
         Ends an active auction, resolves the winner based on the highest bid, 
@@ -722,6 +733,7 @@ class GameManager:
 
         square = auction.square.get_real_instance()
         bids = auction.bids.all()
+
 
         # no one bid
         if not bids.exists():

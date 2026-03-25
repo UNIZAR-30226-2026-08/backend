@@ -174,6 +174,7 @@ class Game(models.Model):
         business = 'business'
         auction = 'auction'
         proposal_acceptance = 'proposal_acceptance'
+        end_game = 'end_game'
 
 
     phase = models.CharField(choices=GamePhase, max_length=20, default='roll_the_dices')

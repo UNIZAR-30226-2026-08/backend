@@ -1,0 +1,25 @@
+site_name: Magnate Backend API Documentation
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: ["."] 
+  - with-pdf:
+      author: 08 - Roberta Williams - Equipo de backend
+      copyright: "2026"
+      output_path: docs/doc_api.pdf
+      cover: true
+      back_cover: true
+      toc_title: Tabla de Contenidos
+
+nav:
+  - Home: index.md
+  - Integration:
+    - WebSockets (Real-time): websockets.md
+    - Actions: actions.md
+    - Responses: responses.md
+  - Technical reference:
+    - Game logic: games.md
+    # - Exceptions: exceptions.md

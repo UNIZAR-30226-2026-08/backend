@@ -321,9 +321,14 @@
         "id": "020",
         "id_successor": "021"
     },
-    "jail_square":
+    "jail_visit_square":
     {
         "id": "104",
+        "id_successor": "105"
+    },
+    "jail_square":
+    {
+        "id": "201",
         "id_successor": "105",
         "bail_price": 40
     },

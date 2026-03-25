@@ -1,0 +1,17 @@
+STATS
+
+IMPLEMENTED:
+dinero ganado
+dinero perdido
+eventos fantasía
+casas ganadas
+casas perdidas
+num de hipotecas
+num de tradeos
+visitas a la cárcel
+turnos en la cárcel
+num de alquileres pagados
+casillas recorridas
+
+TODO:
+

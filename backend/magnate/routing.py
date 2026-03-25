@@ -4,11 +4,11 @@ from django.urls import re_path
 
 websocket_urlpatterns = [
     # Route for the queue manager (when users are waiting for a game)
-    re_path(r'ws/queue/public/$', consumers.PublicQueueConsumer.as_asgi()),
+    re_path(r'ws/queue/public/$', consumers.PublicQueueConsumer.as_asgi()), #type: ignore
 
     # Route for private room lobby management
-    re_path(r'ws/queue/private/(?P<room_code>\w+)/$', consumers.PrivateRoomConsumer.as_asgi()),
+    re_path(r'ws/queue/private/(?P<room_code>\w+)/$', consumers.PrivateRoomConsumer.as_asgi()), #type: ignore
 
     # Dynamic route for game rooms
-    re_path(r'ws/game/(?P<room_id>\w+)/$', consumers.GameConsumer.as_asgi()),
+    re_path(r'ws/game/(?P<room_id>\w+)/$', consumers.GameConsumer.as_asgi()), #type: ignore
 ]

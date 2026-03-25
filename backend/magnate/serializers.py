@@ -100,12 +100,7 @@ class ActionSerializer(serializers.ModelSerializer):
 class ActionThrowDicesSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
         model = ActionThrowDices
-        fields = ActionSerializer.Meta.fields + ['dice1','dice2','dice_bus','destinations','triple','path']
-        extra_kwargs = {
-            'dice1': {'min_value': 1, 'max_value': 6},
-            'dice2': {'min_value': 1, 'max_value': 6},
-            'dice_bus': {'min_value': 1, 'max_value': 6},
-        }
+        fields = ActionSerializer.Meta.fields
 
 class ActionMoveToSerializer(ActionSerializer):
     square = SquareCustomIdField()
@@ -113,11 +108,16 @@ class ActionMoveToSerializer(ActionSerializer):
         model = ActionMoveTo
         fields = ActionSerializer.Meta.fields + ['square']
 
-class ActionTakeBusSerializer(ActionSerializer):
+class ActionTakeTramSerializer(ActionSerializer):
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
-        model = ActionTakeBus
+        model = ActionTakeTram
         fields = ActionSerializer.Meta.fields + ['square']
+
+class ActionDoNotTakeTramSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionDoNotTakeTram
+        fields = ActionSerializer.Meta.fields
 
 class ActionBuySquareSerializer(ActionSerializer):
     square = SquareCustomIdField()
@@ -130,11 +130,6 @@ class ActionSellSquareSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
         model = ActionSellSquare
         fields = ActionSerializer.Meta.fields + ['square']
-
-class ActionGoToJailSerializer(ActionSerializer):
-    class Meta(ActionSerializer.Meta):
-        model = ActionGoToJail
-        fields = ActionSerializer.Meta.fields
 
 class ActionBuildSerializer(ActionSerializer):
     square = SquareCustomIdField()
@@ -205,20 +200,38 @@ class ActionPayBailSerializer(ActionSerializer):
         model = ActionPayBail
         fields = ActionSerializer.Meta.fields
 
+class ActionBidSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionBid
+        fields = ActionSerializer.Meta.fields + ['amount', 'auction']
+
+class AuctionSerializer(serializers.ModelSerializer):
+    square = SquareCustomIdField()
+    bids = serializers.SerializerMethodField()
+    class Meta:
+        model = Auction
+        fields = ['id', 'square', 'winner', 'final_amount', 'is_active', 'is_tie', 'bids']
+    
+    def get_bids(self, obj):
+        # Return dict of user_id -> amount to maintain frontend compatibility
+        return {str(bid.player.pk): bid.amount for bid in obj.bids.all()}
+
+        
+
 class GeneralActionSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         if isinstance(instance, ActionThrowDices):
             return ActionThrowDicesSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionMoveTo):
             return ActionMoveToSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionTakeBus):
-            return ActionTakeBusSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionTakeTram):
+            return ActionTakeTramSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionDoNotTakeTram):
+            return ActionDoNotTakeTramSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionBuySquare):
             return ActionBuySquareSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionSellSquare):
             return ActionSellSquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionGoToJail):
-            return ActionGoToJailSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionBuild):
             return ActionBuildSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionDemolish):
@@ -237,6 +250,8 @@ class GeneralActionSerializer(serializers.ModelSerializer):
             return ActionMortgageUnsetSerializer(instance, context=self.context).data
         elif isinstance(instance, ActionPayBail):
             return ActionPayBailSerializer(instance, context=self.context).data
+        elif isinstance(instance, ActionBid):
+            return ActionBidSerializer(instance, context=self.context).data
         
         #TODO: excepcion
         return ActionSerializer(instance, context=self.context).data
@@ -250,10 +265,10 @@ def action_from_json(data, context=None):
     mapping = {
         'ActionThrowDices': ActionThrowDicesSerializer,
         'ActionMoveTo': ActionMoveToSerializer,
-        'ActionTakeBus': ActionTakeBusSerializer,
+        'ActionTakeTram': ActionTakeTramSerializer,
+        'ActionDoNotTakeTram': ActionDoNotTakeTramSerializer,
         'ActionBuySquare': ActionBuySquareSerializer,
         'ActionSellSquare': ActionSellSquareSerializer,
-        'ActionGoToJail': ActionGoToJailSerializer,
         'ActionBuild': ActionBuildSerializer,
         'ActionDemolish': ActionDemolishSerializer,
         'ActionChooseCard': ActionChooseCardSerializer,
@@ -263,6 +278,7 @@ def action_from_json(data, context=None):
         'ActionMortgageSet': ActionMortgageSetSerializer,
         'ActionMortgageUnset': ActionMortgageUnsetSerializer,
         'ActionPayBail': ActionPayBailSerializer,
+        'ActionBid': ActionBidSerializer,
     }
     type_name = data.get('type')
     if not type_name:
@@ -278,3 +294,72 @@ def action_from_json(data, context=None):
     #return instance
 
     return serializer.save()
+
+
+#########################################################################Fantasy stuff
+class FantasyEventSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FantasyEvent
+        fields = ['fantasy_type','values','card_cost']
+
+class FantasyResultSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FantasyResult
+        fields = ['fantasy_type','values']
+
+######################################################################### Response serializers
+class ResponseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Response
+        fields = []
+
+class ResponseAuctionSerializer(ResponseSerializer):
+    auction = AuctionSerializer()
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseAuction
+        fields = ResponseSerializer.Meta.fields + ['auction']
+
+class ResponseMovementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResponseMovement
+        fields = '__all__'
+
+class ResponseThrowDicesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResponseThrowDices
+        fields = '__all__'
+
+class ResponseChooseSquareSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResponseChooseSquare
+        fields = '__all__'
+
+class ResponseChooseFantasySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ResponseChooseFantasy
+        fields = '__all__'
+
+class GeneralResponseSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+    def to_representation(self, instance):
+        if isinstance(instance, ResponseAuction):
+            data = ResponseAuctionSerializer(instance, context=self.context).data
+        elif isinstance(instance, ResponseThrowDices):
+            data = ResponseThrowDicesSerializer(instance, context=self.context).data
+        elif isinstance(instance, ResponseChooseSquare):
+            data = ResponseChooseSquareSerializer(instance, context=self.context).data
+        elif isinstance(instance, ResponseMovement):
+            data = ResponseMovementSerializer(instance, context=self.context).data
+        elif isinstance(instance, ResponseChooseFantasy):
+            data = ResponseChooseFantasySerializer(instance, context=self.context).data
+        else:
+            data = ResponseSerializer(instance, context=self.context).data
+
+        return {
+            "type": instance.__class__.__name__,
+            **dict(data)
+        }
+
+    class Meta:
+        model = Response
+        fields = '__all__'

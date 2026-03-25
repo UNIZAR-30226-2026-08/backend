@@ -1,17 +1,21 @@
 from django.test import TestCase
 from django.core.management import call_command
 from magnate.models import BaseSquare
-from magnate.serializers import GeneralSquareSerializer, GeneralActionSerializer, action_from_json
+from magnate.serializers import GeneralSquareSerializer, GeneralActionSerializer, action_from_json, FantasyEventSerializer
 from magnate.models import *
 from django.utils import timezone
+from magnate.fantasy import FantasyEventFactory
 
-class PropertySquareSerializerTest(TestCase):
+class SerializerTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         call_command('init_boards')
+
+        ############################# actions
         cls.player = CustomUser.objects.create(username="aaa",email="aaa@gmail.com")
         cls.player2 = CustomUser.objects.create(username="bbb",email="bbb@gmail.com")
-        cls.game = Game.objects.create(datetime=timezone.now(),active_player=cls.player)
+        cls.game = Game.objects.create(datetime=timezone.now())
+        cls.game.players.set([cls.player])
 
         cls.property_relationship1 = PropertyRelationship.objects.create(game=cls.game,owner=cls.player,
                                                                          square=BaseSquare.objects.get(custom_id=6),
@@ -20,16 +24,15 @@ class PropertySquareSerializerTest(TestCase):
                                                                          square=BaseSquare.objects.get(custom_id=8),
                                                                          houses=3)
 
-        cls.actionThrowDices = ActionThrowDices.objects.create(game=cls.game,player=cls.player,
-                                                               dice1=1,dice2=2,dice_bus=3,
-                                                               destinations=[20,21,22],triple=False,
-                                                               path=[11,12,13,14,15,16,17,18,19])
+        cls.actionThrowDices = ActionThrowDices.objects.create(game=cls.game, player=cls.player)
         
         cls.actionMoveTo = ActionMoveTo.objects.create(game=cls.game,player=cls.player,
                                                        square=BaseSquare.objects.get(custom_id=12))
         
-        cls.actionTakeBus = ActionTakeBus.objects.create(game=cls.game,player=cls.player,
+        cls.actionTakeTram = ActionTakeTram.objects.create(game=cls.game,player=cls.player,
                                                          square=BaseSquare.objects.get(custom_id=13))
+
+        cls.actionDoNotTakeTram = ActionDoNotTakeTram.objects.create(game=cls.game,player=cls.player)
         
         cls.actionBuySquare = ActionBuySquare.objects.create(game=cls.game,player=cls.player,
                                                              square=BaseSquare.objects.get(custom_id=14))
@@ -37,8 +40,6 @@ class PropertySquareSerializerTest(TestCase):
         cls.actionSellSquare = ActionSellSquare.objects.create(game=cls.game,player=cls.player,
                                                                square=BaseSquare.objects.get(custom_id=15))
         
-        cls.actionGoToJail = ActionGoToJail.objects.create(game=cls.game,player=cls.player)
-
         cls.actionBuild = ActionBuild.objects.create(game=cls.game,player=cls.player,
                                                      square=BaseSquare.objects.get(custom_id=17),
                                                      houses=3)
@@ -137,13 +138,15 @@ class PropertySquareSerializerTest(TestCase):
         self.assertEqual(data["custom_id"],20)
         
     def test_jail_square(self):
-        casilla = BaseSquare.objects.get(custom_id=104)
+        casilla = BaseSquare.objects.get(custom_id=201)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
 
         self.assertEqual(data["type"],'JailSquare')
-        self.assertEqual(data["custom_id"],104)
+        self.assertEqual(data["custom_id"],201)
         self.assertEqual(data["bail_price"],40)
+
+    #TODO: visit jail
 
     def test_parking_square(self):
         casilla = BaseSquare.objects.get(custom_id=111)
@@ -168,30 +171,13 @@ class PropertySquareSerializerTest(TestCase):
     def test_action_throw_dices(self):
         data = GeneralActionSerializer(self.actionThrowDices).data
         assert isinstance(data,dict)
-        self.assertEqual(data["dice1"],1)
-        self.assertEqual(data["dice2"],2)
-        self.assertEqual(data["dice_bus"],3)
-        self.assertEqual(data["destinations"],[20,21,22])
-        self.assertEqual(data["triple"],False)
-        self.assertEqual(data["path"],[11,12,13,14,15,16,17,18,19])
-
         json_in = {"type": "ActionThrowDices",
                    "game":self.game.pk,
-                   "player":self.player.pk,
-                   "dice1":4,"dice2":5,"dice_bus":6,
-                   "destinations":[1,2,3],"triple":False,
-                   "path":[21,22,23,24]}
+                   "player":self.player.pk}
         instance = action_from_json(json_in)
         assert isinstance(instance,ActionThrowDices)
         self.assertEqual(instance.player,self.player)
         self.assertEqual(instance.game,self.game)
-        self.assertEqual(instance.dice1,4)
-        self.assertEqual(instance.dice2,5)
-        self.assertEqual(instance.dice_bus,6)
-        self.assertEqual(instance.destinations,[1,2,3])
-        self.assertEqual(instance.triple,False)
-        self.assertEqual(instance.path,[21,22,23,24])
-
 
     def test_action_move_to(self):
         data = GeneralActionSerializer(self.actionMoveTo).data
@@ -209,20 +195,32 @@ class PropertySquareSerializerTest(TestCase):
         self.assertEqual(instance.square.custom_id,101)
         
 
-    def test_action_take_bus(self):
-        data = GeneralActionSerializer(self.actionTakeBus).data
+    def test_action_take_tram(self):
+        data = GeneralActionSerializer(self.actionTakeTram).data
         assert isinstance(data,dict)
         self.assertEqual(data["square"],13)
 
-        json_in = {"type": "ActionTakeBus",
+        json_in = {"type": "ActionTakeTram",
                    "game":self.game.pk,
                    "player":self.player.pk,
                    "square":102}
         instance = action_from_json(json_in)
-        assert isinstance(instance,ActionTakeBus)
+        assert isinstance(instance,ActionTakeTram)
         self.assertEqual(instance.player,self.player)
         self.assertEqual(instance.game,self.game)
         self.assertEqual(instance.square.custom_id,102)
+
+    def test_action_do_not_take_tram(self):
+        data = GeneralActionSerializer(self.actionDoNotTakeTram).data
+        assert isinstance(data,dict)
+
+        json_in = {"type": "ActionDoNotTakeTram",
+                   "game":self.game.pk,
+                   "player":self.player.pk}
+        instance = action_from_json(json_in)
+        assert isinstance(instance,ActionDoNotTakeTram)
+        self.assertEqual(instance.player,self.player)
+        self.assertEqual(instance.game,self.game)
 
     def test_action_buy_square(self):
         data = GeneralActionSerializer(self.actionBuySquare).data
@@ -253,20 +251,6 @@ class PropertySquareSerializerTest(TestCase):
         self.assertEqual(instance.player,self.player)
         self.assertEqual(instance.game,self.game)
         self.assertEqual(instance.square.custom_id,104)
-
-    def test_action_go_to_jail(self):
-        data = GeneralActionSerializer(self.actionGoToJail).data
-        assert isinstance(data,dict)
-        self.assertEqual(data["player"],self.player.pk)
-
-        json_in = {"type": "ActionGoToJail",
-                   "game":self.game.pk,
-                   "player":self.player.pk,
-                   "square":103}
-        instance = action_from_json(json_in)
-        assert isinstance(instance,ActionGoToJail)
-        self.assertEqual(instance.player,self.player)
-        self.assertEqual(instance.game,self.game)
 
     def test_action_build(self):
         data = GeneralActionSerializer(self.actionBuild).data
@@ -423,3 +407,23 @@ class PropertySquareSerializerTest(TestCase):
         self.assertEqual(instance.player,self.player)
         self.assertEqual(instance.game,self.game)
         
+
+##############################################################################fantsy serializers
+    def test_fantasy_event(self):
+        fantasyEvent1 = FantasyEvent(fantasy_type='winPlainMoney',
+                                         values={'money':1}, card_cost=2)
+        fantasyEvent2 = FantasyEventFactory.generate()
+
+        data = FantasyEventSerializer(fantasyEvent1).data
+        assert isinstance(data,dict)
+
+        self.assertEqual(data['fantasy_type'],'winPlainMoney')
+        self.assertEqual(data['values']['money'],1)
+        self.assertEqual(data['card_cost'],2)
+
+        data2 = FantasyEventSerializer(fantasyEvent2).data
+        assert isinstance(data2,dict)
+
+        self.assertEqual(data2['fantasy_type'],fantasyEvent2.fantasy_type)
+        self.assertEqual(data2['values'],fantasyEvent2.values)
+        self.assertEqual(data2['card_cost'],fantasyEvent2.card_cost)

@@ -1002,10 +1002,10 @@ class GamesTest(TestCase):
         stats_p2 = PlayerGameStatistic.objects.get(user=self.player2, game=self.game)
         self.assertEqual(stats_p1.num_trades, 1)
         self.assertEqual(stats_p2.num_trades, 1)
-        self.assertEqual(stats_p1.lost_money, 10)
-        self.assertEqual(stats_p1.won_money, 50)
-        self.assertEqual(stats_p2.lost_money, 50)
-        self.assertEqual(stats_p2.won_money, 10)
+        self.assertEqual(stats_p1.lost_money, 0)
+        self.assertEqual(stats_p1.won_money, 40)
+        self.assertEqual(stats_p2.lost_money, 40)
+        self.assertEqual(stats_p2.won_money, 0)
     
     def test_stats_num_mortgages(self):
         """P1 sets and unsets mortgage: num_mortgages=2"""
@@ -1041,3 +1041,127 @@ class GamesTest(TestCase):
         stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
         self.assertEqual(stats.num_fantasy_events, 1)
 
+    ##########################
+    ###### BONUS TESTS ######
+    ##########################
+
+    def test_bonus_winner_receives_money(self):
+        """player with more walked_squares receives bonus"""
+        BonusCategory.objects.create(stat_field='walked_squares', bonus_amount=200)
+
+        stats_p1 = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        stats_p2 = PlayerGameStatistic.objects.get(user=self.player2, game=self.game)
+        stats_p3 = PlayerGameStatistic.objects.get(user=self.player3, game=self.game)
+
+        stats_p1.walked_squares = 10
+        stats_p2.walked_squares = 5
+        stats_p3.walked_squares = 3
+        stats_p1.save()
+        stats_p2.save()
+        stats_p3.save()
+
+        GameManager._apply_end_bonuses(self.game, num_bonuses=1)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.money[str(self.player1.pk)], 1700)  # 1500 + bonus
+        self.assertEqual(self.game.money[str(self.player2.pk)], 1500)
+        self.assertEqual(self.game.money[str(self.player3.pk)], 1500)
+
+    def test_bonus_tie_both_winners_receive_money(self):
+        """2 players tie, both receive bonus"""
+        BonusCategory.objects.create(stat_field='num_trades', bonus_amount=300)
+
+        stats_p1 = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        stats_p2 = PlayerGameStatistic.objects.get(user=self.player2, game=self.game)
+        stats_p3 = PlayerGameStatistic.objects.get(user=self.player3, game=self.game)
+
+        stats_p1.num_trades = 4
+        stats_p2.num_trades = 4
+        stats_p3.num_trades = 1
+        stats_p1.save()
+        stats_p2.save()
+        stats_p3.save()
+
+        GameManager._apply_end_bonuses(self.game, num_bonuses=1)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.money[str(self.player1.pk)], 1800)  # 1500 + 300
+        self.assertEqual(self.game.money[str(self.player2.pk)], 1800)  # 1500 + 300
+        self.assertEqual(self.game.money[str(self.player3.pk)], 1500)
+
+    def test_bonus_all_zero_no_winner(self):
+        """0 in stats, no bonus"""
+        BonusCategory.objects.create(stat_field='built_houses', bonus_amount=200)
+
+        # los stats están a 0 por default
+
+        GameManager._apply_end_bonuses(self.game, num_bonuses=1)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.money[str(self.player1.pk)], 1500)
+        self.assertEqual(self.game.money[str(self.player2.pk)], 1500)
+        self.assertEqual(self.game.money[str(self.player3.pk)], 1500)
+
+
+    ##########################
+    ###### END GAME TESTS ######
+    ##########################
+    #TODO: check action enviada en estos tests
+
+    def test_end_game_sets_finished_and_bonus_response(self):
+        """call _end_game_logic, game.finished=True, bonus_response saved"""
+        BonusCategory.objects.create(stat_field='walked_squares', bonus_amount=200)
+        BonusCategory.objects.create(stat_field='num_trades', bonus_amount=200)
+        BonusCategory.objects.create(stat_field='built_houses', bonus_amount=200)
+
+        action = ActionNextPhase(game=self.game, player=self.player1)
+        GameManager._end_game_logic(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        self.assertTrue(self.game.finished)
+        self.assertIsNotNone(self.game.bonus_response)
+        self.assertIsInstance(self.game.bonus_response, ResponseBonus)
+
+    def test_end_game_idempotent(self):
+        """calling _end_game_logic twice don't recalculate bonuses"""
+        BonusCategory.objects.create(stat_field='walked_squares', bonus_amount=200)
+        BonusCategory.objects.create(stat_field='num_trades', bonus_amount=200)
+        BonusCategory.objects.create(stat_field='built_houses', bonus_amount=200)
+
+        action = ActionNextPhase(game=self.game, player=self.player1)
+        GameManager._end_game_logic(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        if self.game.bonus_response is None:
+            raise GameLogicError('bonus response is none')
+        first_bonus_response_pk = self.game.bonus_response.pk
+        first_money = dict(self.game.money)
+
+        stat = PlayerGameStatistic.objects.get(game=self.game,user=self.player1)
+        stat.walked_squares = 10
+        stat.save()
+
+        GameManager._end_game_logic(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.bonus_response.pk, first_bonus_response_pk)
+        self.assertEqual(self.game.money, first_money)
+
+    def test_end_game_winner_receives_bonus(self):
+        """more walked_squares player wins bonus"""
+        BonusCategory.objects.create(stat_field='walked_squares', bonus_amount=200)
+        BonusCategory.objects.create(stat_field='num_trades', bonus_amount=200)
+        BonusCategory.objects.create(stat_field='built_houses', bonus_amount=200)
+
+        stats_p1 = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
+        stats_p1.walked_squares = 15
+        stats_p1.save()
+
+        action = ActionNextPhase(game=self.game, player=self.player1)
+        with patch('magnate.games.random.sample', return_value=[BonusCategory.objects.get(stat_field='walked_squares')]):
+            GameManager._end_game_logic(self.game, self.player1, action)
+
+        self.game.refresh_from_db()
+        self.assertEqual(self.game.money[str(self.player1.pk)], 1700)  # 1500 + 200
+        self.assertEqual(self.game.money[str(self.player2.pk)], 1500)
+        self.assertEqual(self.game.money[str(self.player3.pk)], 1500)

@@ -49,6 +49,7 @@ class GameManager:
     AUCTION = Game.GamePhase.auction
     PROPOSAL_ACCEPTANCE = Game.GamePhase.proposal_acceptance
     CHOOSE_FANTASY = Game.GamePhase.choose_fantasy
+    END_GAME = Game.GamePhase.end_game
 
 
     @classmethod
@@ -109,6 +110,9 @@ class GameManager:
             if not isinstance(action, ActionBid):
                 raise MaliciousUserInputAction(game, user, action)
             response = cls._bid_property_auction_logic(game, user, action)
+        elif game.phase == cls.END_GAME:
+            # TODO: check instance???
+            response = cls._end_game_logic(game,user,action)
         else: 
             raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
 
@@ -593,12 +597,16 @@ class GameManager:
                     relationship.houses = -1
                     relationship.save()
 
+                final_money = offered_money - asked_money
+
                 game.money[str(offering.pk)] -= offered_money
                 game.money[str(offering.pk)] += asked_money
 
                 stats = PlayerGameStatistic.objects.get(user=offering,game=game)
-                stats.lost_money += offered_money
-                stats.won_money += asked_money
+                if final_money > 0:
+                    stats.lost_money += abs(final_money)
+                else:
+                    stats.won_money += abs(final_money)
                 stats.num_trades += 1
                 stats.save()
                 
@@ -606,8 +614,10 @@ class GameManager:
                 game.money[str(user.pk)] += offered_money
 
                 stats = PlayerGameStatistic.objects.get(user=user,game=game)
-                stats.lost_money += asked_money
-                stats.won_money += offered_money
+                if final_money > 0:
+                    stats.won_money += abs(final_money)
+                else:
+                    stats.lost_money += abs(final_money)
                 stats.num_trades += 1
                 stats.save()
 
@@ -891,4 +901,48 @@ class GameManager:
         
         # TODO: if only one left -> he wins
 
+    #TODO: llegar a fase final donde se reparte esto
+    @classmethod
+    def _apply_end_bonuses(cls, game: Game, num_bonuses: int = 3) -> ResponseBonus:
+        all_categories = list(BonusCategory.objects.all())
+        chosen = random.sample(all_categories, min(num_bonuses, len(all_categories)))
+
+        response = ResponseBonus()
+        bonuses = {}
+
+        for category in chosen:
+            field = category.stat_field
+            stats = PlayerGameStatistic.objects.filter(game=game)
+
+            max_value = stats.aggregate(Max(field))[f'{field}__max']
+            if max_value and max_value > 0:
+                winners = list(stats.filter(**{field: max_value}).values_list('user__pk', flat=True))
+                for pk in winners:
+                    game.money[str(pk)] += category.bonus_amount
+            else:
+                winners = []
+
+            bonuses[str(category.pk)] = {
+                'bonus_amount': category.bonus_amount,
+                'winners': winners
+            }
+
+        response.bonuses = bonuses
+        game.save()
+        return response
+
+
+    @classmethod
+    def _end_game_logic(cls, game: Game, user: CustomUser, action: Action) -> Response:
+        if not game.finished:
+            game.finished = True
+            response: ResponseBonus = cls._apply_end_bonuses(game, num_bonuses=3)
+            response.save()
+            game.bonus_response = response # type: ignore
+            game.save()
+        
+        if game.bonus_response is None:
+            raise GameLogicError('bonus response empty')
+        
+        return game.bonus_response
     ############################################################

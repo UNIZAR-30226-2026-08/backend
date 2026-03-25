@@ -191,6 +191,9 @@ class Game(models.Model):
     fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.SET_NULL, null=True, blank=True, related_name='fantasy_event')
 
     current_auction = models.ForeignKey('Auction', on_delete=models.SET_NULL, null=True, blank=True, related_name='active_game')
+    
+    finished = models.BooleanField(default=False)
+    bonus_response = models.ForeignKey('ResponseBonus', on_delete=models.SET_NULL, null=True, blank=True, related_name='bonus_response')
 
 class Auction(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='auctions')
@@ -618,6 +621,27 @@ class ResponseAuction(Response):
     @property
     def is_tie(self):
         return self.auction.is_tie
+    
+class ResponseBonus(Response):
+    """
+    Response delivering the result of a drawn Chance/Community Chest card.
+    
+    Frontend Response Payload Example:
+    {
+    "type": "ResponseBonus",
+    "money": {"1": 1600, "2": 1200},
+    "active_phase_player": 2,
+    "active_turn_player": 2,
+    "phase": "management",
+    "bonuses": {
+    "walked_squares": {"display_name": "El más viajero", "bonus_amount": 200, "winners": [1, 3]},
+    "built_houses":   {"display_name": "El más constructor", "bonus_amount": 200, "winners": [2]},
+    "num_trades":     {"display_name": "El más trader", "bonus_amount": 200, "winners": []}
+}
+    }
+    }
+    """
+    bonuses = models.JSONField(default=dict, blank=True)
 
 ###############################################################################
 
@@ -642,3 +666,21 @@ class PlayerGameStatistic(models.Model):
     class Meta:
         # 1 player and game for each stats
         unique_together = ('user', 'game')
+
+class BonusCategory(models.Model):
+    class StatField(models.TextChoices):
+        walked_squares    = 'walked_squares'
+        won_money         = 'won_money'
+        lost_money        = 'lost_money'
+        num_fantasy_events = 'num_fantasy_events'
+        built_houses      = 'built_houses'
+        demolished_houses = 'demolished_houses'
+        times_in_jail     = 'times_in_jail'
+        turns_in_jail     = 'turns_in_jail'
+        num_paid_rents    = 'num_paid_rents'
+        num_trades        = 'num_trades'
+        num_mortgages     = 'num_mortgages'
+        end_game = 'end_game'
+
+    stat_field = models.CharField(choices=StatField, max_length=30, unique=True)
+    bonus_amount = models.PositiveIntegerField(default=200)

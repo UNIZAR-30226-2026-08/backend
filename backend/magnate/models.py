@@ -196,6 +196,9 @@ class Game(models.Model):
     finished = models.BooleanField(default=False)
     bonus_response = models.ForeignKey('ResponseBonus', on_delete=models.SET_NULL, null=True, blank=True, related_name='bonus_response')
 
+    kick_out_task_id = models.CharField(max_length=255, null=True, blank=True)
+    next_phase_task_id = models.CharField(max_length=255, null=True, blank=True)
+
 class Auction(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='auctions')
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='auctioned_in')

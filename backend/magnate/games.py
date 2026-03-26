@@ -29,11 +29,7 @@ from typing import Optional
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 
 from celery import shared_task
-
-@shared_task
-def auction_callback(game_pk: int):
-    game = Game.objects.get(pk=game_pk)
-    GameManager._end_auction(game)
+from .celery import app
 
 class GameManager:
     """
@@ -657,6 +653,7 @@ class GameManager:
         game.save()
 
         # TODO: Remove magic number
+        from .tasks import auction_callback
         auction_callback.apply_async(args=[game.pk], countdown=5)
         # TODO: Remove in production
         game.refresh_from_db()
@@ -839,7 +836,17 @@ class GameManager:
         game.active_phase_player = next_player
         game.active_turn_player = next_player
         game.phase = GameManager.ROLL_THE_DICES
+        game.save()
 
+        if game.next_phase_task_id:
+            app.control.revoke(game.next_phase_task_id, terminate=True)
+            game.next_phase_task_id = None
+            
+        from .tasks import kick_out_callback
+
+        task = kick_out_callback.apply_async(args=[game.pk, next_player.pk], countdown=5)
+        game.kick_out_task_id = task.id
+        
         game.save()
  
     @classmethod

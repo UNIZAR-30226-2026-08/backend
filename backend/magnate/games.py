@@ -19,7 +19,8 @@ from .game_utils import (
     _calculate_passed_go, _apply_square_arrival, _compute_dice_combinations, 
     _move_player_logic, _build_square, _demolish_square, _get_jail_square,_set_mortgage,  
     _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, 
-    _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id
+    _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id,
+    _add_basic_response_data
 )
 from channels.db import database_sync_to_async
 
@@ -92,7 +93,7 @@ class GameManager:
         elif game.phase == cls.CHOOSE_SQUARE:
             if not isinstance(action, ActionMoveTo):
                 raise MaliciousUserInputAction(game, user, action)
-            response=  cls._square_chosen_logic(game, user, action)
+            response = cls._square_chosen_logic(game, user, action)
         elif game.phase == cls.CHOOSE_FANTASY:
             if not isinstance(action, ActionChooseCard):
                 raise MaliciousUserInputAction(game, user, action)
@@ -119,12 +120,7 @@ class GameManager:
         else: 
             raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
 
-        response.money = game.money
-        response.active_phase_player = game.active_phase_player
-        response.active_turn_player = game.active_turn_player
-        response.phase = game.phase
-
-        return response
+        return _add_basic_response_data(game, response)
 
     @staticmethod
     def _pay_bail_logic(game: Game, user: CustomUser, action: ActionPayBail) -> Response:

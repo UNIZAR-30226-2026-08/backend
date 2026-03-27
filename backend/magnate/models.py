@@ -515,6 +515,21 @@ class Response(models.Model):
     active_turn_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_turns_to_play')
     phase = models.CharField(choices=Game.GamePhase, max_length=20)
 
+class ResponseSkipPhase(Response):
+    """
+    Base response for an event that skips a phase
+    
+    Frontend Response Payload Example:
+    {
+      "type": "Response",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "management"
+    }
+    """
+    pass
+
 class ResponseMovement(Response):
     """
     Base response for an event that moves a player across the board.

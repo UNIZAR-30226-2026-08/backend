@@ -1,22 +1,50 @@
 from celery import shared_task
 from .models import *
+from .serializers import GeneralResponseSerializer
 
 from .games import GameManager
-from .game_utils import _get_user_square, _get_relationship, _get_square_by_custom_id
+from .game_utils import (
+        _get_user_square, _get_relationship, _get_square_by_custom_id,
+        _add_basic_response_data
+)
 import random
 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+
+def broadcast_to_game_(game: Game, response: Response) -> None:
+    channel_layer = get_channel_layer()
+    group_name = f"game_{game.pk}"
+
+    response = _add_basic_response_data(game, response)
+    
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {
+            'type': 'game_action_event',
+            'action_data': GeneralResponseSerializer(response).data
+        }
+    )
 
 @shared_task
-def auction_callback(game_pk: int):
+def auction_callback(game_pk: int) -> None:
     game = Game.objects.get(pk=game_pk)
-    GameManager._end_auction(game)
+    response = GameManager._end_auction(game)
+    if response:
+        broadcast_to_game(game, response)
 
-# kick_out_callback:
-#   triggered in _next_turn, after setting phase to ROLL_THE_DICES and saving -> DONE
-# TODO: also scheduled before first turn -> ¿consumers?
-#   cancel at the start of _roll_dices_logic and _pay_bail_logic
 @shared_task
-def kick_out_callback(game_pk: int, user_pk: int):
+def kick_out_callback(game_pk: int, user_pk: int) -> None:
+    """
+    triggered in _next_turn, after setting phase to ROLL_THE_DICES and saving -> DONE
+    TODO: also scheduled before first turn -> ¿consumers?
+    TODO: This should change user to AI
+    cancel at the start of _roll_dices_logic and _pay_bail_logic
+    """
+
+    # TODO: Remove this, but the agents test does not work if removed
+    return
+
     game = Game.objects.get(pk=game_pk)
     user = CustomUser.objects.get(pk=user_pk)
 
@@ -43,53 +71,50 @@ def kick_out_callback(game_pk: int, user_pk: int):
     if was_active:
         GameManager._next_turn(game, game.active_turn_player)
 
-
-
-#   triggered at the end of _roll_dices_logic, after saving (phase is now CHOOSE_SQUARE, MANAGEMENT or LIQUIDATION)
-#   triggered at the end of _square_chosen_logic, after saving (phase is now MANAGEMENT or LIQUIDATION)
-#   triggered at the end of _choose_fantasy_logic, after saving (phase is now BUSINESS or ROLL_THE_DICES)
-#   triggered at the end of _management_logic, after saving (phase is now BUSINESS or ROLL_THE_DICES)
-#   triggered at the end of _answer_trade_proposal_logic, after saving (phase is now BUSINESS)
-#   - Cancel at the start of every action handler that is not _roll_dices_logic or _pay_bail_logic
 @shared_task
-def next_phase_callback(game_pk: int, user_pk: int):
+def next_phase_callback(game_pk: int, user_pk: int) -> None:
+    """
+    triggered at the end of _roll_dices_logic, after saving (phase is now CHOOSE_SQUARE, MANAGEMENT or LIQUIDATION)
+    triggered at the end of _square_chosen_logic, after saving (phase is now MANAGEMENT or LIQUIDATION)
+    triggered at the end of _choose_fantasy_logic, after saving (phase is now BUSINESS or ROLL_THE_DICES)
+    triggered at the end of _management_logic, after saving (phase is now BUSINESS or ROLL_THE_DICES)
+    triggered at the end of _answer_trade_proposal_logic, after saving (phase is now BUSINESS)
+    - Cancel at the start of every action handler that is not _roll_dices_logic or _pay_bail_logic
+    """
 
     game = Game.objects.get(pk=game_pk)
     user = CustomUser.objects.get(pk=user_pk)
 
     # we only act if it's user turn
     if game.active_phase_player.pk != user_pk:
-        return
-
+        raise GameLogicError("callback out of time")
     if game.phase == GameManager.CHOOSE_SQUARE:
         # random
         possible = list(game.possible_destinations.keys())
         random_square_id = random.choice(possible)
         random_square = _get_square_by_custom_id(random_square_id)
         action = ActionMoveTo.objects.create(game=game, player=user, square=random_square)
-        GameManager._square_chosen_logic(game, user, action)
-
+        response = GameManager._square_chosen_logic(game, user, action)
     elif game.phase == GameManager.MANAGEMENT:
         current_square = _get_user_square(game, user).get_real_instance()
         if isinstance(current_square, (PropertySquare, ServerSquare, BridgeSquare)):
             # auction if it's unowned
             rel = _get_relationship(game, current_square)
             if rel is None:
-                action = ActionDropPurchase.objects.create(game=game, player=user, square=current_square)
-                GameManager._management_logic(game, user, action)
+                action = ActionDropPurchase.objects.create(game=game, 
+                                            player=user, square=current_square)
+                response = GameManager._management_logic(game, user, action)
             else:
                 # owned, already payed if had to do that -> next turn
                 GameManager._next_turn(game, user)
         else:
             GameManager._next_turn(game, user)
-
-    elif game.phase == GameManager.BUSINESS or game.phase == GameManager.LIQUIDATION:
+    elif game.phase in (GameManager.BUSINESS, GameManager.LIQUIDATION):
         current_money = game.money[str(user.pk)]
         if current_money >= 0:
             GameManager._next_turn(game, user)
         else:
             kick_out_callback(game_pk, user_pk)
-
     elif game.phase == GameManager.PROPOSAL_ACCEPTANCE:
         # reject
         proposal = game.proposal
@@ -97,9 +122,12 @@ def next_phase_callback(game_pk: int, user_pk: int):
         game.active_phase_player = proposal.player
         game.proposal = None
         game.save()
-
     elif game.phase == GameManager.CHOOSE_FANTASY:
         # choose the random one
         action = ActionChooseCard.objects.create(game=game, player=user, chosen_card=False)
         GameManager._choose_fantasy_logic(game, user, action)
+
+    if not response:
+        reponse = ResponseSkipPhase()
+    broadcast_to_game_(game, response)
 

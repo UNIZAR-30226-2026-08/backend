@@ -689,3 +689,12 @@ def _calculate_passed_go(current_square: BaseSquare, target_custom_id: int, d1: 
             if result["passed_go"]:
                 return True
     return False
+
+def _add_basic_response_data(game: Game, response: Response) -> Response:
+    response.money = game.money
+    response.active_phase_player = game.active_phase_player
+    response.active_turn_player = game.active_turn_player
+    response.phase = game.phase
+
+    return response
+

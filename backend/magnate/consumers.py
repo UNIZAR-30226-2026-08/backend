@@ -135,7 +135,7 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
 
             # initialize money and positions (see then what the optimal money)
             game.money = {str(u.pk): 1500 for u in users}
-            game.positions = {str(u.pk): 0 for u in users}
+            game.positions = {str(u.pk): 1 for u in users}
             game.save()
 
             game.players.set(users)
@@ -148,12 +148,6 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             PublicQueuePosition.objects.filter(pk__in=[p.pk for p in players]).delete()
             
             return (game.pk, player_channels)
-
-
-
-        
-
-
 
 class PrivateRoomConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -433,11 +427,6 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             'players': list(room.players.values('username', 'ready_to_play'))
         }
 
-
-        
-        
-
-
     @database_sync_to_async
     def update_player_ready_status(self, room_code, user, is_ready):
         user_from_db = CustomUser.objects.get(username=user.username)
@@ -451,7 +440,6 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         user_from_db.ready_to_play = is_ready
         user_from_db.save()
 
-
     @database_sync_to_async
     def get_num_players(self, room_code):
         # Return the current number of players in the room
@@ -459,7 +447,6 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         if not room:
             return 0
         return room.players.count()
-
 
     @database_sync_to_async
     def check_all_ready(self, room_code):
@@ -473,7 +460,6 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                 return False
         
         return True
-
 
     @database_sync_to_async
     def is_owner(self, user, room_code):
@@ -496,15 +482,21 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         
         return room.owner.username
 
-
     async def send_error(self, message):
         await self.send(text_data=json.dumps({
             'action': 'error',
             'message': message
         }))
 
-
-
+@database_sync_to_async
+def validate_and_save_action(data):
+    serializer = GeneralActionSerializer(data=data)
+    
+    if not serializer.is_valid():
+        return None, serializer.errors
+    
+    action_instance = serializer.save() 
+    return action_instance, None
 
 class GameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -521,7 +513,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         if self.url is None:
             await self.close(code=4002)
             return
-        self.game_id = self.url.get('kwargs').get('room_id')
+        self.game_id = int(self.url.get('kwargs').get('room_id'))
 
         self.game_group_name = f"game_{self.game_id}"
 
@@ -553,83 +545,71 @@ class GameConsumer(AsyncWebsocketConsumer):
             'game_state': game_state
         }))
 
-        
-
     async def disconnect(self, close_code):
         # Triggered when user leaves game -> notify opponent.
         await self.channel_layer.group_discard(
             self.game_group_name,
             self.channel_name
         )
-    
+
+   
     async def receive(self, text_data):
-        # Triggered when user sends a move -> broadcast to room group.
-        # Also manages game over conditions triggering disconnects.
-        # Manages DB interactions over purchases, rents etc
-        try:
-            data = json.loads(text_data)
-            action = data.get('action')
-
-            game = await self.get_game(self.game_id)
-
-            if game is None:
-                await self.send_error("Partida no encontrada.")
-                return
-            
-            
-            is_turn = await self.check_turn(game, self.user)
-            if not is_turn:
-                await self.send_error("No es tu turno.")
-                return
-
-            context = {'game': game, 'player': self.user}
-            try:
-                action = await database_sync_to_async(action_from_json)(data, context=context)
-            except Exception as e:
-                await self.send_error(f"Acción inválida: {e}")
-                return
-            
-            try:
-                response = await GameManager.process_action(game, self.user, action)
-
-                if response is None:
-                    await database_sync_to_async(action.delete)() # Limpiamos BD
-                    await self.send_error("Acción no válida en la fase actual.")
-                    return
-                
-                response_data = await database_sync_to_async(lambda: GeneralResponseSerializer(response).data)()
-                
-                await self.channel_layer.group_send(
-                    self.game_group_name,
-                    {
-                        'type': 'game_action_event',
-                        'action_data': response_data
-                    }
-                )
-
-            except MaliciousUserInput as e:
-                await database_sync_to_async(action.delete)() 
-                raise 
-                
-            except GameLogicError as e:
-                await database_sync_to_async(action.delete)()
-                raise
-                
-            except GameDesignError as e:
-                await database_sync_to_async(action.delete)()
-                raise
-            except Exception as e:
-                await database_sync_to_async(action.delete)()
-                print(f"Error procesando turno: {e}")
-                await self.send_error("Error interno procesando tu movimiento.")
-                return
-            
-        except json.JSONDecodeError:
-            await self.send_error("Datos inválidos.")
+        """
+        Triggered when user sends a move -> broadcast to room group.
+        Also manages game over conditions triggering disconnects.
+        Manages DB interactions over purchases, rents etc
+        """
+       
+        game = await self.get_game(self.game_id)
+        if game is None:
+            await self.send_error("Game not found")
             return
+        
+        is_turn = await self.check_turn(game, self.user)
+        if not is_turn:
+            await self.send_error("action out of turn")
+            return
+
+        data = json.loads(text_data)
+        data['game'] = self.game_id
+        data['player'] = self.user.pk
+
+        action, errors = await validate_and_save_action(data)
+
+        if errors:
+            await self.send_error(f"Invalid data: {errors}")
+            return
+
+        try:
+            response = await GameManager.process_action(game, self.user, action)
+
+            if response is None:
+                await database_sync_to_async(action.delete)() # Limpiamos BD
+                await self.send_error("Acción no válida en la fase actual.")
+                return
+
+            # Broadcast action
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'game_action_event',
+                    'data': data
+                }
+            )
             
+            response_data = await database_sync_to_async(lambda: GeneralResponseSerializer(response).data)()
+            
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'game_response_event',
+                    'data': response_data
+                }
+            )
 
-
+        except (MaliciousUserInput, GameLogicError, GameDesignError, Exception) as e:
+            await database_sync_to_async(action.delete)()
+            await self.send_error(f"{e}")
 
 # --------------------- Handlers ---------------------- #
 
@@ -642,7 +622,13 @@ class GameConsumer(AsyncWebsocketConsumer):
     async def game_action_event(self, event):
         await self.send(text_data=json.dumps({
             'action': 'game_action',
-            'data': event['action_data']
+            'data': event['data']
+        }))
+
+    async def game_response_event(self, event):
+        await self.send(text_data=json.dumps({
+            'action': 'game_response',
+            'data': event['data']
         }))
 
     async def send_error(self, message):

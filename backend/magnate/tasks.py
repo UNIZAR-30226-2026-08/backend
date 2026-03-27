@@ -21,8 +21,8 @@ def broadcast_to_game_(game: Game, response: Response) -> None:
     async_to_sync(channel_layer.group_send)(
         group_name,
         {
-            'type': 'game_action_event',
-            'action_data': GeneralResponseSerializer(response).data
+            'type': 'game_response_event',
+            'data': GeneralResponseSerializer(response).data
         }
     )
 

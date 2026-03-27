@@ -287,7 +287,7 @@ def _get_user_square(game: Game, user: CustomUser) -> BaseSquare:
     Raises:
         GameLogicError: If the user is not part of the game.
     """
-    user_key = str(user.pk) if str(user.pk) in game.positions else user.pk
+    user_key = str(user.pk)
     
     if user_key not in game.positions:
         raise GameLogicError(f"user {user} not in the game")

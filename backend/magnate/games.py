@@ -302,8 +302,6 @@ class GameManager:
         game.save()
         return response
 
-
-
     @staticmethod
     def _square_chosen_logic(game: Game, user: CustomUser, action: Action) -> Response:
         """

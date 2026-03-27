@@ -6,26 +6,41 @@ import os
 
 def launch_terminal(command_args):
     command_str = " ".join(command_args)
-    
-    full_command = f"{command_str}; echo '\n--- Process Finished ---'; read"
-    
-    try:
-        subprocess.Popen(["kitty", "sh", "-c", full_command])
-    except FileNotFoundError:
+
+    full_command = f"{command_str}; printf '\\n--- Process Finished ---\\n'; read -p 'Press Enter to exit...'"
+
+    print(command_str)
+
+    terminals = [
+        ("kitty", []),
+        ("foot", []),
+        ("xterm", ["-e"])
+    ]
+
+    for term, flags in terminals:
         try:
-            subprocess.Popen(["foot", "sh", "-c", full_command]) 
+            # Construct the execution list dynamically
+            cmd = [term] + flags + ["sh", "-c", full_command]
+            subprocess.Popen(cmd)
+            return  # Successfully launched
+            
         except FileNotFoundError:
-            print(f"Could not launch Kitty. Run manually: {command_str}")
+            continue
+
+    print(f"Could not launch a terminal. Run manually: {command_str}")
+
 def main():
     parser = argparse.ArgumentParser(description="Run two CLI clients for testing")
     parser.add_argument("--url", default="ws://localhost:8000", help="WebSocket URL")
     parser.add_argument("--session1", help="Session ID cookie for Player 1", required=True)
+    parser.add_argument("--player_id1", help="Player ID for Player 1", required=True)
     parser.add_argument("--session2", help="Session ID cookie for Player 2", required=True)
+    parser.add_argument("--player_id2", help="Player ID for Player 2", required=True)
     args = parser.parse_args()
 
     # Build the commands to run client.py
-    cmd1 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session1]
-    cmd2 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session2]
+    cmd1 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session1, "--player_id", args.player_id1]
+    cmd2 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session2, "--player_id", args.player_id2]
 
     print("Launching Player 1 client...")
     launch_terminal(cmd1)

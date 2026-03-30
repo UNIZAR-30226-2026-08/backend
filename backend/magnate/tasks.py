@@ -1,6 +1,7 @@
 from celery import shared_task
 from .models import *
 from .serializers import GeneralResponseSerializer
+from .exceptions import *
 
 from .games import GameManager
 from .game_utils import (
@@ -12,11 +13,14 @@ import random
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 
-def broadcast_to_game_(game: Game, response: Response) -> None:
+def broadcast_to_game(game: Game, response: Response) -> None:
     channel_layer = get_channel_layer()
     group_name = f"game_{game.pk}"
 
     response = _add_basic_response_data(game, response)
+
+    if channel_layer is None:
+        return None # TODO: this should not happen, but if it does, we don't want to send an empty response to the clients
     
     async_to_sync(channel_layer.group_send)(
         group_name,

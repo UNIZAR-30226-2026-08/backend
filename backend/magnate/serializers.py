@@ -206,6 +206,12 @@ class ActionBidSerializer(ActionSerializer):
         model = ActionBid
         fields = ActionSerializer.Meta.fields + ['amount', 'auction']
 
+class ActionDropPurchaseSerializer(ActionSerializer):
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionDropPurchase
+        fields = ActionSerializer.Meta.fields + ['square']
+
 class AuctionSerializer(serializers.ModelSerializer):
     square = SquareCustomIdField()
     bids = serializers.SerializerMethodField()
@@ -235,6 +241,7 @@ class GeneralActionSerializer(serializers.ModelSerializer):
         'ActionMortgageUnset': ActionMortgageUnsetSerializer,
         'ActionPayBail': ActionPayBailSerializer,
         'ActionBid': ActionBidSerializer,
+        'ActionDropPurchase': ActionDropPurchaseSerializer, 
     }
     def to_representation(self, instance):
         action_type = instance.__class__.__name__

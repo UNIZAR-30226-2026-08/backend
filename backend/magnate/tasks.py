@@ -129,5 +129,5 @@ def next_phase_callback(game_pk: int, user_pk: int) -> None:
 
     if not response:
         reponse = ResponseSkipPhase()
-    broadcast_to_game_(game, response)
+    broadcast_to_game(game, response)
 

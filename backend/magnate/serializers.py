@@ -218,7 +218,7 @@ class AuctionSerializer(serializers.ModelSerializer):
         return {str(bid.player.pk): bid.amount for bid in obj.bids.all()}
 
 class GeneralActionSerializer(serializers.ModelSerializer):
-    mapping = {
+    serializer_mapping = {
         'ActionThrowDices': ActionThrowDicesSerializer,
         'ActionMoveTo': ActionMoveToSerializer,
         'ActionTakeTram': ActionTakeTramSerializer,
@@ -238,7 +238,7 @@ class GeneralActionSerializer(serializers.ModelSerializer):
     }
     def to_representation(self, instance):
         action_type = instance.__class__.__name__
-        serializer_class = self.mapping.get(action_type, ActionSerializer)
+        serializer_class = self.serializer_mapping.get(action_type, ActionSerializer)
         return serializer_class(instance, context=self.context).data
 
     def to_internal_value(self, data):
@@ -249,11 +249,11 @@ class GeneralActionSerializer(serializers.ModelSerializer):
                 'type': 'This field is required to identify the action.'
             })
 
-        serializer_class = self.mapping.get(action_type)
+        serializer_class = self.serializer_mapping.get(action_type)
 
         if not serializer_class:
             raise serializers.ValidationError({
-                'type': f"Invalid action type '{action_type}'. Valid options are: {list(self.mapping.keys())}"
+                'type': f"Invalid action type '{action_type}'. Valid options are: {list(self.serializer_mapping.keys())}"
             })
 
         serializer = serializer_class(context=self.context)
@@ -261,8 +261,13 @@ class GeneralActionSerializer(serializers.ModelSerializer):
         return serializer.to_internal_value(data)
 
     def create(self, validated_data):
-        action_type = self.initial_data.get('type')
-        serializer_class = self.mapping.get(action_type)
+        action_type = self.initial_data.get('type') #type: ignore
+        serializer_class = self.serializer_mapping.get(action_type)
+
+        if not serializer_class:
+            raise serializers.ValidationError({
+                'type': f"Tipo de acción inválido o no proporcionado: {action_type}"
+            })
         
         serializer = serializer_class(context=self.context)
         return serializer.create(validated_data)

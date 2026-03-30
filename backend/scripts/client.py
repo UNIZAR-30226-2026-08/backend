@@ -196,7 +196,6 @@ class GameClient:
             asked_props_list = [int(x.strip()) for x in asked_props.split(",") if x.strip()]
             
             return {
-                **base_action, 
                 "type": "ActionTradeProposal", 
                 "destination_user": int(dest_user),
                 "offered_money": int(offered_money),
@@ -207,11 +206,11 @@ class GameClient:
         elif cmd == "trade_answer":
             proposal_id = await get_input("Enter Proposal ID: ")
             accept = await get_input("Accept? (y/n): ")
-            return {**base_action, "type": "ActionTradeAnswer", "proposal": int(proposal_id), "choose": accept.lower() == 'y'}
+            return {"type": "ActionTradeAnswer", "proposal": int(proposal_id), "choose": accept.lower() == 'y'}
         elif cmd == "bail":
-            return {**base_action, "type": "ActionPayBail"}
+            return {"type": "ActionPayBail"}
         elif cmd == "surrender": # TODO: surrender has to be done in games.py but i have it here still
-            return {**base_action, "type": "ActionSurrender"}
+            return {"type": "ActionSurrender"}
         else:
             print(f"Unknown command: {cmd}")
             return None

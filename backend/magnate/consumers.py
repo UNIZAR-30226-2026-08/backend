@@ -8,6 +8,7 @@ from .games import *
 import os
 import asyncio
 from magnate.serializers import GeneralResponseSerializer
+from typing import cast
 
 try:
     with open('config.json') as f:
@@ -513,7 +514,13 @@ class GameConsumer(AsyncWebsocketConsumer):
         if self.url is None:
             await self.close(code=4002)
             return
-        self.game_id = int(self.url.get('kwargs').get('room_id'))
+        
+        kwargs = self.url.get('kwargs')
+        if not kwargs or 'room_id' not in kwargs:
+            await self.close(code=4002)
+            return
+
+        self.game_id = int(kwargs['room_id'])
 
         self.game_group_name = f"game_{self.game_id}"
 
@@ -576,9 +583,11 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         action, errors = await validate_and_save_action(data)
 
-        if errors:
+        if errors or action is None:
             await self.send_error(f"Invalid data: {errors}")
             return
+        
+        action = cast(Action, action)
 
         try:
             response = await GameManager.process_action(game, self.user, action)

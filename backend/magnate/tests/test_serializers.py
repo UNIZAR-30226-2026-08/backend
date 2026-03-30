@@ -5,15 +5,14 @@ from magnate.serializers import GeneralSquareSerializer, GeneralActionSerializer
 from magnate.models import *
 from django.utils import timezone
 from magnate.fantasy import FantasyEventFactory
+from typing import cast
 
 def action_from_json(data) -> Action:
     serializer = GeneralActionSerializer(data=data)
 
-    if not serializer.is_valid():
-        return None
+    serializer.is_valid(raise_exception=True)
 
-    action_instance = serializer.save()
-    return action_instance
+    return cast(Action, serializer.save())
 
 class SerializerTest(TestCase):
     @classmethod

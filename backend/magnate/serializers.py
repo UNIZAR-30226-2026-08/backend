@@ -201,6 +201,11 @@ class ActionPayBailSerializer(ActionSerializer):
         model = ActionPayBail
         fields = ActionSerializer.Meta.fields
 
+class ActionNextPhaseSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionNextPhase
+        fields = ActionSerializer.Meta.fields
+
 class ActionBidSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
         model = ActionBid
@@ -242,6 +247,7 @@ class GeneralActionSerializer(serializers.ModelSerializer):
         'ActionPayBail': ActionPayBailSerializer,
         'ActionBid': ActionBidSerializer,
         'ActionDropPurchase': ActionDropPurchaseSerializer, 
+        'ActionNextPhase': ActionNextPhaseSerializer,
     }
     def to_representation(self, instance):
         action_type = instance.__class__.__name__

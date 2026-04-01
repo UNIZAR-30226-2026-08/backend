@@ -137,9 +137,14 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             # initialize money and positions (see then what the optimal money)
             game.money = {str(u.pk): 1500 for u in users}
             game.positions = {str(u.pk): "000" for u in users}
-            game.save()
+            
 
             game.players.set(users)
+            game.ordered_players = [u.pk for u in users]
+            game.ordered_players = random.sample(game.ordered_players, len(game.ordered_players)) #random order of players
+
+            game.save()
+
             
             for user in users:
                 user.active_game = game
@@ -572,11 +577,6 @@ class GameConsumer(AsyncWebsocketConsumer):
             await self.send_error("Game not found")
             return
         
-        is_turn = await self.check_turn(game, self.user)
-        if not is_turn:
-            await self.send_error("action out of turn")
-            return
-
         data = json.loads(text_data)
         data['game'] = self.game_id
         data['player'] = self.user.pk
@@ -678,8 +678,5 @@ class GameConsumer(AsyncWebsocketConsumer):
         except Game.DoesNotExist:
             return None
         
-    @database_sync_to_async
-    def check_turn(self, game, user):
-        return game.active_turn_player == user
 
 

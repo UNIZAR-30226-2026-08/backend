@@ -48,7 +48,7 @@ def kick_out_callback(game_pk: int, user_pk: int) -> None:
     """
 
     # TODO: Remove this, but the agents test does not work if removed
-    #return
+    return
 
     game = Game.objects.get(pk=game_pk)
     user = CustomUser.objects.get(pk=user_pk)

@@ -621,6 +621,7 @@ def _apply_square_arrival(
             raise GameLogicError("no user owns this square")
         game.money[str(user.pk)] -= pay_price
         game.money[str(rel.owner.pk)] += pay_price
+        game.phase = Game.GamePhase.business
         stats = PlayerGameStatistic.objects.get(user=user, game=game)
         stats.lost_money += pay_price
         stats.num_paid_rents += 1
@@ -636,6 +637,7 @@ def _apply_square_arrival(
         stats.won_money += game.parking_money
         stats.save()
         game.parking_money = 0
+        game.phase = Game.GamePhase.business
 
     # 4. Fantasy
     elif isinstance(real_square, FantasySquare):
@@ -651,6 +653,8 @@ def _apply_square_arrival(
         if game.money[str(user.pk)] < 0:
             game.phase = Game.GamePhase.liquidation
         # Phase transition (next turn) is handled by the caller
+    else:
+        game.phase = Game.GamePhase.management
 
     return response
 
@@ -695,6 +699,7 @@ def _add_basic_response_data(game: Game, response: Response) -> Response:
     response.active_phase_player = game.active_phase_player
     response.active_turn_player = game.active_turn_player
     response.phase = game.phase
+    response.positions = game.positions
 
     return response
 

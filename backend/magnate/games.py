@@ -297,7 +297,7 @@ class GameManager:
                 game.positions[str(user.pk)] = dest_square_id
                 square = _get_square_by_custom_id(dest_square_id)
                 _apply_square_arrival(game, user, response, square, move_result["passed_go"])
-                game.phase = GameManager.MANAGEMENT
+                
 
         game.save()
         return response
@@ -351,16 +351,6 @@ class GameManager:
         # Use the passed_go flag correctly computed by _move_player_logic.
         _apply_square_arrival(game, user, response, action.square, move_result["passed_go"])
 
-        real_sq = action.square.get_real_instance()
-        if isinstance(real_sq, JailSquare):
-            if game.phase != GameManager.LIQUIDATION:
-                GameManager._next_turn(game, user)
-        elif game.money[str(user.pk)] < 0:
-            game.phase = GameManager.LIQUIDATION
-        elif game.streak > 0:
-            game.phase = GameManager.ROLL_THE_DICES
-        else:
-            game.phase = GameManager.MANAGEMENT
 
         game.save()
         return response
@@ -374,13 +364,15 @@ class GameManager:
 
         if not generate:
             apply_fantasy_event(game, user, fantasy_event)
-            game.fantasy_event = None
             response.fantasy_event = fantasy_event
+            game.fantasy_event = None
+            
         else:
             new_fantasy = FantasyEventFactory.generate()
             apply_fantasy_event(game, user, new_fantasy)
-            game.fantasy_event = None
             response.fantasy_event = new_fantasy
+            game.fantasy_event = None
+            
         
         if game.streak == 0:
             game.phase = GameManager.BUSINESS
@@ -648,7 +640,7 @@ class GameManager:
 
         # TODO: Remove magic number
         from .tasks import auction_callback
-        auction_callback.apply_async(args=[game.pk], countdown=5)
+        auction_callback.apply_async(args=[game.pk], countdown=50)
         # TODO: Remove in production
         game.refresh_from_db()
 
@@ -692,10 +684,8 @@ class GameManager:
         if amount > game.money[str(user.pk)]:
             raise MaliciousUserInput(user, "Bid amount exceeds current balance")
 
-        # resgister bid
-        action.auction = auction
-        action.save()
-
+      
+        game.save()
         return Response()
     
     @staticmethod
@@ -810,6 +800,8 @@ class GameManager:
     def _next_turn(cls, game: Game, user: CustomUser) -> None:
         players_list = list(game.players.all()) 
         num_players = len(players_list)
+        print(f"players list: {players_list}")
+        print(f"ordered players: {game.ordered_players}")
         current_index = -1
         current_player_id = -1
         for p in players_list:
@@ -822,6 +814,7 @@ class GameManager:
             raise GameLogicError('current player not found')
         
         next_index = (current_index + 1) % num_players
+        print(f"next index: {next_index}")
         # The next active user is for both: phase and turn
         next_player = game.players.filter(pk=game.ordered_players[next_index]).first()
         if next_player is None:
@@ -838,8 +831,8 @@ class GameManager:
             
         from .tasks import kick_out_callback
 
-        task = kick_out_callback.apply_async(args=[game.pk, next_player.pk], countdown=5)
-        game.kick_out_task_id = task.id
+        #task = kick_out_callback.apply_async(args=[game.pk, next_player.pk], countdown=50)
+        #game.kick_out_task_id = task.id
         
         game.save()
  

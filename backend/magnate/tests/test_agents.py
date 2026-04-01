@@ -68,11 +68,18 @@ class AgentsTest(TestCase):
             print(f"\n[Turn {turn:02d}] Player: {active_player.username}")
             s_action = GeneralActionSerializer(action).data
             print(f" ├─ Action:   {s_action}")
+
+            
             
             if not isinstance(action, Action):
                 raise GameLogicError("Wrong type")
             
             response = async_to_sync(GameManager.process_action)(self.game, active_player, action)
+
+            if self.game.phase == GameManager.AUCTION:
+                GameManager._end_auction(self.game)
+                self.game.refresh_from_db()
+                continue
             
             s_response = GeneralResponseSerializer(response).data
             print(f" └─ Response: {s_response}")

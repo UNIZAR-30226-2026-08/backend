@@ -32,6 +32,7 @@ def broadcast_to_game(game: Game, response: Response) -> None:
 
 @shared_task
 def auction_callback(game_pk: int) -> None:
+    #return # TODO: remobe this
     game = Game.objects.get(pk=game_pk)
     response = GameManager._end_auction(game)
     if response:
@@ -47,7 +48,7 @@ def kick_out_callback(game_pk: int, user_pk: int) -> None:
     """
 
     # TODO: Remove this, but the agents test does not work if removed
-    return
+    #return
 
     game = Game.objects.get(pk=game_pk)
     user = CustomUser.objects.get(pk=user_pk)

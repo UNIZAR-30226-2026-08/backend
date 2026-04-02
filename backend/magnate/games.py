@@ -372,7 +372,7 @@ class GameManager:
     def _choose_fantasy_logic(game: Game, user: CustomUser, action: ActionChooseCard) -> Response:
         response = ResponseChooseFantasy()
         fantasy_event = game.fantasy_event
-        generate = not action.chosen_card
+        generate = not action.chosen_revealed_card
         new_fantasy = None
 
         if not generate:

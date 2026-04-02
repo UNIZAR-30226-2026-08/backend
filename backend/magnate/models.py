@@ -365,10 +365,10 @@ class ActionChooseCard(Action):
       "type": "ActionChooseCard",
       "game": 1,
       "player": 2,
-      "chosen_card": true
+      "chosen_revealed_card": true
     }
     """
-    chosen_card = models.BooleanField(default=False)
+    chosen_revealed_card = models.BooleanField(default=False)
 
 class ActionSurrender(Action):
     """

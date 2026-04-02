@@ -465,21 +465,22 @@ class GameManager:
                 square = action.square
                 #check if user can afford it and if that square is a possible destination
                 tram_squares = TramSquare.objects.filter()
-                tram_squares_ids = [s.custom_id for s in tram_squares]
+                tram_squares_extern_ids = [s.custom_id for s in tram_squares]
+                tram_square_actual_id = [game.positions[str(user.pk)]]
 
-                if square.custom_id in tram_squares_ids: # confirms its valid
+                if square.custom_id in tram_squares_extern_ids: # case move, expending money
                     game.money[str(user.pk)] -= square.buy_price
                     stats = PlayerGameStatistic.objects.get(user=user,game=game)
                     stats.lost_money += square.buy_price
                     stats.save()
+                    game.positions[str(user.pk)] = square.custom_id
+                elif square.custom_id in tram_square_actual_id: # case stay in the same square, free
                     game.positions[str(user.pk)] = square.custom_id
                 else:
                     raise MaliciousUserInput(user, "tried to take a tram to a non tram square")
 
             else:
                 raise MaliciousUserInputAction(game, user, action)
-        elif isinstance(action, ActionDoNotTakeTram):
-            pass
         elif isinstance(action, ActionNextPhase):
             pass
         else:

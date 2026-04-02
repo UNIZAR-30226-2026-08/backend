@@ -33,4 +33,5 @@ class Command(BaseCommand):
         self.stdout.write(f'User1 (ID: {user1.pk}) Session: {s1}')
         self.stdout.write(f'User2 (ID: {user2.pk}) Session: {s2}')
         self.stdout.write('\nRUN THIS:')
-        self.stdout.write(f'python scripts/run_test.py --session1 {s1} --session2 {s2}')
+        self.stdout.write(f'python scripts/run_test.py --session1 {s1} --player_id1 {user1.pk} --session2 {s2} --player_id2 {user2.pk}')
+

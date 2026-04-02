@@ -6,7 +6,9 @@ class SquareCustomIdField(serializers.SlugRelatedField):
     def __init__(self, **kwargs):
         super().__init__(slug_field='custom_id', queryset=BaseSquare.objects.all(), **kwargs)
 
-####################### Square serializers
+###############################################################################
+#############      Square serializers     #####################################
+###############################################################################
 class BaseSquareSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
     class Meta:
@@ -61,39 +63,39 @@ class JailSquareSerializer(BaseSquareSerializer):
         fields = BaseSquareSerializer.Meta.fields + ['bail_price']
 
 class GeneralSquareSerializer(serializers.ModelSerializer):
+    mapping = {
+        'PropertySquare': PropertySquareSerializer,
+        'FantasySquare': FantasySquareSerializer,
+        'BridgeSquare': BridgeSquareSerializer,
+        'TramSquare': TramSquareSerializer,
+        'ParkingSquare': ParkingSquareSerializer,
+        'ServerSquare': ServerSquareSerializer,
+        'ExitSquare': ExitSquareSerializer,
+        'GoToJailSquare': GoToJailSquareSerializer,
+        'JailSquare': JailSquareSerializer,
+        'BaseSquare': BaseSquareSerializer, # Fallback
+    }
+    
+    type = serializers.SerializerMethodField()
+
     def to_representation(self, instance):
-        if isinstance(instance, PropertySquare):
-            return PropertySquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, FantasySquare):
-            return FantasySquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, BridgeSquare):
-            return BridgeSquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, TramSquare):
-            return TramSquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, ParkingSquare):
-            return ParkingSquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, ServerSquare):
-            return ServerSquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, ExitSquare):
-            return ExitSquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, GoToJailSquare):
-            return GoToJailSquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, JailSquare):
-            return JailSquareSerializer(instance, context=self.context).data
-        
-        #TODO: excepcion
-        return BaseSquareSerializer(instance, context=self.context).data
+        square_type = instance.__class__.__name__
+        serializer_class = self.mapping.get(square_type, BaseSquareSerializer)
+        data = serializer_class(instance, context=self.context).data
+        return {"type": square_type, **dict(data)}
 
     class Meta:
         model = BaseSquare
         fields = '__all__'
 
-############################################### Action Serializers
+###############################################################################
+#############      Action serializers     #####################################
+###############################################################################
 class ActionSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
     class Meta:
         model = Action
-        fields = ['type','game','player']#game?????? creo que sobra TODO
+        fields = ['type', 'game', 'player']
     def get_type(self, obj):
         return obj.__class__.__name__
 
@@ -171,7 +173,6 @@ class ActionTradeProposalSerializer(ActionSerializer):
         if asked_ids:
             instance.asked_properties.set(asked_ids)
         return instance
-    
 
 class ActionTradeAnswerSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
@@ -195,10 +196,21 @@ class ActionPayBailSerializer(ActionSerializer):
         model = ActionPayBail
         fields = ActionSerializer.Meta.fields
 
+class ActionNextPhaseSerializer(ActionSerializer):
+    class Meta(ActionSerializer.Meta):
+        model = ActionNextPhase
+        fields = ActionSerializer.Meta.fields
+
 class ActionBidSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
         model = ActionBid
         fields = ActionSerializer.Meta.fields + ['amount', 'auction']
+
+class ActionDropPurchaseSerializer(ActionSerializer):
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionDropPurchase
+        fields = ActionSerializer.Meta.fields + ['square']
 
 class AuctionSerializer(serializers.ModelSerializer):
     square = SquareCustomIdField()
@@ -211,51 +223,8 @@ class AuctionSerializer(serializers.ModelSerializer):
         # Return dict of user_id -> amount to maintain frontend compatibility
         return {str(bid.player.pk): bid.amount for bid in obj.bids.all()}
 
-        
-
 class GeneralActionSerializer(serializers.ModelSerializer):
-    def to_representation(self, instance):
-        if isinstance(instance, ActionThrowDices):
-            return ActionThrowDicesSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionMoveTo):
-            return ActionMoveToSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionTakeTram):
-            return ActionTakeTramSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionBuySquare):
-            return ActionBuySquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionSellSquare):
-            return ActionSellSquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionBuild):
-            return ActionBuildSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionDemolish):
-            return ActionDemolishSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionChooseCard):
-            return ActionChooseCardSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionSurrender):
-            return ActionSurrenderSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionTradeProposal):
-            return ActionTradeProposalSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionTradeAnswer):
-            return ActionTradeAnswerSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionMortgageSet):
-            return ActionMortgageSetSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionMortgageUnset):
-            return ActionMortgageUnsetSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionPayBail):
-            return ActionPayBailSerializer(instance, context=self.context).data
-        elif isinstance(instance, ActionBid):
-            return ActionBidSerializer(instance, context=self.context).data
-        
-        #TODO: excepcion
-        return ActionSerializer(instance, context=self.context).data
-
-    class Meta:
-        model = Action
-        fields = '__all__'
-
-
-def action_from_json(data, context=None):
-    mapping = {
+    serializer_mapping = {
         'ActionThrowDices': ActionThrowDicesSerializer,
         'ActionMoveTo': ActionMoveToSerializer,
         'ActionTakeTram': ActionTakeTramSerializer,
@@ -271,24 +240,52 @@ def action_from_json(data, context=None):
         'ActionMortgageUnset': ActionMortgageUnsetSerializer,
         'ActionPayBail': ActionPayBailSerializer,
         'ActionBid': ActionBidSerializer,
+        'ActionDropPurchase': ActionDropPurchaseSerializer, 
+        'ActionNextPhase': ActionNextPhaseSerializer,
     }
-    type_name = data.get('type')
-    if not type_name:
-        raise serializers.ValidationError('Missing type field in action json')
-    serializer_cls = mapping.get(type_name)
-    if serializer_cls is None:
-        raise serializers.ValidationError(f'Unknown action type: {type_name}')
-    serializer = serializer_cls(data=data, context=context)
-    serializer.is_valid(raise_exception=True)
-    
-    #model_class = serializer.Meta.model
-    #instance = model_class(**serializer.validated_data)
-    #return instance
+    def to_representation(self, instance):
+        action_type = instance.__class__.__name__
+        serializer_class = self.serializer_mapping.get(action_type, ActionSerializer)
+        return serializer_class(instance, context=self.context).data
 
-    return serializer.save()
+    def to_internal_value(self, data):
+        action_type = data.get('type')
 
+        if not action_type:
+            raise serializers.ValidationError({
+                'type': 'This field is required to identify the action.'
+            })
 
-#########################################################################Fantasy stuff
+        serializer_class = self.serializer_mapping.get(action_type)
+
+        if not serializer_class:
+            raise serializers.ValidationError({
+                'type': f"Invalid action type '{action_type}'. Valid options are: {list(self.serializer_mapping.keys())}"
+            })
+
+        serializer = serializer_class(context=self.context)
+        
+        return serializer.to_internal_value(data)
+
+    def create(self, validated_data):
+        action_type = self.initial_data.get('type') #type: ignore
+        serializer_class = self.serializer_mapping.get(action_type)
+
+        if not serializer_class:
+            raise serializers.ValidationError({
+                'type': f"Tipo de acción inválido o no proporcionado: {action_type}"
+            })
+        
+        serializer = serializer_class(context=self.context)
+        return serializer.create(validated_data)
+
+    class Meta:
+        model = Action
+        fields = '__all__'
+
+###############################################################################
+#############      Fantasy serializers     ####################################
+###############################################################################
 class FantasyEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = FantasyEvent
@@ -299,59 +296,49 @@ class FantasyResultSerializer(serializers.ModelSerializer):
         model = FantasyResult
         fields = ['fantasy_type','values']
 
-######################################################################### Response serializers
+###############################################################################
+############      Response serializers     ####################################
+###############################################################################
 class ResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Response
-        fields = []
+        exclude = ['id']
 
 class ResponseAuctionSerializer(ResponseSerializer):
     auction = AuctionSerializer()
     class Meta(ResponseSerializer.Meta):
         model = ResponseAuction
-        fields = ResponseSerializer.Meta.fields + ['auction']
 
 class ResponseMovementSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(ResponseSerializer.Meta):
         model = ResponseMovement
-        fields = '__all__'
 
 class ResponseThrowDicesSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(ResponseSerializer.Meta):
         model = ResponseThrowDices
-        fields = '__all__'
 
 class ResponseChooseSquareSerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(ResponseSerializer.Meta):
         model = ResponseChooseSquare
-        fields = '__all__'
 
 class ResponseChooseFantasySerializer(serializers.ModelSerializer):
-    class Meta:
+    class Meta(ResponseSerializer.Meta):
         model = ResponseChooseFantasy
-        fields = '__all__'
 
 class GeneralResponseSerializer(serializers.ModelSerializer):
+    mapping = {
+        'ResponseAuction': ResponseAuctionSerializer,
+        'ResponseThrowDices': ResponseThrowDicesSerializer,
+        'ResponseChooseSquare': ResponseChooseSquareSerializer,
+        'ResponseChooseFantasy': ResponseChooseFantasySerializer,
+        'Response': ResponseSerializer,
+    }
     type = serializers.SerializerMethodField()
     def to_representation(self, instance):
-        if isinstance(instance, ResponseAuction):
-            data = ResponseAuctionSerializer(instance, context=self.context).data
-        elif isinstance(instance, ResponseThrowDices):
-            data = ResponseThrowDicesSerializer(instance, context=self.context).data
-        elif isinstance(instance, ResponseChooseSquare):
-            data = ResponseChooseSquareSerializer(instance, context=self.context).data
-        elif isinstance(instance, ResponseMovement):
-            data = ResponseMovementSerializer(instance, context=self.context).data
-        elif isinstance(instance, ResponseChooseFantasy):
-            data = ResponseChooseFantasySerializer(instance, context=self.context).data
-        else:
-            data = ResponseSerializer(instance, context=self.context).data
-
-        return {
-            "type": instance.__class__.__name__,
-            **dict(data)
-        }
+        action_type = instance.__class__.__name__
+        serializer_class = self.mapping.get(action_type, ResponseSerializer)
+        data = serializer_class(instance, context=self.context).data
+        return {"type": action_type, **dict(data)}
 
     class Meta:
         model = Response
-        fields = '__all__'

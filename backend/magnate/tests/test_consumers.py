@@ -12,7 +12,6 @@ from magnate.consumers import *
 from magnate.games import GameManager
 import os
 
-# 1. Recreamos tu enrutador (routing) para que los tests sepan a qué Consumer llamar
 application = URLRouter([
     re_path(r'ws/queue/public/$', PublicQueueConsumer.as_asgi()), # type: ignore
     re_path(r'ws/queue/private/(?P<room_code>\w+)/$', PrivateRoomConsumer.as_asgi()), # type: ignore
@@ -21,6 +20,10 @@ application = URLRouter([
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
 class ConsumersTest(TransactionTestCase):
+
+    @classmethod
+    def setUpTestData(cls):
+        call_command('init_boards')
     
     def setUp(self):
         os.environ['DJANGO_TESTING'] = '1'

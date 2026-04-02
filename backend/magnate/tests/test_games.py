@@ -280,7 +280,8 @@ class GamesTest(TestCase):
         self.assertEqual(bids.count(), 3)
         self.assertEqual(auction.bids.get(player=self.player2).amount, 300)
 
-        result = async_to_sync(GameManager._end_auction)(self.game)
+        result = GameManager._end_auction(self.game)
+
 
         if not isinstance(result, ResponseAuction):
             raise GameLogicError("Wrong type")
@@ -304,7 +305,8 @@ class GamesTest(TestCase):
         self.game.refresh_from_db()
         self.assertEqual(self.game.phase, GameManager.AUCTION)
 
-        result = async_to_sync(GameManager._end_auction)(self.game)
+        result = GameManager._end_auction(self.game)
+
 
         if not isinstance(result, ResponseAuction):
             raise GameLogicError("Wrong type")
@@ -333,7 +335,8 @@ class GamesTest(TestCase):
         async_to_sync(GameManager.process_action)(self.game, self.player1, bid_p1)
         async_to_sync(GameManager.process_action)(self.game, self.player2, bid_p2)
 
-        result = async_to_sync(GameManager._end_auction)(self.game)
+        result = GameManager._end_auction(self.game)
+
 
         if not isinstance(result, ResponseAuction):
             raise GameLogicError("Wrong type")
@@ -736,7 +739,7 @@ class GamesTest(TestCase):
 
         # After auction, it goes back to ROLL_THE_DICES directly if streak > 0
         self.assertEqual(self.game.phase, GameManager.AUCTION)
-        async_to_sync(GameManager._end_auction)(self.game)
+        GameManager._end_auction(self.game)
 
         self.game.refresh_from_db()
         self.assertEqual(self.game.streak, 2)

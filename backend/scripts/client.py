@@ -44,8 +44,9 @@ class GameClient:
             print(f"Failed to connect to queue: {e}")
             return None
 
-    async def play_game(self, game_id: int):
+    async def play_game(self, game_id: int, player_id: int):
         self.game_id = game_id
+        self.player_id = player_id
         url = f"{self.base_url}/ws/game/{game_id}/"
         print(f"Connecting to game: {url}")
         
@@ -74,6 +75,7 @@ class GameClient:
         async for message in self.websocket:
             data = json.loads(message)
             action = data.get("action")
+            print(action)
             
             if action == "game_state":
                 self.game_state = data["game_state"]
@@ -102,6 +104,10 @@ class GameClient:
             
             elif action == "game_action":
                 print("\n--- Game Action Received ---")
+                print(json.dumps(data["data"], indent=2))
+
+            elif action == "game_response":
+                print("\n--- Game Response Received ---")
                 print(json.dumps(data["data"], indent=2))
 
             elif action == "error":
@@ -137,53 +143,48 @@ class GameClient:
         if not self.player_id:
             self.player_id = await get_input("Enter your Player ID (integer): ")
         
-        base_action = {
-            "game": int(self.game_id), # type: ignore
-            "player": int(self.player_id)
-        }
-
         if cmd == "throw":
-            return {**base_action, "type": "ActionThrowDices"}
+            return {"type": "ActionThrowDices"}
         elif cmd == "move": 
             sq_id = await get_input("Enter Square Custom ID to move to: ")
-            return {**base_action, "type": "ActionMoveTo", "square": int(sq_id)}
+            return {"type": "ActionMoveTo", "square": int(sq_id)}
         elif cmd == "buy":
             sq_id = await get_input("Enter Square Custom ID to buy: ")
-            return {**base_action, "type": "ActionBuySquare", "square": int(sq_id)}
+            return {"type": "ActionBuySquare", "square": int(sq_id)}
         elif cmd == "sell": 
             sq_id = await get_input("Enter Square Custom ID to sell: ")
-            return {**base_action, "type": "ActionSellSquare", "square": int(sq_id)}
+            return {"type": "ActionSellSquare", "square": int(sq_id)}
         elif cmd == "next":
-            return {**base_action, "type": "ActionNextPhase"}
+            return {"type": "ActionNextPhase"}
         elif cmd == "build":
             sq_id = await get_input("Enter Square Custom ID to build on: ")
             houses = await get_input("Enter number of houses: ")
-            return {**base_action, "type": "ActionBuild", "square": int(sq_id), "houses": int(houses)}
+            return {"type": "ActionBuild", "square": int(sq_id), "houses": int(houses)}
         elif cmd == "demolish":
             sq_id = await get_input("Enter Square Custom ID to demolish: ")
             houses = await get_input("Enter number of houses: ")
-            return {**base_action, "type": "ActionDemolish", "square": int(sq_id), "houses": int(houses)}
+            return {"type": "ActionDemolish", "square": int(sq_id), "houses": int(houses)}
         elif cmd == "mortgage":
             sq_id = await get_input("Enter Square Custom ID to mortgage: ")
-            return {**base_action, "type": "ActionMortgageSet", "square": int(sq_id)}
+            return {"type": "ActionMortgageSet", "square": int(sq_id)}
         elif cmd == "unmortgage":
             sq_id = await get_input("Enter Square Custom ID to unmortgage: ")
-            return {**base_action, "type": "ActionMortgageUnset", "square": int(sq_id)}
+            return {"type": "ActionMortgageUnset", "square": int(sq_id)}
         elif cmd == "drop":
             sq_id = await get_input("Enter Square Custom ID to drop purchase: ")
-            return {**base_action, "type": "ActionDropPurchase", "square": int(sq_id)}
+            return {"type": "ActionDropPurchase", "square": int(sq_id)}
         elif cmd == "take_tram":
             sq_id = await get_input("Enter Square Custom ID of destination tram: ")
-            return {**base_action, "type": "ActionTakeTram", "square": int(sq_id)}
+            return {"type": "ActionTakeTram", "square": int(sq_id)}
         elif cmd == "skip_tram":
-            return {**base_action, "type": "ActionDoNotTakeTram"}
+            return {"type": "ActionDoNotTakeTram"}
         elif cmd == "choose_card":
             choice = await get_input("Use card? (y/n): ")
-            return {**base_action, "type": "ActionChooseCard", "chosen_card": choice.lower() == 'y'}
+            return {"type": "ActionChooseCard", "chosen_card": choice.lower() == 'y'}
         elif cmd == "bid":
             auction_id = await get_input("Enter Auction ID: ")
             amount = await get_input("Enter bid amount: ")
-            return {**base_action, "type": "ActionBid", "auction": int(auction_id), "amount": int(amount)}
+            return {"type": "ActionBid", "auction": int(auction_id), "amount": int(amount)}
         elif cmd == "trade":
             dest_user = await get_input("Enter destination User ID: ")
             offered_money = await get_input("Offered money: ")
@@ -195,7 +196,6 @@ class GameClient:
             asked_props_list = [int(x.strip()) for x in asked_props.split(",") if x.strip()]
             
             return {
-                **base_action, 
                 "type": "ActionTradeProposal", 
                 "destination_user": int(dest_user),
                 "offered_money": int(offered_money),
@@ -206,11 +206,11 @@ class GameClient:
         elif cmd == "trade_answer":
             proposal_id = await get_input("Enter Proposal ID: ")
             accept = await get_input("Accept? (y/n): ")
-            return {**base_action, "type": "ActionTradeAnswer", "proposal": int(proposal_id), "choose": accept.lower() == 'y'}
+            return {"type": "ActionTradeAnswer", "proposal": int(proposal_id), "choose": accept.lower() == 'y'}
         elif cmd == "bail":
-            return {**base_action, "type": "ActionPayBail"}
+            return {"type": "ActionPayBail"}
         elif cmd == "surrender": # TODO: surrender has to be done in games.py but i have it here still
-            return {**base_action, "type": "ActionSurrender"}
+            return {"type": "ActionSurrender"}
         else:
             print(f"Unknown command: {cmd}")
             return None
@@ -220,7 +220,8 @@ async def main():
     parser.add_argument("--url", default=DEFAULT_WS_URL, help="Base WebSocket URL (e.g. ws://localhost:8000)")
     parser.add_argument("--session", help="Django sessionid cookie value for authentication")
     parser.add_argument("--game", help="Game ID to connect directly (skips queue)")
-    
+    parser.add_argument("--player_id", help="Player ID to connect")
+
     args = parser.parse_args()
 
     client = GameClient(args.url, args.session)
@@ -230,7 +231,7 @@ async def main():
         game_id = await client.connect_to_queue()
     
     if game_id:
-        await client.play_game(game_id)
+        await client.play_game(game_id, args.player_id)
     else:
         print("Could not join a game.")
 

@@ -8,6 +8,8 @@ from ..games import *
 from ..agent import *
 from ..serializers import *
 
+import time
+
 class AgentsTest(TestCase):
     @classmethod
     def setUpTestData(cls) -> None:
@@ -51,25 +53,33 @@ class AgentsTest(TestCase):
         print('STARTING GAME SIMULATION')
         print('=' * 60)
         
-        for turn in range(1, 26):
+        turn = 0
+        while turn < 26:
             active_player = self.game.active_phase_player
-
-            if self.game.phase == GameManager.AUCTION:
-                async_to_sync(GameManager._end_auction)(self.game)
 
             if active_player == self.agent1:
                 action = agent1.choose_action(self.game)
             elif active_player == self.agent2:
                 action = agent2.choose_action(self.game)
 
+            if action is None:
+                continue
+
             print(f"\n[Turn {turn:02d}] Player: {active_player.username}")
             s_action = GeneralActionSerializer(action).data
             print(f" ├─ Action:   {s_action}")
+
+            
             
             if not isinstance(action, Action):
                 raise GameLogicError("Wrong type")
             
             response = async_to_sync(GameManager.process_action)(self.game, active_player, action)
+
+            if self.game.phase == GameManager.AUCTION:
+                GameManager._end_auction(self.game)
+                self.game.refresh_from_db()
+                continue
             
             s_response = GeneralResponseSerializer(response).data
             print(f" └─ Response: {s_response}")
@@ -77,6 +87,8 @@ class AgentsTest(TestCase):
             # 5. Refresh game state from the database for the next iteration
             # This is crucial so active_phase_player actually changes in the loop
             self.game.refresh_from_db()
+
+            turn += 1
 
         print('\n' + '=' * 60)
         print('SIMULATION COMPLETE')

@@ -174,6 +174,7 @@ class Game(models.Model):
         business = 'business'
         auction = 'auction'
         proposal_acceptance = 'proposal_acceptance'
+        end_game = 'end_game'
 
 
     phase = models.CharField(choices=GamePhase, max_length=20, default='roll_the_dices')
@@ -194,6 +195,9 @@ class Game(models.Model):
     
     finished = models.BooleanField(default=False)
     bonus_response = models.ForeignKey('ResponseBonus', on_delete=models.SET_NULL, null=True, blank=True, related_name='bonus_response')
+
+    kick_out_task_id = models.CharField(max_length=255, null=True, blank=True)
+    next_phase_task_id = models.CharField(max_length=255, null=True, blank=True)
 
 class Auction(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='auctions')
@@ -497,6 +501,23 @@ class Response(models.Model):
     active_phase_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_phase_to_play')
     active_turn_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_turns_to_play')
     phase = models.CharField(choices=Game.GamePhase, max_length=20)
+    positions = models.JSONField(default=dict, blank=True)
+    
+
+class ResponseSkipPhase(Response):
+    """
+    Base response for an event that skips a phase
+    
+    Frontend Response Payload Example:
+    {
+      "type": "Response",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "management"
+    }
+    """
+    pass
 
 class ResponseMovement(Response):
     """

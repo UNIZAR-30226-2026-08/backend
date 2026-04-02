@@ -19,7 +19,8 @@ from .game_utils import (
     _calculate_passed_go, _apply_square_arrival, _compute_dice_combinations, 
     _move_player_logic, _build_square, _demolish_square, _get_jail_square,_set_mortgage,  
     _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, 
-    _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id
+    _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id,
+    _add_basic_response_data
 )
 from channels.db import database_sync_to_async
 
@@ -27,6 +28,9 @@ from .exceptions import *
 
 from typing import Optional
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
+
+from celery import shared_task
+from .celery import app
 
 class GameManager:
     """
@@ -89,7 +93,7 @@ class GameManager:
         elif game.phase == cls.CHOOSE_SQUARE:
             if not isinstance(action, ActionMoveTo):
                 raise MaliciousUserInputAction(game, user, action)
-            response=  cls._square_chosen_logic(game, user, action)
+            response = cls._square_chosen_logic(game, user, action)
         elif game.phase == cls.CHOOSE_FANTASY:
             if not isinstance(action, ActionChooseCard):
                 raise MaliciousUserInputAction(game, user, action)
@@ -116,12 +120,7 @@ class GameManager:
         else: 
             raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
 
-        response.money = game.money
-        response.active_phase_player = game.active_phase_player
-        response.active_turn_player = game.active_turn_player
-        response.phase = game.phase
-
-        return response
+        return _add_basic_response_data(game, response)
 
     @staticmethod
     def _pay_bail_logic(game: Game, user: CustomUser, action: ActionPayBail) -> Response:
@@ -298,12 +297,10 @@ class GameManager:
                 game.positions[str(user.pk)] = dest_square_id
                 square = _get_square_by_custom_id(dest_square_id)
                 _apply_square_arrival(game, user, response, square, move_result["passed_go"])
-                game.phase = GameManager.MANAGEMENT
+                
 
         game.save()
         return response
-
-
 
     @staticmethod
     def _square_chosen_logic(game: Game, user: CustomUser, action: Action) -> Response:
@@ -354,16 +351,6 @@ class GameManager:
         # Use the passed_go flag correctly computed by _move_player_logic.
         _apply_square_arrival(game, user, response, action.square, move_result["passed_go"])
 
-        real_sq = action.square.get_real_instance()
-        if isinstance(real_sq, JailSquare):
-            if game.phase != GameManager.LIQUIDATION:
-                GameManager._next_turn(game, user)
-        elif game.money[str(user.pk)] < 0:
-            game.phase = GameManager.LIQUIDATION
-        elif game.streak > 0:
-            game.phase = GameManager.ROLL_THE_DICES
-        else:
-            game.phase = GameManager.MANAGEMENT
 
         game.save()
         return response
@@ -377,13 +364,15 @@ class GameManager:
 
         if not generate:
             apply_fantasy_event(game, user, fantasy_event)
-            game.fantasy_event = None
             response.fantasy_event = fantasy_event
+            game.fantasy_event = None
+            
         else:
             new_fantasy = FantasyEventFactory.generate()
             apply_fantasy_event(game, user, new_fantasy)
-            game.fantasy_event = None
             response.fantasy_event = new_fantasy
+            game.fantasy_event = None
+            
         
         if game.streak == 0:
             game.phase = GameManager.BUSINESS
@@ -651,6 +640,12 @@ class GameManager:
         game.current_auction = auction
         game.save()
 
+        # TODO: Remove magic number
+        from .tasks import auction_callback
+        auction_callback.apply_async(args=[game.pk], countdown=50)
+        # TODO: Remove in production
+        game.refresh_from_db()
+
         return Response()
         
     @staticmethod
@@ -691,14 +686,11 @@ class GameManager:
         if amount > game.money[str(user.pk)]:
             raise MaliciousUserInput(user, "Bid amount exceeds current balance")
 
-        # resgister bid
-        action.auction = auction
-        action.save()
-
+      
+        game.save()
         return Response()
     
     @staticmethod
-    @database_sync_to_async
     def _end_auction(game: Game) -> Response:
         """
         Ends an active auction, resolves the winner based on the highest bid, 
@@ -724,6 +716,7 @@ class GameManager:
 
         square = auction.square.get_real_instance()
         bids = auction.bids.all()
+
 
         # no one bid
         if not bids.exists():
@@ -809,6 +802,8 @@ class GameManager:
     def _next_turn(cls, game: Game, user: CustomUser) -> None:
         players_list = list(game.players.all()) 
         num_players = len(players_list)
+        print(f"players list: {players_list}")
+        print(f"ordered players: {game.ordered_players}")
         current_index = -1
         current_player_id = -1
         for p in players_list:
@@ -821,6 +816,7 @@ class GameManager:
             raise GameLogicError('current player not found')
         
         next_index = (current_index + 1) % num_players
+        print(f"next index: {next_index}")
         # The next active user is for both: phase and turn
         next_player = game.players.filter(pk=game.ordered_players[next_index]).first()
         if next_player is None:
@@ -829,7 +825,17 @@ class GameManager:
         game.active_phase_player = next_player
         game.active_turn_player = next_player
         game.phase = GameManager.ROLL_THE_DICES
+        game.save()
 
+        if game.next_phase_task_id:
+            app.control.revoke(game.next_phase_task_id, terminate=True)
+            game.next_phase_task_id = None
+            
+        from .tasks import kick_out_callback
+
+        #task = kick_out_callback.apply_async(args=[game.pk, next_player.pk], countdown=50)
+        #game.kick_out_task_id = task.id
+        
         game.save()
  
     @classmethod

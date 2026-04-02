@@ -80,21 +80,29 @@ WSGI_APPLICATION = 'magnate.wsgi.application'
 ASGI_APPLICATION = 'magnate.asgi.application'
 
 
+# REDIS_PORT = 6379
+REDIS_PORT = 26379
+
 if 'test' in sys.argv:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels.layers.InMemoryChannelLayer",
         },
     }
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_STORE_EAGER_RESULT = True
+    CELERY_BROKER_URL = "memory://" 
 else:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [("127.0.0.1", 6379)],
+                "hosts": [("127.0.0.1", REDIS_PORT)],
             },
         },
     }
+    CELERY_BROKER_URL = f"redis://127.0.0.1:{REDIS_PORT}/0"
+    CELERY_RESULT_BACKEND = f"redis://127.0.0.1:{REDIS_PORT}/0"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases

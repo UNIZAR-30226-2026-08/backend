@@ -1,10 +1,18 @@
 from django.test import TestCase
 from django.core.management import call_command
 from magnate.models import BaseSquare
-from magnate.serializers import GeneralSquareSerializer, GeneralActionSerializer, action_from_json, FantasyEventSerializer
+from magnate.serializers import GeneralSquareSerializer, GeneralActionSerializer, FantasyEventSerializer
 from magnate.models import *
 from django.utils import timezone
 from magnate.fantasy import FantasyEventFactory
+from typing import cast
+
+def action_from_json(data) -> Action:
+    serializer = GeneralActionSerializer(data=data)
+
+    serializer.is_valid(raise_exception=True)
+
+    return cast(Action, serializer.save())
 
 class SerializerTest(TestCase):
     @classmethod

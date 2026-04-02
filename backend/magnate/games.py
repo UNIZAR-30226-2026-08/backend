@@ -99,7 +99,7 @@ class GameManager:
                 raise MaliciousUserInputAction(game, user, action)
             response = cls._choose_fantasy_logic(game, user, action)
         elif game.phase == cls.MANAGEMENT:
-            if not isinstance(action, (ActionBuySquare, ActionDropPurchase, ActionTakeTram, ActionDoNotTakeTram, ActionNextPhase)):
+            if not isinstance(action, (ActionBuySquare, ActionDropPurchase, ActionTakeTram, ActionNextPhase)):
                 raise MaliciousUserInputAction(game, user, action)
             response = cls._management_logic(game, user, action)
         elif game.phase == cls.BUSINESS or game.phase == cls.LIQUIDATION:
@@ -359,7 +359,7 @@ class GameManager:
     def _choose_fantasy_logic(game: Game, user: CustomUser, action: ActionChooseCard) -> Response:
         response = ResponseChooseFantasy()
         fantasy_event = game.fantasy_event
-        generate = not action.chosen_card
+        generate = not action.chosen_revealed_card
         new_fantasy = None
 
         if not generate:
@@ -450,26 +450,28 @@ class GameManager:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionTakeTram):
             if isinstance(current_square, TramSquare):
-                # TODO: Change for a take_tram function that verifies enough money
                 square = action.square
-                #check if user can afford it and if that square is a possible destination
                 tram_squares = TramSquare.objects.filter()
-                tram_squares_ids = [s.custom_id for s in tram_squares]
+                tram_squares_extern_ids = [s.custom_id for s in tram_squares]
+                tram_square_actual_id = [game.positions[str(user.pk)]]
 
-                if square.custom_id in tram_squares_ids: # confirms its valid
+                # Move to another square
+                if square.custom_id in tram_squares_extern_ids:
+                    if game.money[str(user.pk)] < square.buy_price:
+                        raise MaliciousUserInput(user, "does not have enough money to take tram")
                     game.money[str(user.pk)] -= square.buy_price
                     stats = PlayerGameStatistic.objects.get(user=user,game=game)
                     stats.lost_money += square.buy_price
                     stats.save()
                     game.positions[str(user.pk)] = square.custom_id
+                elif square.custom_id in tram_square_actual_id: # case stay in the same square, free
+                    pass
                 else:
                     raise MaliciousUserInput(user, "tried to take a tram to a non tram square")
-
             else:
                 raise MaliciousUserInputAction(game, user, action)
-        elif isinstance(action, ActionDoNotTakeTram):
-            pass
         elif isinstance(action, ActionNextPhase):
+            # TODO: Remove?
             pass
         else:
             raise MaliciousUserInputAction(game, user, action)

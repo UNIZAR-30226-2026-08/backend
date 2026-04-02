@@ -269,19 +269,6 @@ class ActionTakeTram(Action):
     """
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='tram_move_to')
 
-class ActionDoNotTakeTram(Action):
-    """
-    Action to do not take the tram when possible. It is empty.
-    
-    Frontend Request Payload Example:
-    {
-      "type": "ActionDoNotTakeTram",
-      "game": 1,
-      "player": 2,
-    }
-    """
-    pass
-
 class ActionDropPurchase(Action):
     """
     Action to decline purchasing a property.

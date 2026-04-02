@@ -116,7 +116,8 @@ class GameManager:
             response = cls._bid_property_auction_logic(game, user, action)
         elif game.phase == cls.END_GAME:
             # TODO: check instance???
-            response = cls._end_game_logic(game,user,action)
+            # response = cls._end_game_logic(game,user,action)
+            return cls._end_game_logic(game,user,action)
         else: 
             raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
 
@@ -452,11 +453,12 @@ class GameManager:
             if isinstance(current_square, TramSquare):
                 square = action.square
                 tram_squares = TramSquare.objects.filter()
+                tram_square_actual_id = game.positions[str(user.pk)]
                 tram_squares_extern_ids = [s.custom_id for s in tram_squares]
-                tram_square_actual_id = [game.positions[str(user.pk)]]
 
-                # Move to another square
-                if square.custom_id in tram_squares_extern_ids:
+                if square.custom_id == tram_square_actual_id: # case stay in the same square, free
+                    pass
+                elif square.custom_id in tram_squares_extern_ids: # Move to another square
                     if game.money[str(user.pk)] < square.buy_price:
                         raise MaliciousUserInput(user, "does not have enough money to take tram")
                     game.money[str(user.pk)] -= square.buy_price
@@ -464,8 +466,6 @@ class GameManager:
                     stats.lost_money += square.buy_price
                     stats.save()
                     game.positions[str(user.pk)] = square.custom_id
-                elif square.custom_id in tram_square_actual_id: # case stay in the same square, free
-                    pass
                 else:
                     raise MaliciousUserInput(user, "tried to take a tram to a non tram square")
             else:
@@ -939,18 +939,16 @@ class GameManager:
         game.save()
         return response
 
-
     @classmethod
     def _end_game_logic(cls, game: Game, user: CustomUser, action: Action) -> Response:
         if not game.finished:
             game.finished = True
-            response: ResponseBonus = cls._apply_end_bonuses(game, num_bonuses=3)
+            response = cls._apply_end_bonuses(game, num_bonuses=3)
             response.save()
-            game.bonus_response = response # type: ignore
+            game.bonus_response = response
             game.save()
+            return response
+        else:
+            raise GameLogicError('game was already ended')
         
-        if game.bonus_response is None:
-            raise GameLogicError('bonus response empty')
-        
-        return game.bonus_response
     ############################################################

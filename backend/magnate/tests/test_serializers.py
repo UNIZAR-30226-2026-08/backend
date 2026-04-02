@@ -40,8 +40,6 @@ class SerializerTest(TestCase):
         cls.actionTakeTram = ActionTakeTram.objects.create(game=cls.game,player=cls.player,
                                                          square=BaseSquare.objects.get(custom_id=13))
 
-        cls.actionDoNotTakeTram = ActionDoNotTakeTram.objects.create(game=cls.game,player=cls.player)
-        
         cls.actionBuySquare = ActionBuySquare.objects.create(game=cls.game,player=cls.player,
                                                              square=BaseSquare.objects.get(custom_id=14))
         
@@ -57,7 +55,7 @@ class SerializerTest(TestCase):
                                                            houses=2)
         
         cls.actionChooseCard = ActionChooseCard.objects.create(game=cls.game,player=cls.player,
-                                                               chosen_card=True)
+                                                               chosen_revealed_card=True)
         
         cls.actionSurrender = ActionSurrender.objects.create(game=cls.game,player=cls.player)
 
@@ -218,18 +216,6 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.game,self.game)
         self.assertEqual(instance.square.custom_id,102)
 
-    def test_action_do_not_take_tram(self):
-        data = GeneralActionSerializer(self.actionDoNotTakeTram).data
-        assert isinstance(data,dict)
-
-        json_in = {"type": "ActionDoNotTakeTram",
-                   "game":self.game.pk,
-                   "player":self.player.pk}
-        instance = action_from_json(json_in)
-        assert isinstance(instance,ActionDoNotTakeTram)
-        self.assertEqual(instance.player,self.player)
-        self.assertEqual(instance.game,self.game)
-
     def test_action_buy_square(self):
         data = GeneralActionSerializer(self.actionBuySquare).data
         assert isinstance(data,dict)
@@ -299,17 +285,17 @@ class SerializerTest(TestCase):
     def test_choose_card(self):
         data = GeneralActionSerializer(self.actionChooseCard).data
         assert isinstance(data,dict)
-        self.assertEqual(data["chosen_card"],True)
+        self.assertEqual(data["chosen_revealed_card"],True)
 
         json_in = {"type": "ActionChooseCard",
                    "game":self.game.pk,
                    "player":self.player.pk,
-                   "chosen_card":True}
+                   "chosen_revealed_card":True}
         instance = action_from_json(json_in)
         assert isinstance(instance,ActionChooseCard)
         self.assertEqual(instance.player,self.player)
         self.assertEqual(instance.game,self.game)
-        self.assertEqual(instance.chosen_card,True)
+        self.assertEqual(instance.chosen_revealed_card,True)
     
     def test_action_surrender(self):
         data = GeneralActionSerializer(self.actionSurrender).data

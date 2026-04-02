@@ -129,7 +129,7 @@ def next_phase_callback(game_pk: int, user_pk: int) -> None:
         game.save()
     elif game.phase == GameManager.CHOOSE_FANTASY:
         # choose the random one
-        action = ActionChooseCard.objects.create(game=game, player=user, chosen_card=False)
+        action = ActionChooseCard.objects.create(game=game, player=user, chosen_revealed_card=False)
         GameManager._choose_fantasy_logic(game, user, action)
 
     if not response:

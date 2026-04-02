@@ -143,7 +143,7 @@ class ActionDemolishSerializer(ActionSerializer):
 class ActionChooseCardSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
         model = ActionChooseCard
-        fields = ActionSerializer.Meta.fields + ['chosen_card']
+        fields = ActionSerializer.Meta.fields + ['chosen_revealed_card']
 
 class ActionSurrenderSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):

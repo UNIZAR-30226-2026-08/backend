@@ -464,7 +464,7 @@ class GamesTest(TestCase):
         self.game.save()
 
         # execute action
-        action = ActionDoNotTakeTram(game=self.game, player=self.player1)
+        action = ActionTakeTram(game=self.game, player=self.player1, square=tram_square_1)
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)
 
         self.game.refresh_from_db()
@@ -790,8 +790,8 @@ class GamesTest(TestCase):
         
         initial_money = self.game.money[str(self.player1.pk)]
         
-        # Action: choose the first card (chosen_card=True)
-        action = ActionChooseCard.objects.create(game=self.game, player=self.player1, chosen_card=True)
+        # Action: choose the first card (chosen_revealed_card=True)
+        action = ActionChooseCard.objects.create(game=self.game, player=self.player1, chosen_revealed_card=True)
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)
         
         self.game.refresh_from_db()
@@ -823,8 +823,8 @@ class GamesTest(TestCase):
         
         initial_money = self.game.money[str(self.player1.pk)]
         
-        # Action: choose the other card (chosen_card=False)
-        action = ActionChooseCard.objects.create(game=self.game, player=self.player1, chosen_card=False)
+        # Action: choose the other card (chosen_revealed_card=False)
+        action = ActionChooseCard.objects.create(game=self.game, player=self.player1, chosen_revealed_card=False)
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)
         
         self.game.refresh_from_db()
@@ -1038,7 +1038,7 @@ class GamesTest(TestCase):
         self.game.fantasy_event = event
         self.game.save()
 
-        action = ActionChooseCard.objects.create(game=self.game, player=self.player1, chosen_card=True)
+        action = ActionChooseCard.objects.create(game=self.game, player=self.player1, chosen_revealed_card=True)
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)
 
         stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
@@ -1124,31 +1124,6 @@ class GamesTest(TestCase):
         self.assertTrue(self.game.finished)
         self.assertIsNotNone(self.game.bonus_response)
         self.assertIsInstance(self.game.bonus_response, ResponseBonus)
-
-    def test_end_game_idempotent(self):
-        """calling _end_game_logic twice don't recalculate bonuses"""
-        BonusCategory.objects.create(stat_field='walked_squares', bonus_amount=200)
-        BonusCategory.objects.create(stat_field='num_trades', bonus_amount=200)
-        BonusCategory.objects.create(stat_field='built_houses', bonus_amount=200)
-
-        action = ActionNextPhase(game=self.game, player=self.player1)
-        GameManager._end_game_logic(self.game, self.player1, action)
-
-        self.game.refresh_from_db()
-        if self.game.bonus_response is None:
-            raise GameLogicError('bonus response is none')
-        first_bonus_response_pk = self.game.bonus_response.pk
-        first_money = dict(self.game.money)
-
-        stat = PlayerGameStatistic.objects.get(game=self.game,user=self.player1)
-        stat.walked_squares = 10
-        stat.save()
-
-        GameManager._end_game_logic(self.game, self.player1, action)
-
-        self.game.refresh_from_db()
-        self.assertEqual(self.game.bonus_response.pk, first_bonus_response_pk)
-        self.assertEqual(self.game.money, first_money)
 
     def test_end_game_winner_receives_bonus(self):
         """more walked_squares player wins bonus"""

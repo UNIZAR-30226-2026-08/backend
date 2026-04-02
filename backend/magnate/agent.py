@@ -83,8 +83,6 @@ class Agent:
 
 
     def _random_choose_fantasy(self, game: Game) -> Action:
-        # chosen_card=True  -> keep the shown card and pay
-        # chosen_card=False -> new card
         fantasy_event = game.fantasy_event
         money = game.money[str(self.user.pk)]
 
@@ -92,10 +90,10 @@ class Agent:
         can_afford_shown = (fantasy_event is not None and fantasy_event.card_cost is not None and money >= fantasy_event.card_cost)
 
         if can_afford_shown:
-            return ActionChooseCard(game=game, player=self.user, chosen_card=random.choice([True, False]))
+            return ActionChooseCard(game=game, player=self.user, chosen_revealed_card=random.choice([True, False]))
 
         # if we can't afford
-        return ActionChooseCard(game=game, player=self.user, chosen_card=False)
+        return ActionChooseCard(game=game, player=self.user, chosen_revealed_card=False)
 
 
     def _random_management(self, game: Game) -> Action:
@@ -111,7 +109,7 @@ class Agent:
                     destination = random.choice(other_trams)
                     if money >= destination.buy_price:
                         return ActionTakeTram(game=game, player=self.user, square=destination)
-            return ActionDoNotTakeTram(game=game, player=self.user)
+            return ActionTakeTram(game=game, player=self.user, square=current_square)
 
         # buyable squares with no current owner
         is_buyable = isinstance(current_square, (PropertySquare, ServerSquare, BridgeSquare))

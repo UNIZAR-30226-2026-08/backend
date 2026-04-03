@@ -314,14 +314,17 @@ class ResponseMovementSerializer(serializers.ModelSerializer):
         model = ResponseMovement
 
 class ResponseThrowDicesSerializer(serializers.ModelSerializer):
+    fantasy_event = FantasyEventSerializer(read_only=True)
     class Meta(ResponseSerializer.Meta):
         model = ResponseThrowDices
 
 class ResponseChooseSquareSerializer(serializers.ModelSerializer):
+    fantasy_event = FantasyEventSerializer(read_only=True)
     class Meta(ResponseSerializer.Meta):
         model = ResponseChooseSquare
 
 class ResponseChooseFantasySerializer(serializers.ModelSerializer):
+    fantasy_event = FantasyEventSerializer(read_only=True)
     class Meta(ResponseSerializer.Meta):
         model = ResponseChooseFantasy
 

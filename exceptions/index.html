@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+
+<html data-bs-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Exceptions - Magnate Backend API Documentation</title>
+<link href="../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../css/fontawesome.min.css" rel="stylesheet"/>
+<link href="../css/brands.min.css" rel="stylesheet"/>
+<link href="../css/solid.min.css" rel="stylesheet"/>
+<link href="../css/v4-font-face.min.css" rel="stylesheet"/>
+<link href="../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" id="hljs-light" rel="stylesheet"/>
+<link disabled="" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" id="hljs-dark" rel="stylesheet"/>
+<link href="../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<link href="../docs/doc_api.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="..">Magnate Backend API Documentation</a>
+<!-- Expander button -->
+<button aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbar-collapse" data-bs-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="nav-item">
+<a class="nav-link" href="..">Home</a>
+</li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">Integration</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../websockets/">WebSockets (Real-time)</a>
+</li>
+<li>
+<a class="dropdown-item" href="../actions/">Actions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../responses/">Responses</a>
+</li>
+<li>
+<a class="dropdown-item" href="../fantasy_events/">Fantasy events</a>
+</li>
+</ul>
+</li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">Technical reference</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../games/">Game logic</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ms-md-auto">
+<li class="nav-item">
+<a class="nav-link" data-bs-target="#mkdocs_search_modal" data-bs-toggle="modal" href="#">
+<i class="fa fa-search"></i> Search
+                            </a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-bs-target="#toc-collapse" data-bs-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-body-tertiary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="1"><a class="nav-link" href="#exceptions">Exceptions</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.exceptions">exceptions</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.exceptions.GameLogicError">GameLogicError</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.exceptions.GameDesignError">GameDesignError</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.exceptions.MaliciousUserInput">MaliciousUserInput</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.exceptions.MaliciousUserInputAction">MaliciousUserInputAction</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="exceptions">Exceptions</h1>
+<div class="doc doc-object doc-module">
+<a id="magnate.exceptions"></a>
+<div class="doc doc-contents first">
+<p>Game Exceptions Module.</p>
+<p>This module defines custom exceptions used throughout the game logic
+to handle internal errors, board configuration issues, and invalid
+or malicious actions performed by users.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.exceptions.GameLogicError">
+<code>GameLogicError</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
+<p>Exception raised for errors in the internal game logic.</p>
+<p>This is typically thrown when the game reaches an impossible state
+or encounters an unexpected condition during normal execution.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.exceptions.GameLogicError.message">message</span></code></td>
+<td>
+<code><span title="str">str</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Explanation of the internal logic error.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/exceptions.py</code></summary>
+<pre class="highlight"><code class="language-python">class GameLogicError(Exception):
+    """
+    Exception raised for errors in the internal game logic.
+
+    This is typically thrown when the game reaches an impossible state
+    or encounters an unexpected condition during normal execution.
+
+    Attributes:
+        message (str): Explanation of the internal logic error.
+    """
+    def __init__(self, message=''):
+        """
+        Initializes the GameLogicError.
+
+        Args:
+            message (str, optional): Specific details about the logic error. Defaults to ''.
+        """
+        self.message = "Internal logic error: " + message
+        super().__init__(self.message)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="magnate.exceptions.GameLogicError.__init__">
+<code class="highlight language-python">__init__(message='')</code>
+</h3>
+<div class="doc doc-contents">
+<p>Initializes the GameLogicError.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>message</code>
+</td>
+<td>
+<code><span title="str">str</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Specific details about the logic error. Defaults to ''.</p>
+</div>
+</td>
+<td>
+<code>''</code>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/exceptions.py</code></summary>
+<pre class="highlight"><code class="language-python">def __init__(self, message=''):
+    """
+    Initializes the GameLogicError.
+
+    Args:
+        message (str, optional): Specific details about the logic error. Defaults to ''.
+    """
+    self.message = "Internal logic error: " + message
+    super().__init__(self.message)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.exceptions.GameDesignError">
+<code>GameDesignError</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
+<p>Exception raised for errors in the game's design or board configuration.</p>
+<p>This is used when a square lacks required data (like rent prices) or
+when the board is fundamentally misconfigured (e.g., missing a Jail square).</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.exceptions.GameDesignError.message">message</span></code></td>
+<td>
+<code><span title="str">str</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Explanation of the design error.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/exceptions.py</code></summary>
+<pre class="highlight"><code class="language-python">class GameDesignError(Exception):
+    """
+    Exception raised for errors in the game's design or board configuration.
+
+    This is used when a square lacks required data (like rent prices) or
+    when the board is fundamentally misconfigured (e.g., missing a Jail square).
+
+    Attributes:
+        message (str): Explanation of the design error.
+    """
+    def __init__(self, message=''):
+        """
+        Initializes the GameDesignError.
+
+        Args:
+            message (str, optional): Specific details about the configuration or design error. Defaults to ''.
+        """
+        self.message = "Internal logic error: " + message
+        super().__init__(self.message)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="magnate.exceptions.GameDesignError.__init__">
+<code class="highlight language-python">__init__(message='')</code>
+</h3>
+<div class="doc doc-contents">
+<p>Initializes the GameDesignError.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>message</code>
+</td>
+<td>
+<code><span title="str">str</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Specific details about the configuration or design error. Defaults to ''.</p>
+</div>
+</td>
+<td>
+<code>''</code>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/exceptions.py</code></summary>
+<pre class="highlight"><code class="language-python">def __init__(self, message=''):
+    """
+    Initializes the GameDesignError.
+
+    Args:
+        message (str, optional): Specific details about the configuration or design error. Defaults to ''.
+    """
+    self.message = "Internal logic error: " + message
+    super().__init__(self.message)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.exceptions.MaliciousUserInput">
+<code>MaliciousUserInput</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
+<p>Exception raised when a user provides invalid, unauthorized, or potentially malicious input.</p>
+<p>This acts as a security and validation layer, thrown when a user attempts
+to manipulate assets they do not own, or tries to exploit the game mechanics.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.exceptions.MaliciousUserInput.message">message</span></code></td>
+<td>
+<code><span title="str">str</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Explanation of the malicious input, tagged with the user's primary key.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/exceptions.py</code></summary>
+<pre class="highlight"><code class="language-python">class MaliciousUserInput(Exception):
+    """
+    Exception raised when a user provides invalid, unauthorized, or potentially malicious input.
+
+    This acts as a security and validation layer, thrown when a user attempts
+    to manipulate assets they do not own, or tries to exploit the game mechanics.
+
+    Attributes:
+        message (str): Explanation of the malicious input, tagged with the user's primary key.
+    """
+    def __init__(self, user: CustomUser, message=''):
+        """
+        Initializes the MaliciousUserInput exception.
+
+        Args:
+            user (CustomUser): The user who triggered the exception.
+            message (str, optional): Specific details about what the user attempted to do. Defaults to ''.
+        """
+        self.message = f"[{user.pk}] Potentially malicious input: " + message
+        super().__init__(self.message)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="magnate.exceptions.MaliciousUserInput.__init__">
+<code class="highlight language-python">__init__(user, message='')</code>
+</h3>
+<div class="doc doc-contents">
+<p>Initializes the MaliciousUserInput exception.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.models.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user who triggered the exception.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>message</code>
+</td>
+<td>
+<code><span title="str">str</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Specific details about what the user attempted to do. Defaults to ''.</p>
+</div>
+</td>
+<td>
+<code>''</code>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/exceptions.py</code></summary>
+<pre class="highlight"><code class="language-python">def __init__(self, user: CustomUser, message=''):
+    """
+    Initializes the MaliciousUserInput exception.
+
+    Args:
+        user (CustomUser): The user who triggered the exception.
+        message (str, optional): Specific details about what the user attempted to do. Defaults to ''.
+    """
+    self.message = f"[{user.pk}] Potentially malicious input: " + message
+    super().__init__(self.message)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.exceptions.MaliciousUserInputAction">
+<code>MaliciousUserInputAction</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.exceptions.MaliciousUserInput" title="MaliciousUserInput (magnate.exceptions.MaliciousUserInput)">MaliciousUserInput</a></code></p>
+<p>Exception raised when a user attempts an action that is not allowed in the current game phase.</p>
+<p>This is a specialized form of MaliciousUserInput used heavily in the GameManager
+to enforce strict phase-based state machine transitions.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.exceptions.MaliciousUserInputAction.message">message</span></code></td>
+<td>
+<code><span title="str">str</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Detailed message including the invalid action and the current game phase.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/exceptions.py</code></summary>
+<pre class="highlight"><code class="language-python">class MaliciousUserInputAction(MaliciousUserInput):
+    """
+    Exception raised when a user attempts an action that is not allowed in the current game phase.
+
+    This is a specialized form of MaliciousUserInput used heavily in the GameManager
+    to enforce strict phase-based state machine transitions.
+
+    Attributes:
+        message (str): Detailed message including the invalid action and the current game phase.
+    """
+    def __init__(self, game: Game, user: CustomUser, action: Action):
+        """
+        Initializes the MaliciousUserInputAction exception.
+
+        Args:
+            game (Game): The current game instance where the violation occurred.
+            user (CustomUser): The user attempting the invalid action.
+            action (Action): The forbidden action the user attempted to perform.
+        """
+        self.message = f"cannot perform action {action} in phase {game.phase}"
+        super().__init__(user, self.message)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="magnate.exceptions.MaliciousUserInputAction.__init__">
+<code class="highlight language-python">__init__(game, user, action)</code>
+</h3>
+<div class="doc doc-contents">
+<p>Initializes the MaliciousUserInputAction exception.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.models.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance where the violation occurred.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.models.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user attempting the invalid action.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>action</code>
+</td>
+<td>
+<code><a class="autorefs autorefs-internal" href="../actions/#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The forbidden action the user attempted to perform.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/exceptions.py</code></summary>
+<pre class="highlight"><code class="language-python">def __init__(self, game: Game, user: CustomUser, action: Action):
+    """
+    Initializes the MaliciousUserInputAction exception.
+
+    Args:
+        game (Game): The current game instance where the violation occurred.
+        user (CustomUser): The user attempting the invalid action.
+        action (Action): The forbidden action the user attempted to perform.
+    """
+    self.message = f"cannot perform action {action} in phase {game.phase}"
+    super().__init__(user, self.message)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script src="../js/base.js"></script>
+<script src="../search/main.js"></script>
+<div aria-hidden="true" aria-labelledby="searchModalLabel" class="modal" id="mkdocs_search_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="searchModalLabel">Search</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p>From here you can search these documents. Enter your search terms below.</p>
+<form>
+<div class="form-group">
+<input class="form-control" id="mkdocs-search-query" placeholder="Search..." title="Type search term here" type="search"/>
+</div>
+</form>
+<div data-no-results-text="No results found" id="mkdocs-search-results"></div>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div><div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

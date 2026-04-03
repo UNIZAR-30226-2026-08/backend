@@ -1,0 +1,3805 @@
+<!DOCTYPE html>
+
+<html data-bs-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Game logic - Magnate Backend API Documentation</title>
+<link href="../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../css/fontawesome.min.css" rel="stylesheet"/>
+<link href="../css/brands.min.css" rel="stylesheet"/>
+<link href="../css/solid.min.css" rel="stylesheet"/>
+<link href="../css/v4-font-face.min.css" rel="stylesheet"/>
+<link href="../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" id="hljs-light" rel="stylesheet"/>
+<link disabled="" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" id="hljs-dark" rel="stylesheet"/>
+<link href="../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<link href="../docs/doc_api.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="..">Magnate Backend API Documentation</a>
+<!-- Expander button -->
+<button aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbar-collapse" data-bs-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="nav-item">
+<a class="nav-link" href="..">Home</a>
+</li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">Integration</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../websockets/">WebSockets (Real-time)</a>
+</li>
+<li>
+<a class="dropdown-item" href="../actions/">Actions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../responses/">Responses</a>
+</li>
+<li>
+<a class="dropdown-item" href="../fantasy_events/">Fantasy events</a>
+</li>
+</ul>
+</li>
+<li class="nav-item dropdown">
+<a aria-current="page" aria-expanded="false" class="nav-link dropdown-toggle active" data-bs-toggle="dropdown" href="#" role="button">Technical reference</a>
+<ul class="dropdown-menu">
+<li>
+<a aria-current="page" class="dropdown-item active" href="./">Game logic</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ms-md-auto">
+<li class="nav-item">
+<a class="nav-link" data-bs-target="#mkdocs_search_modal" data-bs-toggle="modal" href="#">
+<i class="fa fa-search"></i> Search
+                            </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../fantasy_events/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link disabled" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-bs-target="#toc-collapse" data-bs-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-body-tertiary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="1"><a class="nav-link" href="#core-game-logic-gamespy">Core Game Logic (games.py)</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#game-state-machine-flow">🎲 Game State Machine Flow</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#utility-data-functions">🛠 Utility &amp; Data Functions</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games">games</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games._get_square_by_custom_id">_get_square_by_custom_id</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games._get_user_square">_get_user_square</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games._get_relationship">_get_relationship</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games._get_jail_square">_get_jail_square</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#property-economy-rules">🏠 Property &amp; Economy Rules</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games">games</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games._calculate_rent_price">_calculate_rent_price</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games._build_square">_build_square</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games._demolish_square">_demolish_square</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games._set_mortgage">_set_mortgage</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games._unset_mortgage">_unset_mortgage</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#gamemanager">⚙️ GameManager</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.games.GameManager">GameManager</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="core-game-logic-gamespy">Core Game Logic (games.py)</h1>
+<p>This module encapsulates the rules, state transitions, and actions of the game. It functions as the authoritative backend engine, ensuring that all moves are valid according to the game state.</p>
+<hr/>
+<h2 id="game-state-machine-flow">🎲 Game State Machine Flow</h2>
+<p>The game operates as a finite state machine where players transition through specific phases. Any action sent by the frontend must be authorized by the <code>GameManager</code> based on the current active phase.</p>
+<hr/>
+<h2 id="utility-data-functions">🛠 Utility &amp; Data Functions</h2>
+<p>These functions handle the database-level interactions required to resolve game logic.</p>
+<div class="doc doc-object doc-module">
+<a id="magnate.games"></a>
+<div class="doc doc-contents first">
+<p>Core Game Logic Module.</p>
+<p>This module handles the rules, state transitions, and actions of the game.
+It provides helper functions to calculate net worth, rent, building/demolishing
+rules, and a GameManager class that acts as a state machine for the different phases
+of a player's turn.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.games._get_square_by_custom_id">
+<code class="highlight language-python">_get_square_by_custom_id(custom_id)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Retrieves a BaseSquare instance by its custom_id.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>custom_id</code>
+</td>
+<td>
+<code><span title="int">int</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The custom identifier of the square.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>BaseSquare</code></td> <td>
+<code><span title="magnate.exceptions.BaseSquare">BaseSquare</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The square instance.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.GameLogicError" title="GameLogicError (magnate.exceptions.GameLogicError)">GameLogicError</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If no square with the given custom_id exists.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/game_utils.py</code></summary>
+<pre class="highlight"><code class="language-python">def _get_square_by_custom_id(custom_id: int) -&gt; BaseSquare:
+    """
+    Retrieves a BaseSquare instance by its custom_id.
+
+    Args:
+        custom_id (int): The custom identifier of the square.
+
+    Returns:
+        BaseSquare: The square instance.
+
+    Raises:
+        GameLogicError: If no square with the given custom_id exists.
+    """
+    square = BaseSquare.objects.filter(custom_id=custom_id).first()
+    if square is None:
+        raise GameLogicError(f"no square with id {custom_id}")
+
+    return square</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.games._get_user_square">
+<code class="highlight language-python">_get_user_square(game, user)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Retrieves the square where a specific user is currently located.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user whose position is being queried.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>BaseSquare</code></td> <td>
+<code><span title="magnate.exceptions.BaseSquare">BaseSquare</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The square where the user is currently standing.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.GameLogicError" title="GameLogicError (magnate.exceptions.GameLogicError)">GameLogicError</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If the user is not part of the game.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/game_utils.py</code></summary>
+<pre class="highlight"><code class="language-python">def _get_user_square(game: Game, user: CustomUser) -&gt; BaseSquare:
+    """
+    Retrieves the square where a specific user is currently located.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user whose position is being queried.
+
+    Returns:
+        BaseSquare: The square where the user is currently standing.
+
+    Raises:
+        GameLogicError: If the user is not part of the game.
+    """
+    user_key = str(user.pk)
+
+    if user_key not in game.positions:
+        raise GameLogicError(f"user {user} not in the game")
+
+    return _get_square_by_custom_id(game.positions[user_key])</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.games._get_relationship">
+<code class="highlight language-python">_get_relationship(game, square)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Gets the ownership relationship between a game and a specific square.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>square</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.BaseSquare">BaseSquare</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The property square to check.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><span title="typing.Optional">Optional</span>[<span title="magnate.exceptions.PropertyRelationship">PropertyRelationship</span>]</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Optional[PropertyRelationship]: The relationship object if owned, None otherwise.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.GameLogicError" title="GameLogicError (magnate.exceptions.GameLogicError)">GameLogicError</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If more than one owner is found for the same square.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/game_utils.py</code></summary>
+<pre class="highlight"><code class="language-python">def _get_relationship(game: Game, square: BaseSquare) -&gt; Optional[PropertyRelationship]:
+    """
+    Gets the ownership relationship between a game and a specific square.
+
+    Args:
+        game (Game): The current game instance.
+        square (BaseSquare): The property square to check.
+
+    Returns:
+        Optional[PropertyRelationship]: The relationship object if owned, None otherwise.
+
+    Raises:
+        GameLogicError: If more than one owner is found for the same square.
+    """
+    try:
+        return PropertyRelationship.objects.get(game=game, square=square)
+    except PropertyRelationship.DoesNotExist:
+        return None
+    except MultipleObjectsReturned:
+        raise GameLogicError("more than one owners for the same square")</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.games._get_jail_square">
+<code class="highlight language-python">_get_jail_square()</code>
+</h2>
+<div class="doc doc-contents">
+<p>Retrieves the designated Jail square for the board.</p>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>BaseSquare</code></td> <td>
+<code><span title="magnate.exceptions.BaseSquare">BaseSquare</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The JailSquare instance.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.GameDesignError" title="GameDesignError (magnate.exceptions.GameDesignError)">GameDesignError</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If there are no jail squares or too many jail squares.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/game_utils.py</code></summary>
+<pre class="highlight"><code class="language-python">def _get_jail_square() -&gt; BaseSquare:
+    """
+    Retrieves the designated Jail square for the board.
+
+    Returns:
+        BaseSquare: The JailSquare instance.
+
+    Raises:
+        GameDesignError: If there are no jail squares or too many jail squares.
+    """
+    try:
+        return JailSquare.objects.get()
+    except JailSquare.DoesNotExist:
+        raise GameDesignError("there are no jail squares in the game")
+    except MultipleObjectsReturned:
+        raise GameDesignError("there are too many jail squares")</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><hr/>
+<h2 id="property-economy-rules">🏠 Property &amp; Economy Rules</h2>
+<p>Calculates financial impacts, building constraints, and mortgage status.</p>
+<div class="doc doc-object doc-module">
+<a id="magnate.games"></a>
+<div class="doc doc-contents first">
+<p>Core Game Logic Module.</p>
+<p>This module handles the rules, state transitions, and actions of the game.
+It provides helper functions to calculate net worth, rent, building/demolishing
+rules, and a GameManager class that acts as a state machine for the different phases
+of a player's turn.</p>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.games._calculate_rent_price">
+<code class="highlight language-python">_calculate_rent_price(game, user, square)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Calculates the rent price a user must pay when landing on a square.</p>
+<p>Handles different logic for PropertySquares (houses), TramSquares, 
+BridgeSquares, and ServerSquares based on ownership and multipliers.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user landing on the square.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>square</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.BaseSquare">BaseSquare</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The square being landed on.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>int</code></td> <td>
+<code><span title="int">int</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The calculated rent amount to pay. Returns 0 if unowned or owned by the user.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.GameDesignError" title="GameDesignError (magnate.exceptions.GameDesignError)">GameDesignError</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If the rent arrays on the square are incorrectly configured.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.GameLogicError" title="GameLogicError (magnate.exceptions.GameLogicError)">GameLogicError</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If an unexpected condition occurs during calculation.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/game_utils.py</code></summary>
+<pre class="highlight"><code class="language-python">def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -&gt; int:
+    """
+    Calculates the rent price a user must pay when landing on a square.
+
+    Handles different logic for PropertySquares (houses), TramSquares, 
+    BridgeSquares, and ServerSquares based on ownership and multipliers.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user landing on the square.
+        square (BaseSquare): The square being landed on.
+
+    Returns:
+        int: The calculated rent amount to pay. Returns 0 if unowned or owned by the user.
+
+    Raises:
+        GameDesignError: If the rent arrays on the square are incorrectly configured.
+        GameLogicError: If an unexpected condition occurs during calculation.
+    """
+    # If it is not owned or is owned by the same user, no rent is paid
+    prop_rel = _get_relationship(game, square)
+    if not prop_rel or prop_rel.owner == user or prop_rel.mortgage: 
+        return 0
+
+    houses = prop_rel.houses
+
+    if isinstance(square, PropertySquare):
+        if not square.rent_prices or len(square.rent_prices) &lt; 6:
+            raise GameDesignError(f"Incorrect rent prices for square {square.custom_id}")
+        if houses == -1:
+            return square.rent_prices[0]
+        elif houses == 0:
+            return square.rent_prices[0] * 2  # grupo completo = doble del alquiler base
+        elif houses == 1:
+            return square.rent_prices[1]
+        elif houses == 2:
+            return square.rent_prices[2]
+        elif houses == 3:
+            return square.rent_prices[3]
+        elif houses == 4:
+            return square.rent_prices[4]
+        elif houses == 5:  # hotel
+            return square.rent_prices[5]
+
+        return 0
+
+    elif isinstance(square, TramSquare):
+        # TODO
+        return 0
+
+    elif isinstance(square, BridgeSquare):
+        property_owner = prop_rel.owner
+        bridges_owned = PropertyRelationship.objects.filter(game=game, square__bridgesquare__isnull=False, owner=property_owner).count()
+        if not square.rent_prices or len(square.rent_prices) &lt; bridges_owned:
+            raise GameDesignError(f"Incorrect rent prices for bridge {square.custom_id}")
+        return square.rent_prices[bridges_owned - 1]
+
+    elif isinstance(square, ServerSquare):
+        property_owner = prop_rel.owner
+
+        if not square.rent_prices or len(square.rent_prices) &lt; 2:
+            raise GameDesignError(f"Incorrect rent prices for square {square.custom_id}")
+
+        squares = PropertyRelationship.objects.filter(game=game, square__serversquare__isnull=False, owner=property_owner)
+
+        if squares.count() == 2:
+            return square.rent_prices[1]
+        elif squares.count() == 1:
+            return square.rent_prices[0]
+        else:
+            # TODO: Write something
+            raise GameLogicError()
+    else:
+        return 0</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.games._build_square">
+<code class="highlight language-python">_build_square(game, user, building_square, number_built, free_build)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Builds houses or hotels on a property.</p>
+<p>Validates that the user owns the complete color group and respects 
+the uniform building rule.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user attempting to build.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>building_square</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.BaseSquare">BaseSquare</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The target property square.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>number_built</code>
+</td>
+<td>
+<code><span title="int">int</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Number of buildings to construct.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>free_build</code>
+</td>
+<td>
+<code><span title="bool">bool</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If True, the user is not charged for the construction.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>PropertyRelationship</code></td> <td>
+<code><span title="magnate.exceptions.PropertyRelationship">PropertyRelationship</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The updated ownership relationship.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.MaliciousUserInput" title="MaliciousUserInput (magnate.exceptions.MaliciousUserInput)">MaliciousUserInput</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If the user does not own the full group, violates 
+uniform building rules, or tries to build beyond the max limit.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.GameLogicError" title="GameLogicError (magnate.exceptions.GameLogicError)">GameLogicError</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If negative house values are encountered.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/game_utils.py</code></summary>
+<pre class="highlight"><code class="language-python">def _build_square(game: Game, 
+                  user: CustomUser, 
+                  building_square: BaseSquare, 
+                  number_built: int,
+                  free_build: bool) -&gt; PropertyRelationship:
+    """
+    Builds houses or hotels on a property.
+
+    Validates that the user owns the complete color group and respects 
+    the uniform building rule.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user attempting to build.
+        building_square (BaseSquare): The target property square.
+        number_built (int): Number of buildings to construct.
+        free_build (bool): If True, the user is not charged for the construction.
+
+    Returns:
+        PropertyRelationship: The updated ownership relationship.
+
+    Raises:
+        MaliciousUserInput: If the user does not own the full group, violates 
+            uniform building rules, or tries to build beyond the max limit.
+        GameLogicError: If negative house values are encountered.
+    """
+    # Check if it's  a property and take its group
+    building_square = building_square.get_real_instance()
+
+    if not isinstance(building_square, PropertySquare):
+        raise MaliciousUserInput(user, "tried to build in a non property square")
+
+    relationship = _get_relationship(game, building_square)
+
+    if relationship is None:
+        raise MaliciousUserInput(user, "no user owns this square")
+
+    if relationship.owner != user:
+        raise MaliciousUserInput(user, "tried to build in an unowned property")
+
+    square_group = building_square.group
+    actual_houses = relationship.houses
+
+    # Check if user has every square in the group and if its a property
+    total_squares_in_group = PropertySquare.objects.filter(
+        board=building_square.board, 
+        group=square_group
+    ).count()
+
+    group_relationships = PropertyRelationship.objects.filter(
+        game=game, 
+        owner=user, 
+        square__propertysquare__group=square_group
+    ).select_related('square')
+
+    if group_relationships.count() != total_squares_in_group:
+        raise MaliciousUserInput(user, "does not own the group")
+
+    for rel in group_relationships:
+        if rel.houses &lt; 0: 
+            raise GameLogicError(f"negative house value")
+        elif actual_houses + number_built - 1 &gt; rel.houses:
+            raise MaliciousUserInput(user, "already owns more than other")
+
+    if actual_houses == 5:
+        raise MaliciousUserInput(user, "nothing more to build")
+
+    relationship.houses += number_built
+    relationship.save()
+
+    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+    stats.built_houses += number_built
+
+    if not free_build:
+        coste = building_square.build_price * number_built
+
+        game.money[str(user.pk)] -= coste
+        game.save()
+        stats.lost_money += coste
+
+    stats.save()
+
+    return relationship  #ack</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.games._demolish_square">
+<code class="highlight language-python">_demolish_square(game, user, demolition_square, number_demolished, free_demolish)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Demolishes houses/hotels on a property and returns money to the user.</p>
+<p>Ensures that uniform building rules are respected during demolition.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user attempting to demolish.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>demolition_square</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.BaseSquare">BaseSquare</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The square where buildings will be demolished.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>number_demolished</code>
+</td>
+<td>
+<code><span title="int">int</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The amount of houses to demolish.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>free_demolish</code>
+</td>
+<td>
+<code><span title="bool">bool</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If True, no money is refunded to the user.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>PropertyRelationship</code></td> <td>
+<code><span title="magnate.exceptions.PropertyRelationship">PropertyRelationship</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The updated ownership relationship.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.MaliciousUserInput" title="MaliciousUserInput (magnate.exceptions.MaliciousUserInput)">MaliciousUserInput</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If the property is unowned, owned by someone else, 
+is not a property square, or violates uniform building rules.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/game_utils.py</code></summary>
+<pre class="highlight"><code class="language-python">def _demolish_square(game: Game, 
+                     user: CustomUser, 
+                     demolition_square: BaseSquare, 
+                     number_demolished: int,
+                     free_demolish: bool) -&gt; PropertyRelationship:
+    """
+    Demolishes houses/hotels on a property and returns money to the user.
+
+    Ensures that uniform building rules are respected during demolition.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user attempting to demolish.
+        demolition_square (BaseSquare): The square where buildings will be demolished.
+        number_demolished (int): The amount of houses to demolish.
+        free_demolish (bool): If True, no money is refunded to the user.
+
+    Returns:
+        PropertyRelationship: The updated ownership relationship.
+
+    Raises:
+        MaliciousUserInput: If the property is unowned, owned by someone else, 
+            is not a property square, or violates uniform building rules.
+    """
+    # Check if it's a property
+    demolition_square = demolition_square.get_real_instance()
+    if not isinstance(demolition_square, PropertySquare):
+        raise MaliciousUserInput(user, "tried to demolish a non property square")
+
+    relationship = _get_relationship(game, demolition_square)
+
+    if relationship is None:
+        raise MaliciousUserInput(user, "no user owns this square")
+
+    if relationship.owner != user:
+        raise MaliciousUserInput(user, "tried to demolish an unowned property")
+
+    actual_houses = relationship.houses
+
+    if actual_houses &lt; number_demolished:
+        raise MaliciousUserInput(user, "tried to demolish more houses than are built")
+
+    square_group = demolition_square.group
+
+    group_relationships = PropertyRelationship.objects.filter(
+        game=game, 
+        owner=user, 
+        square__propertysquare__group=square_group
+    ).select_related('square')
+
+    # Check if we can demolish -&gt; respect rule 
+    for rel in group_relationships:
+        if (actual_houses - number_demolished) &lt; (rel.houses - 1):
+            raise MaliciousUserInput(user, "unable to demolish so many houses: violates the uniform building rule")
+
+    # demolish
+    relationship.houses -= number_demolished
+    relationship.save()
+
+    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+    stats.demolished_houses += number_demolished
+
+    if not free_demolish:
+        coste = demolition_square.build_price
+
+        game.money[str(user.pk)] += coste // 2 * number_demolished
+        game.save()
+        stats.won_money += coste // 2 * number_demolished
+
+    stats.save()
+
+    return relationship</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.games._set_mortgage">
+<code class="highlight language-python">_set_mortgage(game, user, target_square, free_mortgage)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Mortgages a property to receive immediate funds.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user attempting the mortgage.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>target_square</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.BaseSquare">BaseSquare</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The property to be mortgaged.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>free_mortgage</code>
+</td>
+<td>
+<code><span title="bool">bool</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If True, no money is added to the user's balance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>PropertyRelationship</code></td> <td>
+<code><span title="magnate.exceptions.PropertyRelationship">PropertyRelationship</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The updated relationship.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.MaliciousUserInput" title="MaliciousUserInput (magnate.exceptions.MaliciousUserInput)">MaliciousUserInput</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If not owned, already mortgaged, or wrong type of square.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.GameLogicError" title="GameLogicError (magnate.exceptions.GameLogicError)">GameLogicError</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If trying to mortgage a property that still has houses built on it.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/game_utils.py</code></summary>
+<pre class="highlight"><code class="language-python">def _set_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_mortgage: bool) -&gt; PropertyRelationship:
+    """
+    Mortgages a property to receive immediate funds.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user attempting the mortgage.
+        target_square (BaseSquare): The property to be mortgaged.
+        free_mortgage (bool): If True, no money is added to the user's balance.
+
+    Returns:
+        PropertyRelationship: The updated relationship.
+
+    Raises:
+        MaliciousUserInput: If not owned, already mortgaged, or wrong type of square.
+        GameLogicError: If trying to mortgage a property that still has houses built on it.
+    """
+    target_square = target_square.get_real_instance()
+    if not (isinstance(target_square, PropertySquare) or
+            isinstance(target_square, BridgeSquare) or
+            isinstance(target_square, ServerSquare)):
+        raise MaliciousUserInput(user, "tried to mortgage a non property/bridge/server square")
+
+    relationship = _get_relationship(game=game, square=target_square)
+
+    if relationship is None:
+        raise MaliciousUserInput(user, "no user owns this square")
+
+    if relationship.owner != user:
+        raise MaliciousUserInput(user, "tried to mortgage an unowned property")
+
+    if relationship.mortgage:
+        raise MaliciousUserInput(user, "tried to mortgage an already mortgaged property")
+
+
+
+    if isinstance(target_square, PropertySquare):
+        if relationship.houses &gt; 0:
+            raise GameLogicError("tried to mortgage a property with houses")
+
+    relationship.mortgage = True
+    relationship.save()
+    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+    stats.num_mortgages += 1
+
+    if not free_mortgage:
+        mortgage_value = target_square.buy_price // 2
+        game.money[str(user.pk)] += mortgage_value
+
+        stats.won_money += mortgage_value
+        game.save()
+
+    stats.save()
+
+    return relationship</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.games._unset_mortgage">
+<code class="highlight language-python">_unset_mortgage(game, user, target_square, free_unset_mortgage)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Lifts the mortgage from a property by paying the required fee.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user lifting the mortgage.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>target_square</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.BaseSquare">BaseSquare</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The property to unmortgage.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>free_unset_mortgage</code>
+</td>
+<td>
+<code><span title="bool">bool</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If True, the user is not charged.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>PropertyRelationship</code></td> <td>
+<code><span title="magnate.exceptions.PropertyRelationship">PropertyRelationship</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The updated relationship.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.MaliciousUserInput" title="MaliciousUserInput (magnate.exceptions.MaliciousUserInput)">MaliciousUserInput</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If not owned, not mortgaged, or wrong type of square.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/game_utils.py</code></summary>
+<pre class="highlight"><code class="language-python">def _unset_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_unset_mortgage: bool) -&gt; PropertyRelationship:
+    """
+    Lifts the mortgage from a property by paying the required fee.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user lifting the mortgage.
+        target_square (BaseSquare): The property to unmortgage.
+        free_unset_mortgage (bool): If True, the user is not charged.
+
+    Returns:
+        PropertyRelationship: The updated relationship.
+
+    Raises:
+        MaliciousUserInput: If not owned, not mortgaged, or wrong type of square.
+    """
+    target_square = target_square.get_real_instance()
+    if not (isinstance(target_square, PropertySquare) or
+            isinstance(target_square, BridgeSquare) or
+            isinstance(target_square, ServerSquare)):
+        raise MaliciousUserInput(user, "tried to unset mortgage a non property/bridge/server square")
+
+    relationship = _get_relationship(game=game, square=target_square)
+
+    if relationship is None:
+        raise MaliciousUserInput(user, "no user owns this square")
+
+    if relationship.owner != user:
+        raise MaliciousUserInput(user, "tried to unset mortgage an unowned property")
+
+    if not relationship.mortgage:
+        raise MaliciousUserInput(user, "tried to unset mortgage a not mortgaged property")
+
+    relationship.mortgage = False
+    relationship.save()
+    target_square = target_square.get_real_instance()
+
+    if not free_unset_mortgage:
+        mortgage_value = target_square.buy_price // 2
+        game.money[str(user.pk)] -= mortgage_value
+        game.save()
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.lost_money += mortgage_value
+
+
+    return relationship</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><hr/>
+<h2 id="gamemanager">⚙️ GameManager</h2>
+<p>The primary gateway for all frontend actions. Every action sent via WebSocket or REST must be processed through the <code>process_action</code> method.</p>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.games.GameManager">
+<code>magnate.games.GameManager</code>
+</h2>
+<div class="doc doc-contents first">
+<p>State machine and core processor for Game Actions.</p>
+<p>The GameManager encapsulates the logic for each specific phase of a 
+player's turn, processing polymorphic Action objects and mutating the 
+database state accordingly.</p>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/games.py</code></summary>
+<pre class="highlight"><code class="language-python">class GameManager:
+    """
+    State machine and core processor for Game Actions.
+
+    The GameManager encapsulates the logic for each specific phase of a 
+    player's turn, processing polymorphic Action objects and mutating the 
+    database state accordingly.
+    """
+    ###########################################################################
+    # Phase logic
+    ###########################################################################
+
+    ROLL_THE_DICES = Game.GamePhase.roll_the_dices
+    CHOOSE_SQUARE = Game.GamePhase.choose_square
+    MANAGEMENT = Game.GamePhase.management
+    BUSINESS = Game.GamePhase.business
+    ANSWER_TRADE_PROPOSAL = Game.GamePhase.proposal_acceptance
+    LIQUIDATION = Game.GamePhase.liquidation
+    AUCTION = Game.GamePhase.auction
+    PROPOSAL_ACCEPTANCE = Game.GamePhase.proposal_acceptance
+    CHOOSE_FANTASY = Game.GamePhase.choose_fantasy
+    END_GAME = Game.GamePhase.end_game
+
+
+    @classmethod
+    @database_sync_to_async
+    def process_action(cls, game: Game, user: CustomUser, action: Action) -&gt; Response:
+        """
+        The only public method exposed in the API. It processes each action
+        in dedicated functions depending on the current phase and returns
+        a Response.
+
+        Args:
+            game (Game): The current active game instance.
+            user (CustomUser): The user performing the action.
+            action (Action): The deserialized action payload.
+
+        Returns:
+            Response: A response object representing the outcome.
+
+        Raises:
+            MaliciousUserInput: If the user acts out of turn or phase.
+            GameLogicError: If an unrecognized phase is encountered.
+        """
+        if isinstance(action, ActionSurrender):
+            # TODO
+            pass
+
+        if user != game.active_phase_player and not isinstance(action, ActionBid): # if aucction there are no turns
+            raise MaliciousUserInput(user, "is not the active player")
+
+        if game.phase == cls.ROLL_THE_DICES:
+            if isinstance(action, ActionPayBail):
+                response = cls._pay_bail_logic(game, user, action)
+            elif isinstance(action, ActionThrowDices):
+                response = cls._roll_dices_logic(game, user, action)
+            else:
+                raise MaliciousUserInputAction(game, user, action)
+        elif game.phase == cls.CHOOSE_SQUARE:
+            if not isinstance(action, ActionMoveTo):
+                raise MaliciousUserInputAction(game, user, action)
+            response = cls._square_chosen_logic(game, user, action)
+        elif game.phase == cls.CHOOSE_FANTASY:
+            if not isinstance(action, ActionChooseCard):
+                raise MaliciousUserInputAction(game, user, action)
+            response = cls._choose_fantasy_logic(game, user, action)
+        elif game.phase == cls.MANAGEMENT:
+            if not isinstance(action, (ActionBuySquare, ActionDropPurchase, ActionTakeTram, ActionNextPhase)):
+                raise MaliciousUserInputAction(game, user, action)
+            response = cls._management_logic(game, user, action)
+        elif game.phase == cls.BUSINESS or game.phase == cls.LIQUIDATION:
+            if not isinstance(action, (ActionBuild, ActionDemolish, ActionTradeProposal, ActionMortgageSet, ActionMortgageUnset, ActionNextPhase)):
+                raise MaliciousUserInputAction(game, user, action)
+            response = cls._business_logic(game, user, action)
+        elif game.phase == cls.ANSWER_TRADE_PROPOSAL:
+            if not isinstance(action, ActionTradeAnswer):
+                raise MaliciousUserInputAction(game, user, action)
+            response = cls._answer_trade_proposal_logic(game, user, action)
+        elif game.phase == cls.AUCTION:
+            if not isinstance(action, ActionBid):
+                raise MaliciousUserInputAction(game, user, action)
+            response = cls._bid_property_auction_logic(game, user, action)
+        elif game.phase == cls.END_GAME:
+            # TODO: check instance???
+            # response = cls._end_game_logic(game,user,action)
+            return cls._end_game_logic(game,user,action)
+        else: 
+            raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
+
+        return _add_basic_response_data(game, response)
+
+    @staticmethod
+    def _pay_bail_logic(game: Game, user: CustomUser, action: ActionPayBail) -&gt; Response:
+        """
+        Processes the action to pay the jail bail.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The jailed user.
+            action (ActionPayBail): The bail action payload.
+
+        Returns:
+            Response: The standard response.
+
+        Raises:
+            MaliciousUserInput: If the user is not actually in jail.
+            GameLogicError: If the user does not have enough money.
+        """
+        square = _get_user_square(game, user).get_real_instance()
+
+        if not isinstance(square, JailSquare):
+            raise MaliciousUserInput(user, "is not in jail")
+
+        remaining = game.jail_remaining_turns.get(str(user.pk), 0)
+        if remaining == 0:
+            raise MaliciousUserInput(user, "is not in jail (no turns remaining)")
+
+        bail_price = square.bail_price
+
+        if game.money[str(user.pk)] &lt; bail_price:
+            raise GameLogicError("not enough money to pay bail")
+
+        game.money[str(user.pk)] -= bail_price
+        game.jail_remaining_turns[str(user.pk)] = 0
+        game.save()
+
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.lost_money += bail_price
+        stats.save()
+        # roll the dices -&gt; continue normally
+
+        return Response()
+
+    @staticmethod
+    def _roll_dices_logic(game: Game, user: CustomUser, action: ActionThrowDices) -&gt; Response: 
+        """
+        Handles rolling the dice, checking for doubles/triples, and resolving jail mechanics.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The user throwing the dice.
+            action (ActionThrowDices): The dice throw action payload.
+
+        Returns:
+            Response: Standard response.
+        """
+        response: ResponseThrowDices = ResponseThrowDices()
+
+        d1 = random.randint(1,6)
+        d2 = random.randint(1,6)
+        d3 = random.randint(1,6) # 4-6 are the bus faces
+
+        response.dice1, response.dice2, response.dice_bus = d1, d2, d3
+
+        triples = d3 &lt;= 3 and (d1 == d2 == d3)
+        doubles = (d1 == d2) and not triples
+
+        response.triple = triples
+
+        current_pos_square = _get_user_square(game, user).get_real_instance()
+        current_pos_id = current_pos_square.custom_id
+
+        # jail logic
+        remaining_jail_turns = game.jail_remaining_turns.get(str(user.pk), 0)
+        is_jailed = remaining_jail_turns &gt; 0
+
+        if is_jailed:
+            jail_sq = current_pos_square
+            if isinstance(jail_sq, JailSquare):
+                if remaining_jail_turns == 1: #obligado a salir
+                    game.money[str(user.pk)] -= jail_sq.bail_price
+                    game.jail_remaining_turns[str(user.pk)] = 0
+                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                    stats.turns_in_jail += 1
+                    stats.lost_money += jail_sq.bail_price
+                    stats.save()
+                elif doubles: #sale gratis
+                    game.jail_remaining_turns[str(user.pk)] = 0
+                    game.streak = 0
+                else:
+                    # stays in jail
+                    game.jail_remaining_turns[str(user.pk)] -= 1
+                    game.phase = GameManager.BUSINESS
+                    game.save()
+                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                    stats.turns_in_jail += 1
+                    stats.save()
+                    response.path = [current_pos_id]
+                    return response
+            else:
+                raise GameLogicError(f"Cannot be in jail status and not in jail square")
+
+        # Not jailed
+        if triples:
+            # path current -&gt; decided in chosen
+            response.triple = True
+            square = current_pos_square
+            all_squares = BaseSquare.objects.filter(board=square.board)
+            # All squares are suitable destinations
+            possible_destinations = [s.custom_id for s in all_squares]
+            possible_destinations.remove(_get_jail_square().custom_id)
+            game.possible_destinations = {str(c_id): 0 for c_id in possible_destinations}
+            response.destinations = possible_destinations
+            game.phase = GameManager.CHOOSE_SQUARE
+            response.path = [current_pos_id]
+            game.save()
+            return response
+        elif doubles: # doubles streak only if not getting out of jail via doubles
+            if game.streak &gt;= 2:
+                # path -&gt; current and jail
+                jail_square = _get_jail_square()
+                response.destinations = [jail_square.custom_id]
+                game.streak = 0
+                response.streak = game.streak
+
+                game.positions[str(user.pk)] = jail_square.custom_id
+                game.jail_remaining_turns[str(user.pk)] = 3
+                response.path = [current_pos_id, jail_square.custom_id]
+
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.times_in_jail += 1
+                stats.save()
+
+                game.phase = GameManager.LIQUIDATION
+
+                game.save()
+                return response
+            elif not is_jailed:
+                game.streak = game.streak + 1
+        else:
+            game.streak = 0
+
+        response.streak = game.streak
+
+        # Hasn't gone to jail
+        dice_combinations = _compute_dice_combinations(d1, d2, d3)
+        game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
+
+        response.destinations = list(game.possible_destinations.keys())
+        if len(game.possible_destinations) &gt; 1:
+            # path in square chosen logic
+            game.phase = GameManager.CHOOSE_SQUARE
+            response.path = [current_pos_id]
+        else:
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.walked_squares += dice_combinations[0]
+            stats.save()
+            dest_square_id = next(iter(game.possible_destinations))
+            steps = game.possible_destinations[dest_square_id]
+
+            # Use _move_player_logic to get the traversed path and check for "Go to Jail" or "Passing Go".
+            move_result = _move_player_logic(current_pos_square, steps)
+            response.path = move_result["path"]
+
+            if move_result["jailed"]:
+                # landing in go to jail; update state to jail the player.
+                game.positions[str(user.pk)] = move_result["final_id"]
+                game.jail_remaining_turns[str(user.pk)] = 3
+                game.phase = GameManager.LIQUIDATION
+                stats = PlayerGameStatistic.objects.get(user=user, game=game)
+                stats.times_in_jail += 1
+                stats.save()
+            else:
+                game.positions[str(user.pk)] = dest_square_id
+                square = _get_square_by_custom_id(dest_square_id)
+                _apply_square_arrival(game, user, response, square, move_result["passed_go"])
+
+
+        game.save()
+        return response
+
+    @staticmethod
+    def _square_chosen_logic(game: Game, user: CustomUser, action: Action) -&gt; Response:
+        """
+        Handles the logic when a user selects their final destination (if multiple choices were given).
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The current user.
+            action (ActionMoveTo): Action indicating the chosen square.
+
+        Returns:
+            Response: Standard response.
+
+        Raises:
+            MaliciousUserInput: If the chosen square is not in `possible_destinations`.
+        """
+        response: ResponseChooseSquare = ResponseChooseSquare()
+
+        if not isinstance(action, ActionMoveTo):
+            raise MaliciousUserInputAction(game, user, action)
+
+        square = action.square
+
+        if str(square.custom_id) not in game.possible_destinations:
+            raise MaliciousUserInput(user, "tried to move to an illegal square")
+
+        current_pos_id = game.positions[str(user.pk)]
+        current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
+
+        steps = game.possible_destinations.get(str(square.custom_id), 0)
+
+        move_result = _move_player_logic(current_pos_square, steps)
+
+        if steps == 0:
+            response.path = [current_pos_id, square.custom_id]
+        else:
+            response.path = move_result["path"]
+
+        game.positions[str(user.pk)] = square.custom_id
+
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.walked_squares += steps
+        stats.save()
+
+        game.possible_destinations = dict()
+
+        # Use the passed_go flag correctly computed by _move_player_logic.
+        _apply_square_arrival(game, user, response, action.square, move_result["passed_go"])
+
+
+        game.save()
+        return response
+
+    @staticmethod
+    def _choose_fantasy_logic(game: Game, user: CustomUser, action: ActionChooseCard) -&gt; Response:
+        response = ResponseChooseFantasy()
+        fantasy_event = game.fantasy_event
+        generate = not action.chosen_revealed_card
+        new_fantasy = None
+
+        if not generate:
+            apply_fantasy_event(game, user, fantasy_event)
+            response.fantasy_event = fantasy_event
+            game.fantasy_event = None
+
+        else:
+            new_fantasy = FantasyEventFactory.generate()
+            apply_fantasy_event(game, user, new_fantasy)
+            response.fantasy_event = new_fantasy
+            game.fantasy_event = None
+
+
+        if game.streak == 0:
+            game.phase = GameManager.BUSINESS
+        else:
+            game.phase = GameManager.ROLL_THE_DICES
+
+        game.save()
+
+        return response
+
+    @staticmethod
+    def _management_logic(game: Game, user: CustomUser, action: Action) -&gt; Response:
+        """
+        Logic of management phase, where the user can buy properties, pay bills etc.
+
+        It checks the user's action against the current square they are on to update 
+        the game state and transition to the next phase.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The acting user.
+            action (Action): The payload of the action taken (e.g., ActionBuySquare).
+
+        Returns:
+            Response: Standard response.
+
+        Raises:
+            MaliciousUserInputAction: If the action does not fit the phase/context.
+        """
+        current_square = _get_user_square(game, user).get_real_instance()
+        prop_rel = _get_relationship(game, current_square)
+
+        if isinstance(action, ActionBuySquare):
+            if isinstance(current_square, PropertySquare):
+                # TODO: Check money
+                game.money[str(user.pk)] -= current_square.buy_price
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.lost_money += current_square.buy_price
+                stats.save()
+                new_property = PropertyRelationship(game=game, square=current_square, owner=user)
+                user_properties = PropertyRelationship.objects.filter(game=game, owner=user)
+                user_same_group_properties = user_properties.filter(square__propertysquare__group=current_square.group)
+
+                group_squares = PropertySquare.objects.filter(group=current_square.group, board = current_square.board)
+
+                if user_same_group_properties.count() == group_squares.count() - 1:
+                    new_property.houses = 0
+                    user_same_group_properties.update(houses=0)
+                else: 
+                    new_property.houses = -1
+                new_property.save()
+
+            elif isinstance(current_square, ServerSquare):
+                game.money[str(user.pk)] -= current_square.buy_price
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.lost_money += current_square.buy_price
+                stats.save()
+                new_property = PropertyRelationship(game=game, square=current_square, owner=user)
+                new_property.save()
+
+            elif isinstance(current_square, BridgeSquare):
+                game.money[str(user.pk)] -= current_square.buy_price
+                stats = PlayerGameStatistic.objects.get(user=user, game=game)
+                stats.lost_money += current_square.buy_price
+                stats.save()
+                new_property = PropertyRelationship(game=game, square=current_square, owner=user)
+                new_property.save()
+
+            else:
+                raise MaliciousUserInputAction(game, user, action)
+        elif isinstance(action, ActionDropPurchase):
+            if isinstance(action.square, (PropertySquare, ServerSquare, BridgeSquare)):
+                GameManager._initiate_auction(game, action.square)
+            else:
+                raise MaliciousUserInputAction(game, user, action)
+        elif isinstance(action, ActionTakeTram):
+            if isinstance(current_square, TramSquare):
+                square = action.square
+                tram_squares = TramSquare.objects.filter()
+                tram_square_actual_id = game.positions[str(user.pk)]
+                tram_squares_extern_ids = [s.custom_id for s in tram_squares]
+
+                if square.custom_id == tram_square_actual_id: # case stay in the same square, free
+                    pass
+                elif square.custom_id in tram_squares_extern_ids: # Move to another square
+                    if game.money[str(user.pk)] &lt; square.buy_price:
+                        raise MaliciousUserInput(user, "does not have enough money to take tram")
+                    game.money[str(user.pk)] -= square.buy_price
+                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                    stats.lost_money += square.buy_price
+                    stats.save()
+                    game.positions[str(user.pk)] = square.custom_id
+                else:
+                    raise MaliciousUserInput(user, "tried to take a tram to a non tram square")
+            else:
+                raise MaliciousUserInputAction(game, user, action)
+        elif isinstance(action, ActionNextPhase):
+            # TODO: Remove?
+            pass
+        else:
+            raise MaliciousUserInputAction(game, user, action)
+
+        if game.phase == GameManager.MANAGEMENT:
+            if game.streak == 0:
+                game.phase = GameManager.BUSINESS
+            else:
+                game.phase = GameManager.ROLL_THE_DICES
+
+        game.save()
+        return Response()
+
+    @staticmethod
+    def _business_logic(game: Game, user: CustomUser, action: Action) -&gt; Response:
+        """
+        Unifies the business and liquidation phases. Handles building, demolishing, 
+        trading, mortgaging, and proceeding to the next turn.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The active user.
+            action (Action): The payload of the action taken.
+
+        Returns:
+            Response: Standard response.
+
+        Raises:
+            MaliciousUserInput: If restrictions (e.g., negative balance on next turn) are unmet.
+        """
+        # Logic for the business phase where players can build houses, trade, etc.
+        if isinstance(action, ActionBuild):
+            # Check owner 
+            building_square = action.square
+            relationship = _build_square(game, user, building_square, action.houses, False)
+
+        elif isinstance(action, ActionDemolish):
+            # Similiar to build
+            demolition_square = action.square
+            relationship = _demolish_square(game, user, demolition_square, action.houses, False)
+
+        elif isinstance(action, ActionTradeProposal):
+            relationship = GameManager._propose_trade(game, user, action)
+
+        elif isinstance(action, ActionMortgageSet):
+            relationship = _set_mortgage(game, user, action.square, False)
+
+        elif isinstance(action, ActionMortgageUnset):
+            relationship = _unset_mortgage(game, user, action.square, False)        
+        elif isinstance(action, ActionNextPhase):
+            current_money = game.money[str(user.pk)]
+
+
+            if game.phase == GameManager.BUSINESS:
+                if current_money &gt;= 0:
+                    GameManager._next_turn(game, user)
+                else:
+                    game.phase = GameManager.LIQUIDATION
+                    game.save()
+
+            elif game.phase == GameManager.LIQUIDATION:
+                if current_money &gt;= 0:
+                    GameManager._next_turn(game, user)
+                else:
+                    raise MaliciousUserInput(user, "Cannot end in NEGATIVE")
+
+        #TODO: elif with a timeout -&gt; auto sell in case user can reach positive status or kick out in case
+
+        return Response()
+
+    @staticmethod
+    def _answer_trade_proposal_logic(game: Game, user: CustomUser, action: Action) -&gt; Response:
+        """
+        Processes a user's answer (accept/reject) to an active trade proposal.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The targeted user responding to the offer.
+            action (ActionTradeAnswer): The user's response payload.
+
+        Returns:
+            Response: Standard response.
+
+        Raises:
+            MaliciousUserInput: If an unauthorized user attempts to answer, 
+                or references an invalid proposal.
+        """
+        if isinstance(action, ActionTradeAnswer):
+            offer = action.proposal
+
+            offering = offer.player
+
+            offered_money = offer.offered_money
+            asked_money = offer.asked_money
+            offered_properties = offer.offered_properties
+            asked_properties = offer.asked_properties
+
+            # TODO: Verify no player goes to negative (unless liquidation)
+
+            if user != offer.destination_user:
+                raise MaliciousUserInput(user, f"cannot accept proposal {offer}")
+
+            if offer != game.proposal:
+                raise MaliciousUserInput(user, f"tried to reference a non-existent proposal")
+
+            if action.choose:
+                for relationship in offered_properties.all():
+                    relationship.owner = user
+                    relationship.houses = -1 # reset houses
+                    relationship.save()
+
+                for relationship in asked_properties.all():
+                    relationship.owner = offering
+                    relationship.houses = -1
+                    relationship.save()
+
+                final_money = offered_money - asked_money
+
+                game.money[str(offering.pk)] -= offered_money
+                game.money[str(offering.pk)] += asked_money
+
+                stats = PlayerGameStatistic.objects.get(user=offering,game=game)
+                if final_money &gt; 0:
+                    stats.lost_money += abs(final_money)
+                else:
+                    stats.won_money += abs(final_money)
+                stats.num_trades += 1
+                stats.save()
+
+                game.money[str(user.pk)] -= asked_money
+                game.money[str(user.pk)] += offered_money
+
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                if final_money &gt; 0:
+                    stats.won_money += abs(final_money)
+                else:
+                    stats.lost_money += abs(final_money)
+                stats.num_trades += 1
+                stats.save()
+
+                game.save()
+
+            game.phase = GameManager.BUSINESS
+            game.active_phase_player = offering
+            game.save()
+
+            return Response()
+        else:
+            raise MaliciousUserInputAction(game, user, action)
+
+    @staticmethod
+    def _initiate_auction(game: Game, square: BaseSquare) -&gt; Response:
+        """
+        Transitions the game into an AUCTION phase for a dropped property.
+
+        Args:
+            game (Game): The current game instance.
+            square (BaseSquare): The property square going up for auction.
+
+        Returns:
+            Response: Standard response.
+        """
+        game.phase = GameManager.AUCTION
+
+        auction = Auction.objects.create(game=game, square=square)
+        game.current_auction = auction
+        game.save()
+
+        # TODO: Remove magic number
+        from .tasks import auction_callback
+        auction_callback.apply_async(args=[game.pk], countdown=50)
+        # TODO: Remove in production
+        game.refresh_from_db()
+
+        return Response()
+
+    @staticmethod
+    def _bid_property_auction_logic(game: Game, user: CustomUser, action: Action) -&gt; Response:
+        """
+        Registers a player's bid during an active auction phase.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The user placing the bid.
+            action (ActionBid): The action carrying the bid amount.
+
+        Returns:
+            Response: Standard response.
+
+        Raises:
+            GameLogicError: If auction state is corrupted.
+            MaliciousUserInput: If the user bids twice or exceeds their balance.
+        """
+        if not isinstance(action, ActionBid):
+            raise MaliciousUserInputAction(game, user, action)
+
+        auction = game.current_auction
+        if not auction:
+            raise GameLogicError("No active auction")
+
+        # user has not bid yet
+        if auction.bids.filter(player=user).exists():
+            raise MaliciousUserInput(user, "User already placed a bid in this auction")
+
+        # user who started the bid cant bid
+        dropped = ActionDropPurchase.objects.filter(game=game, player=user, square=auction.square).exists()
+        if dropped:
+            raise MaliciousUserInput(user, "cannot bid in an auction they triggered")
+
+        # user has enough money -&gt; compulsory for auctions
+        amount = action.amount
+        if amount &gt; game.money[str(user.pk)]:
+            raise MaliciousUserInput(user, "Bid amount exceeds current balance")
+
+
+        game.save()
+        return Response()
+
+    @staticmethod
+    def _end_auction(game: Game) -&gt; Response:
+        """
+        Ends an active auction, resolves the winner based on the highest bid, 
+        handles ties, and transitions the game state back to BUSINESS.
+
+        Args:
+            game (Game): The current game instance.
+
+        Returns:
+            Auction: The finalized auction object.
+
+        Raises:
+            GameLogicError: If not in AUCTION phase or state is missing square ID.
+        """
+        ## call this with a timer -&gt; end of the auction
+
+        if game.phase != GameManager.AUCTION:
+            raise GameLogicError("Tried to end auction but game is not in auction phase")
+
+        auction = game.current_auction
+        if not auction:
+            raise GameLogicError("Game is in AUCTION phase but no auction object found")
+
+        square = auction.square.get_real_instance()
+        bids = auction.bids.all()
+
+
+        # no one bid
+        if not bids.exists():
+            if game.streak == 0:
+                game.phase = GameManager.BUSINESS
+            else:
+                game.phase = GameManager.ROLL_THE_DICES
+
+            auction.is_active = False
+            auction.winner = None
+            auction.final_amount = 0
+            auction.is_tie = False
+            auction.save()
+
+            game.current_auction = None
+            game.save()
+
+            return ResponseAuction(auction=auction)
+
+        max_bid_amount = bids.aggregate(Max('amount'))['amount__max']
+        winners = bids.filter(amount=max_bid_amount)
+
+        if winners.count() &gt; 1:
+            if game.streak == 0:
+                game.phase = GameManager.BUSINESS
+            else:
+                game.phase = GameManager.ROLL_THE_DICES
+
+            auction.is_active = False
+            auction.winner = None
+            auction.final_amount = max_bid_amount
+            auction.is_tie = True
+            auction.save()
+
+            game.current_auction = None
+            game.save()
+            return ResponseAuction(auction=auction)
+
+        winner_action = winners.first()
+        winner = winner_action.player
+        highest_bid = winner_action.amount
+
+        game.money[str(winner.pk)] -= highest_bid
+        stats = PlayerGameStatistic.objects.get(user=winner,game=game)
+        stats.lost_money += highest_bid
+        stats.save()
+
+        new_property = PropertyRelationship(game=game, square=square, owner=winner)
+
+        # groups n houses
+        if isinstance(square, PropertySquare):
+            user_properties = PropertyRelationship.objects.filter(game=game, owner=winner)
+            user_same_group_properties = user_properties.filter(square__propertysquare__group=square.group)
+            group_squares = PropertySquare.objects.filter(group=square.group, board = square.board)
+
+            if user_same_group_properties.count() == group_squares.count() - 1:
+                new_property.houses = 0
+                user_same_group_properties.update(houses=0)
+            else: 
+                new_property.houses = -1
+        else:
+            new_property.houses = -1
+
+        new_property.save()
+
+        auction.winner = winner
+        auction.final_amount = highest_bid
+        auction.is_active = False
+        auction.is_tie = False
+        auction.save()
+
+        if game.streak == 0:
+            game.phase = GameManager.BUSINESS
+        else:
+            game.phase = GameManager.ROLL_THE_DICES
+
+        game.current_auction = None
+        game.save()
+
+        return ResponseAuction(auction=auction)
+
+    @classmethod
+    def _next_turn(cls, game: Game, user: CustomUser) -&gt; None:
+        players_list = list(game.players.all()) 
+        num_players = len(players_list)
+        print(f"players list: {players_list}")
+        print(f"ordered players: {game.ordered_players}")
+        current_index = -1
+        current_player_id = -1
+        for p in players_list:
+            if p == game.active_turn_player:
+                current_player_id = p.pk
+                current_index = game.ordered_players.index(current_player_id)
+                break
+
+        if current_index == -1:
+            raise GameLogicError('current player not found')
+
+        next_index = (current_index + 1) % num_players
+        print(f"next index: {next_index}")
+        # The next active user is for both: phase and turn
+        next_player = game.players.filter(pk=game.ordered_players[next_index]).first()
+        if next_player is None:
+            raise GameLogicError('next player is None')
+
+        game.active_phase_player = next_player
+        game.active_turn_player = next_player
+        game.phase = GameManager.ROLL_THE_DICES
+        game.save()
+
+        if game.next_phase_task_id:
+            app.control.revoke(game.next_phase_task_id, terminate=True)
+            game.next_phase_task_id = None
+
+        from .tasks import kick_out_callback
+
+        #task = kick_out_callback.apply_async(args=[game.pk, next_player.pk], countdown=50)
+        #game.kick_out_task_id = task.id
+
+        game.save()
+
+    @classmethod
+    def _propose_trade(cls, game: Game, user: CustomUser, action: ActionTradeProposal) -&gt; None:
+        if action.player != user or action.offered_money &lt; 0 or action.asked_money &lt; 0:
+            raise MaliciousUserInput(user, "cannot do operation")
+        if action.destination_user not in game.players.all():
+            # FIXME: Change to internal order so that it handles player change to AI
+            raise MaliciousUserInput(user, "referenced a player that is not in game")
+
+        asked_properties_list = action.asked_properties.all()
+        asked_count = PropertyRelationship.objects.filter(
+            game=game, 
+            owner=action.destination_user,
+            id__in=action.asked_properties.all()
+        ).count()
+
+        if asked_count != asked_properties_list.count():
+            raise MaliciousUserInput(user, "destination does not have enough properties")
+
+        offered_properties_list = action.offered_properties.all()
+        offered_count = PropertyRelationship.objects.filter(
+            game=game, 
+            owner=action.player,
+            id__in=offered_properties_list
+        ).count()
+
+        if offered_count != offered_properties_list.count():
+            raise MaliciousUserInput(user, "offer does not have enough properties")
+
+        all_trade_properties = list(asked_properties_list) + list(offered_properties_list)
+        for rel in all_trade_properties:
+            real_sq = rel.square.get_real_instance()
+            if isinstance(real_sq, PropertySquare):
+                group_has_houses = PropertyRelationship.objects.filter(
+                    game=game, 
+                    square__propertysquare__group=real_sq.group,
+                    houses__gt=0
+                ).exists()
+                if group_has_houses:
+                    raise MaliciousUserInput(user, "cannot trade properties from a group with constructions")
+
+        game.phase = GameManager.PROPOSAL_ACCEPTANCE
+        game.active_phase_player = action.destination_user
+        game.proposal = action # type: ignore
+        game.save()
+
+    @classmethod
+    def _bankrupt_player(cls, game: Game, user: CustomUser) -&gt; None:
+        properties = PropertyRelationship.objects.filter(game=game, owner=user)
+
+        #reset all properties
+        for rel in properties:
+            rel.owner = None 
+            rel.houses = -1  
+            rel.mortgage = False
+            rel.save()
+
+
+        game.money[str(user.pk)] = 0
+
+        # next_turns fails if we dont do this sh
+        game.ordered_players = [pk for pk in game.ordered_players if pk != user.pk]
+        game.save()
+
+        if game.active_turn_player == user:
+            cls._next_turn(game, user)
+
+        game.players.remove(user)
+        game.save()
+
+        # TODO: if only one left -&gt; he wins
+
+    #TODO: llegar a fase final donde se reparte esto
+    @classmethod
+    def _apply_end_bonuses(cls, game: Game, num_bonuses: int = 3) -&gt; ResponseBonus:
+        all_categories = list(BonusCategory.objects.all())
+        chosen = random.sample(all_categories, min(num_bonuses, len(all_categories)))
+
+        response = ResponseBonus()
+        bonuses = {}
+
+        for category in chosen:
+            field = category.stat_field
+            stats = PlayerGameStatistic.objects.filter(game=game)
+
+            max_value = stats.aggregate(Max(field))[f'{field}__max']
+            if max_value and max_value &gt; 0:
+                winners = list(stats.filter(**{field: max_value}).values_list('user__pk', flat=True))
+                for pk in winners:
+                    game.money[str(pk)] += category.bonus_amount
+            else:
+                winners = []
+
+            bonuses[str(category.pk)] = {
+                'bonus_amount': category.bonus_amount,
+                'winners': winners
+            }
+
+        response.bonuses = bonuses
+        game.save()
+        return response
+
+    @classmethod
+    def _end_game_logic(cls, game: Game, user: CustomUser, action: Action) -&gt; Response:
+        if not game.finished:
+            game.finished = True
+            response = cls._apply_end_bonuses(game, num_bonuses=3)
+            response.save()
+            game.bonus_response = response
+            game.save()
+            return response
+        else:
+            raise GameLogicError('game was already ended')</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="magnate.games.GameManager.process_action">
+<code class="highlight language-python">process_action(game, user, action)</code>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+</span>
+</h3>
+<div class="doc doc-contents">
+<p>The only public method exposed in the API. It processes each action
+in dedicated functions depending on the current phase and returns
+a Response.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current active game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user performing the action.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>action</code>
+</td>
+<td>
+<code><a class="autorefs autorefs-internal" href="../actions/#magnate.models.Action" title="Action (magnate.exceptions.Action)">Action</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The deserialized action payload.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><a class="autorefs autorefs-internal" href="../responses/#magnate.models.Response" title="Response (magnate.exceptions.Response)">Response</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A response object representing the outcome.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.MaliciousUserInput" title="MaliciousUserInput (magnate.exceptions.MaliciousUserInput)">MaliciousUserInput</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If the user acts out of turn or phase.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.GameLogicError" title="GameLogicError (magnate.exceptions.GameLogicError)">GameLogicError</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If an unrecognized phase is encountered.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/games.py</code></summary>
+<pre class="highlight"><code class="language-python">@classmethod
+@database_sync_to_async
+def process_action(cls, game: Game, user: CustomUser, action: Action) -&gt; Response:
+    """
+    The only public method exposed in the API. It processes each action
+    in dedicated functions depending on the current phase and returns
+    a Response.
+
+    Args:
+        game (Game): The current active game instance.
+        user (CustomUser): The user performing the action.
+        action (Action): The deserialized action payload.
+
+    Returns:
+        Response: A response object representing the outcome.
+
+    Raises:
+        MaliciousUserInput: If the user acts out of turn or phase.
+        GameLogicError: If an unrecognized phase is encountered.
+    """
+    if isinstance(action, ActionSurrender):
+        # TODO
+        pass
+
+    if user != game.active_phase_player and not isinstance(action, ActionBid): # if aucction there are no turns
+        raise MaliciousUserInput(user, "is not the active player")
+
+    if game.phase == cls.ROLL_THE_DICES:
+        if isinstance(action, ActionPayBail):
+            response = cls._pay_bail_logic(game, user, action)
+        elif isinstance(action, ActionThrowDices):
+            response = cls._roll_dices_logic(game, user, action)
+        else:
+            raise MaliciousUserInputAction(game, user, action)
+    elif game.phase == cls.CHOOSE_SQUARE:
+        if not isinstance(action, ActionMoveTo):
+            raise MaliciousUserInputAction(game, user, action)
+        response = cls._square_chosen_logic(game, user, action)
+    elif game.phase == cls.CHOOSE_FANTASY:
+        if not isinstance(action, ActionChooseCard):
+            raise MaliciousUserInputAction(game, user, action)
+        response = cls._choose_fantasy_logic(game, user, action)
+    elif game.phase == cls.MANAGEMENT:
+        if not isinstance(action, (ActionBuySquare, ActionDropPurchase, ActionTakeTram, ActionNextPhase)):
+            raise MaliciousUserInputAction(game, user, action)
+        response = cls._management_logic(game, user, action)
+    elif game.phase == cls.BUSINESS or game.phase == cls.LIQUIDATION:
+        if not isinstance(action, (ActionBuild, ActionDemolish, ActionTradeProposal, ActionMortgageSet, ActionMortgageUnset, ActionNextPhase)):
+            raise MaliciousUserInputAction(game, user, action)
+        response = cls._business_logic(game, user, action)
+    elif game.phase == cls.ANSWER_TRADE_PROPOSAL:
+        if not isinstance(action, ActionTradeAnswer):
+            raise MaliciousUserInputAction(game, user, action)
+        response = cls._answer_trade_proposal_logic(game, user, action)
+    elif game.phase == cls.AUCTION:
+        if not isinstance(action, ActionBid):
+            raise MaliciousUserInputAction(game, user, action)
+        response = cls._bid_property_auction_logic(game, user, action)
+    elif game.phase == cls.END_GAME:
+        # TODO: check instance???
+        # response = cls._end_game_logic(game,user,action)
+        return cls._end_game_logic(game,user,action)
+    else: 
+        raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
+
+    return _add_basic_response_data(game, response)</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="magnate.games.GameManager._pay_bail_logic">
+<code class="highlight language-python">_pay_bail_logic(game, user, action)</code>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+</span>
+</h3>
+<div class="doc doc-contents">
+<p>Processes the action to pay the jail bail.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The jailed user.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>action</code>
+</td>
+<td>
+<code><a class="autorefs autorefs-internal" href="../actions/#magnate.models.ActionPayBail" title="ActionPayBail (magnate.exceptions.ActionPayBail)">ActionPayBail</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The bail action payload.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><a class="autorefs autorefs-internal" href="../responses/#magnate.models.Response" title="Response (magnate.exceptions.Response)">Response</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The standard response.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.MaliciousUserInput" title="MaliciousUserInput (magnate.exceptions.MaliciousUserInput)">MaliciousUserInput</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If the user is not actually in jail.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.GameLogicError" title="GameLogicError (magnate.exceptions.GameLogicError)">GameLogicError</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If the user does not have enough money.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/games.py</code></summary>
+<pre class="highlight"><code class="language-python">@staticmethod
+def _pay_bail_logic(game: Game, user: CustomUser, action: ActionPayBail) -&gt; Response:
+    """
+    Processes the action to pay the jail bail.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The jailed user.
+        action (ActionPayBail): The bail action payload.
+
+    Returns:
+        Response: The standard response.
+
+    Raises:
+        MaliciousUserInput: If the user is not actually in jail.
+        GameLogicError: If the user does not have enough money.
+    """
+    square = _get_user_square(game, user).get_real_instance()
+
+    if not isinstance(square, JailSquare):
+        raise MaliciousUserInput(user, "is not in jail")
+
+    remaining = game.jail_remaining_turns.get(str(user.pk), 0)
+    if remaining == 0:
+        raise MaliciousUserInput(user, "is not in jail (no turns remaining)")
+
+    bail_price = square.bail_price
+
+    if game.money[str(user.pk)] &lt; bail_price:
+        raise GameLogicError("not enough money to pay bail")
+
+    game.money[str(user.pk)] -= bail_price
+    game.jail_remaining_turns[str(user.pk)] = 0
+    game.save()
+
+    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+    stats.lost_money += bail_price
+    stats.save()
+    # roll the dices -&gt; continue normally
+
+    return Response()</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="magnate.games.GameManager._roll_dices_logic">
+<code class="highlight language-python">_roll_dices_logic(game, user, action)</code>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+</span>
+</h3>
+<div class="doc doc-contents">
+<p>Handles rolling the dice, checking for doubles/triples, and resolving jail mechanics.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user throwing the dice.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>action</code>
+</td>
+<td>
+<code><a class="autorefs autorefs-internal" href="../actions/#magnate.models.ActionThrowDices" title="ActionThrowDices (magnate.exceptions.ActionThrowDices)">ActionThrowDices</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The dice throw action payload.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><a class="autorefs autorefs-internal" href="../responses/#magnate.models.Response" title="Response (magnate.exceptions.Response)">Response</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Standard response.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/games.py</code></summary>
+<pre class="highlight"><code class="language-python">@staticmethod
+def _roll_dices_logic(game: Game, user: CustomUser, action: ActionThrowDices) -&gt; Response: 
+    """
+    Handles rolling the dice, checking for doubles/triples, and resolving jail mechanics.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The user throwing the dice.
+        action (ActionThrowDices): The dice throw action payload.
+
+    Returns:
+        Response: Standard response.
+    """
+    response: ResponseThrowDices = ResponseThrowDices()
+
+    d1 = random.randint(1,6)
+    d2 = random.randint(1,6)
+    d3 = random.randint(1,6) # 4-6 are the bus faces
+
+    response.dice1, response.dice2, response.dice_bus = d1, d2, d3
+
+    triples = d3 &lt;= 3 and (d1 == d2 == d3)
+    doubles = (d1 == d2) and not triples
+
+    response.triple = triples
+
+    current_pos_square = _get_user_square(game, user).get_real_instance()
+    current_pos_id = current_pos_square.custom_id
+
+    # jail logic
+    remaining_jail_turns = game.jail_remaining_turns.get(str(user.pk), 0)
+    is_jailed = remaining_jail_turns &gt; 0
+
+    if is_jailed:
+        jail_sq = current_pos_square
+        if isinstance(jail_sq, JailSquare):
+            if remaining_jail_turns == 1: #obligado a salir
+                game.money[str(user.pk)] -= jail_sq.bail_price
+                game.jail_remaining_turns[str(user.pk)] = 0
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.turns_in_jail += 1
+                stats.lost_money += jail_sq.bail_price
+                stats.save()
+            elif doubles: #sale gratis
+                game.jail_remaining_turns[str(user.pk)] = 0
+                game.streak = 0
+            else:
+                # stays in jail
+                game.jail_remaining_turns[str(user.pk)] -= 1
+                game.phase = GameManager.BUSINESS
+                game.save()
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.turns_in_jail += 1
+                stats.save()
+                response.path = [current_pos_id]
+                return response
+        else:
+            raise GameLogicError(f"Cannot be in jail status and not in jail square")
+
+    # Not jailed
+    if triples:
+        # path current -&gt; decided in chosen
+        response.triple = True
+        square = current_pos_square
+        all_squares = BaseSquare.objects.filter(board=square.board)
+        # All squares are suitable destinations
+        possible_destinations = [s.custom_id for s in all_squares]
+        possible_destinations.remove(_get_jail_square().custom_id)
+        game.possible_destinations = {str(c_id): 0 for c_id in possible_destinations}
+        response.destinations = possible_destinations
+        game.phase = GameManager.CHOOSE_SQUARE
+        response.path = [current_pos_id]
+        game.save()
+        return response
+    elif doubles: # doubles streak only if not getting out of jail via doubles
+        if game.streak &gt;= 2:
+            # path -&gt; current and jail
+            jail_square = _get_jail_square()
+            response.destinations = [jail_square.custom_id]
+            game.streak = 0
+            response.streak = game.streak
+
+            game.positions[str(user.pk)] = jail_square.custom_id
+            game.jail_remaining_turns[str(user.pk)] = 3
+            response.path = [current_pos_id, jail_square.custom_id]
+
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.times_in_jail += 1
+            stats.save()
+
+            game.phase = GameManager.LIQUIDATION
+
+            game.save()
+            return response
+        elif not is_jailed:
+            game.streak = game.streak + 1
+    else:
+        game.streak = 0
+
+    response.streak = game.streak
+
+    # Hasn't gone to jail
+    dice_combinations = _compute_dice_combinations(d1, d2, d3)
+    game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
+
+    response.destinations = list(game.possible_destinations.keys())
+    if len(game.possible_destinations) &gt; 1:
+        # path in square chosen logic
+        game.phase = GameManager.CHOOSE_SQUARE
+        response.path = [current_pos_id]
+    else:
+        stats = PlayerGameStatistic.objects.get(user=user,game=game)
+        stats.walked_squares += dice_combinations[0]
+        stats.save()
+        dest_square_id = next(iter(game.possible_destinations))
+        steps = game.possible_destinations[dest_square_id]
+
+        # Use _move_player_logic to get the traversed path and check for "Go to Jail" or "Passing Go".
+        move_result = _move_player_logic(current_pos_square, steps)
+        response.path = move_result["path"]
+
+        if move_result["jailed"]:
+            # landing in go to jail; update state to jail the player.
+            game.positions[str(user.pk)] = move_result["final_id"]
+            game.jail_remaining_turns[str(user.pk)] = 3
+            game.phase = GameManager.LIQUIDATION
+            stats = PlayerGameStatistic.objects.get(user=user, game=game)
+            stats.times_in_jail += 1
+            stats.save()
+        else:
+            game.positions[str(user.pk)] = dest_square_id
+            square = _get_square_by_custom_id(dest_square_id)
+            _apply_square_arrival(game, user, response, square, move_result["passed_go"])
+
+
+    game.save()
+    return response</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="magnate.games.GameManager._square_chosen_logic">
+<code class="highlight language-python">_square_chosen_logic(game, user, action)</code>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+</span>
+</h3>
+<div class="doc doc-contents">
+<p>Handles the logic when a user selects their final destination (if multiple choices were given).</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current user.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>action</code>
+</td>
+<td>
+<code><a class="autorefs autorefs-internal" href="../actions/#magnate.models.ActionMoveTo" title="ActionMoveTo (magnate.exceptions.ActionMoveTo)">ActionMoveTo</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Action indicating the chosen square.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><a class="autorefs autorefs-internal" href="../responses/#magnate.models.Response" title="Response (magnate.exceptions.Response)">Response</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Standard response.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.MaliciousUserInput" title="MaliciousUserInput (magnate.exceptions.MaliciousUserInput)">MaliciousUserInput</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If the chosen square is not in <code>possible_destinations</code>.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/games.py</code></summary>
+<pre class="highlight"><code class="language-python">@staticmethod
+def _square_chosen_logic(game: Game, user: CustomUser, action: Action) -&gt; Response:
+    """
+    Handles the logic when a user selects their final destination (if multiple choices were given).
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The current user.
+        action (ActionMoveTo): Action indicating the chosen square.
+
+    Returns:
+        Response: Standard response.
+
+    Raises:
+        MaliciousUserInput: If the chosen square is not in `possible_destinations`.
+    """
+    response: ResponseChooseSquare = ResponseChooseSquare()
+
+    if not isinstance(action, ActionMoveTo):
+        raise MaliciousUserInputAction(game, user, action)
+
+    square = action.square
+
+    if str(square.custom_id) not in game.possible_destinations:
+        raise MaliciousUserInput(user, "tried to move to an illegal square")
+
+    current_pos_id = game.positions[str(user.pk)]
+    current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
+
+    steps = game.possible_destinations.get(str(square.custom_id), 0)
+
+    move_result = _move_player_logic(current_pos_square, steps)
+
+    if steps == 0:
+        response.path = [current_pos_id, square.custom_id]
+    else:
+        response.path = move_result["path"]
+
+    game.positions[str(user.pk)] = square.custom_id
+
+    stats = PlayerGameStatistic.objects.get(user=user,game=game)
+    stats.walked_squares += steps
+    stats.save()
+
+    game.possible_destinations = dict()
+
+    # Use the passed_go flag correctly computed by _move_player_logic.
+    _apply_square_arrival(game, user, response, action.square, move_result["passed_go"])
+
+
+    game.save()
+    return response</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="magnate.games.GameManager._management_logic">
+<code class="highlight language-python">_management_logic(game, user, action)</code>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+</span>
+</h3>
+<div class="doc doc-contents">
+<p>Logic of management phase, where the user can buy properties, pay bills etc.</p>
+<p>It checks the user's action against the current square they are on to update 
+the game state and transition to the next phase.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The acting user.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>action</code>
+</td>
+<td>
+<code><a class="autorefs autorefs-internal" href="../actions/#magnate.models.Action" title="Action (magnate.exceptions.Action)">Action</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The payload of the action taken (e.g., ActionBuySquare).</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><a class="autorefs autorefs-internal" href="../responses/#magnate.models.Response" title="Response (magnate.exceptions.Response)">Response</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Standard response.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.MaliciousUserInputAction" title="MaliciousUserInputAction (magnate.exceptions.MaliciousUserInputAction)">MaliciousUserInputAction</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If the action does not fit the phase/context.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/games.py</code></summary>
+<pre class="highlight"><code class="language-python">@staticmethod
+def _management_logic(game: Game, user: CustomUser, action: Action) -&gt; Response:
+    """
+    Logic of management phase, where the user can buy properties, pay bills etc.
+
+    It checks the user's action against the current square they are on to update 
+    the game state and transition to the next phase.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The acting user.
+        action (Action): The payload of the action taken (e.g., ActionBuySquare).
+
+    Returns:
+        Response: Standard response.
+
+    Raises:
+        MaliciousUserInputAction: If the action does not fit the phase/context.
+    """
+    current_square = _get_user_square(game, user).get_real_instance()
+    prop_rel = _get_relationship(game, current_square)
+
+    if isinstance(action, ActionBuySquare):
+        if isinstance(current_square, PropertySquare):
+            # TODO: Check money
+            game.money[str(user.pk)] -= current_square.buy_price
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.lost_money += current_square.buy_price
+            stats.save()
+            new_property = PropertyRelationship(game=game, square=current_square, owner=user)
+            user_properties = PropertyRelationship.objects.filter(game=game, owner=user)
+            user_same_group_properties = user_properties.filter(square__propertysquare__group=current_square.group)
+
+            group_squares = PropertySquare.objects.filter(group=current_square.group, board = current_square.board)
+
+            if user_same_group_properties.count() == group_squares.count() - 1:
+                new_property.houses = 0
+                user_same_group_properties.update(houses=0)
+            else: 
+                new_property.houses = -1
+            new_property.save()
+
+        elif isinstance(current_square, ServerSquare):
+            game.money[str(user.pk)] -= current_square.buy_price
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.lost_money += current_square.buy_price
+            stats.save()
+            new_property = PropertyRelationship(game=game, square=current_square, owner=user)
+            new_property.save()
+
+        elif isinstance(current_square, BridgeSquare):
+            game.money[str(user.pk)] -= current_square.buy_price
+            stats = PlayerGameStatistic.objects.get(user=user, game=game)
+            stats.lost_money += current_square.buy_price
+            stats.save()
+            new_property = PropertyRelationship(game=game, square=current_square, owner=user)
+            new_property.save()
+
+        else:
+            raise MaliciousUserInputAction(game, user, action)
+    elif isinstance(action, ActionDropPurchase):
+        if isinstance(action.square, (PropertySquare, ServerSquare, BridgeSquare)):
+            GameManager._initiate_auction(game, action.square)
+        else:
+            raise MaliciousUserInputAction(game, user, action)
+    elif isinstance(action, ActionTakeTram):
+        if isinstance(current_square, TramSquare):
+            square = action.square
+            tram_squares = TramSquare.objects.filter()
+            tram_square_actual_id = game.positions[str(user.pk)]
+            tram_squares_extern_ids = [s.custom_id for s in tram_squares]
+
+            if square.custom_id == tram_square_actual_id: # case stay in the same square, free
+                pass
+            elif square.custom_id in tram_squares_extern_ids: # Move to another square
+                if game.money[str(user.pk)] &lt; square.buy_price:
+                    raise MaliciousUserInput(user, "does not have enough money to take tram")
+                game.money[str(user.pk)] -= square.buy_price
+                stats = PlayerGameStatistic.objects.get(user=user,game=game)
+                stats.lost_money += square.buy_price
+                stats.save()
+                game.positions[str(user.pk)] = square.custom_id
+            else:
+                raise MaliciousUserInput(user, "tried to take a tram to a non tram square")
+        else:
+            raise MaliciousUserInputAction(game, user, action)
+    elif isinstance(action, ActionNextPhase):
+        # TODO: Remove?
+        pass
+    else:
+        raise MaliciousUserInputAction(game, user, action)
+
+    if game.phase == GameManager.MANAGEMENT:
+        if game.streak == 0:
+            game.phase = GameManager.BUSINESS
+        else:
+            game.phase = GameManager.ROLL_THE_DICES
+
+    game.save()
+    return Response()</code></pre>
+</details>
+</div>
+</div>
+<div class="doc doc-object doc-function">
+<h3 class="doc doc-heading" id="magnate.games.GameManager._business_logic">
+<code class="highlight language-python">_business_logic(game, user, action)</code>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+</span>
+</h3>
+<div class="doc doc-contents">
+<p>Unifies the business and liquidation phases. Handles building, demolishing, 
+trading, mortgaging, and proceeding to the next turn.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>game</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.Game">Game</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current game instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>user</code>
+</td>
+<td>
+<code><span title="magnate.exceptions.CustomUser">CustomUser</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The active user.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>action</code>
+</td>
+<td>
+<code><a class="autorefs autorefs-internal" href="../actions/#magnate.models.Action" title="Action (magnate.exceptions.Action)">Action</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The payload of the action taken.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><a class="autorefs autorefs-internal" href="../responses/#magnate.models.Response" title="Response (magnate.exceptions.Response)">Response</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Standard response.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Raises:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code><a class="autorefs autorefs-internal" href="../exceptions/#magnate.exceptions.MaliciousUserInput" title="MaliciousUserInput (magnate.exceptions.MaliciousUserInput)">MaliciousUserInput</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>If restrictions (e.g., negative balance on next turn) are unmet.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/games.py</code></summary>
+<pre class="highlight"><code class="language-python">@staticmethod
+def _business_logic(game: Game, user: CustomUser, action: Action) -&gt; Response:
+    """
+    Unifies the business and liquidation phases. Handles building, demolishing, 
+    trading, mortgaging, and proceeding to the next turn.
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The active user.
+        action (Action): The payload of the action taken.
+
+    Returns:
+        Response: Standard response.
+
+    Raises:
+        MaliciousUserInput: If restrictions (e.g., negative balance on next turn) are unmet.
+    """
+    # Logic for the business phase where players can build houses, trade, etc.
+    if isinstance(action, ActionBuild):
+        # Check owner 
+        building_square = action.square
+        relationship = _build_square(game, user, building_square, action.houses, False)
+
+    elif isinstance(action, ActionDemolish):
+        # Similiar to build
+        demolition_square = action.square
+        relationship = _demolish_square(game, user, demolition_square, action.houses, False)
+
+    elif isinstance(action, ActionTradeProposal):
+        relationship = GameManager._propose_trade(game, user, action)
+
+    elif isinstance(action, ActionMortgageSet):
+        relationship = _set_mortgage(game, user, action.square, False)
+
+    elif isinstance(action, ActionMortgageUnset):
+        relationship = _unset_mortgage(game, user, action.square, False)        
+    elif isinstance(action, ActionNextPhase):
+        current_money = game.money[str(user.pk)]
+
+
+        if game.phase == GameManager.BUSINESS:
+            if current_money &gt;= 0:
+                GameManager._next_turn(game, user)
+            else:
+                game.phase = GameManager.LIQUIDATION
+                game.save()
+
+        elif game.phase == GameManager.LIQUIDATION:
+            if current_money &gt;= 0:
+                GameManager._next_turn(game, user)
+            else:
+                raise MaliciousUserInput(user, "Cannot end in NEGATIVE")
+
+    #TODO: elif with a timeout -&gt; auto sell in case user can reach positive status or kick out in case
+
+    return Response()</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script src="../js/base.js"></script>
+<script src="../search/main.js"></script>
+<div aria-hidden="true" aria-labelledby="searchModalLabel" class="modal" id="mkdocs_search_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="searchModalLabel">Search</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p>From here you can search these documents. Enter your search terms below.</p>
+<form>
+<div class="form-group">
+<input class="form-control" id="mkdocs-search-query" placeholder="Search..." title="Type search term here" type="search"/>
+</div>
+</form>
+<div data-no-results-text="No results found" id="mkdocs-search-results"></div>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div><div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

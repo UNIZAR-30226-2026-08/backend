@@ -78,7 +78,9 @@ class GameManager:
         """
         if isinstance(action, ActionSurrender):
             # TODO
-            pass
+            cls._bankrupt_player(game, user)
+            response = Response()
+            return _add_basic_response_data(game, response)
 
         if user != game.active_phase_player and not isinstance(action, ActionBid): # if aucction there are no turns
             raise MaliciousUserInput(user, "is not the active player")
@@ -446,7 +448,7 @@ class GameManager:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionDropPurchase):
             if isinstance(action.square, (PropertySquare, ServerSquare, BridgeSquare)):
-                GameManager._initiate_auction(game, action.square)
+                return GameManager._initiate_auction(game, action.square)
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionTakeTram):
@@ -636,13 +638,13 @@ class GameManager:
         """
         game.phase = GameManager.AUCTION
 
-        auction = Auction.objects.create(game=game, square=square)
+        auction = Auction.objects.create(game=game, square=square, is_active=True, bids = {})
         game.current_auction = auction
         game.save()
 
         # TODO: Remove magic number
         from .tasks import auction_callback
-        auction_callback.apply_async(args=[game.pk], countdown=50)
+        auction_callback.apply_async(args=[game.pk], countdown=10)
         # TODO: Remove in production
         game.refresh_from_db()
 
@@ -672,8 +674,10 @@ class GameManager:
         if not auction:
             raise GameLogicError("No active auction")
 
+
+        bids = auction.bids
         # user has not bid yet
-        if auction.bids.filter(player=user).exists():
+        if bids.get(str(user.pk)):
             raise MaliciousUserInput(user, "User already placed a bid in this auction")
         
         # user who started the bid cant bid
@@ -687,6 +691,10 @@ class GameManager:
             raise MaliciousUserInput(user, "Bid amount exceeds current balance")
 
       
+        bids[str(user.pk)] = amount
+        auction.bids = bids
+        auction.save()
+
         game.save()
         return Response()
     
@@ -715,11 +723,11 @@ class GameManager:
             raise GameLogicError("Game is in AUCTION phase but no auction object found")
 
         square = auction.square.get_real_instance()
-        bids = auction.bids.all()
+        bids = auction.bids
 
 
         # no one bid
-        if not bids.exists():
+        if not bids:
             if game.streak == 0:
                 game.phase = GameManager.BUSINESS
             else:
@@ -736,10 +744,10 @@ class GameManager:
 
             return ResponseAuction(auction=auction)
 
-        max_bid_amount = bids.aggregate(Max('amount'))['amount__max']
-        winners = bids.filter(amount=max_bid_amount)
-        
-        if winners.count() > 1:
+        max_bid_amount = max(bids.values())
+        winners = [int(uid) for uid, amt in bids.items() if amt == max_bid_amount]
+            
+        if len(winners)> 1:
             if game.streak == 0:
                 game.phase = GameManager.BUSINESS
             else:
@@ -755,9 +763,9 @@ class GameManager:
             game.save()
             return ResponseAuction(auction=auction)
 
-        winner_action = winners.first()
-        winner = winner_action.player
-        highest_bid = winner_action.amount
+        winner_id = winners[0]
+        winner = CustomUser.objects.get(pk=winner_id)
+        highest_bid = max_bid_amount
         
         game.money[str(winner.pk)] -= highest_bid
         stats = PlayerGameStatistic.objects.get(user=winner,game=game)

@@ -32,6 +32,7 @@ def broadcast_to_game(game: Game, response: Response) -> None:
 
 @shared_task
 def auction_callback(game_pk: int) -> None:
+    print("Auction ending")
     #return # TODO: remobe this
     game = Game.objects.get(pk=game_pk)
     response = GameManager._end_auction(game)

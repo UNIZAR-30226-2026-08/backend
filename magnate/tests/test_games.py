@@ -244,14 +244,14 @@ class GamesTest(TestCase):
     ##########################
     ###### ACUTION  TESTS ######
     ##########################
-    def test_auction_complete_flow(self):
+    @patch('magnate.tasks.auction_callback.apply_async')
+    def test_auction_complete_flow(self, mock_auction_task):
         """
         1. P1 do not purchase
         2. Initiate auction
         3. Players bid
         4. Terminate
         """
-
         if self.property_square is None:
             raise GameLogicError("no property square")
 
@@ -276,12 +276,11 @@ class GamesTest(TestCase):
 
         self.game.refresh_from_db()
         auction = self.game.current_auction
-        bids = auction.bids.all()
-        self.assertEqual(bids.count(), 3)
-        self.assertEqual(auction.bids.get(player=self.player2).amount, 300)
+        bids = auction.bids
+        self.assertEqual(len(bids), 3)
+        self.assertEqual(bids.get(str(self.player2.pk)), 300)
 
         result = GameManager._end_auction(self.game)
-
 
         if not isinstance(result, ResponseAuction):
             raise GameLogicError("Wrong type")
@@ -296,7 +295,8 @@ class GamesTest(TestCase):
         self.assertEqual(rel.owner, self.player2)
         self.assertEqual(self.game.money[str(self.player2.pk)], 1500 - 300)
 
-    def test_auction_desert(self):
+    @patch('magnate.tasks.auction_callback.apply_async')
+    def test_auction_desert(self, mock_auction_task):
         if self.server_square is None:
             raise GameLogicError("no server square")
 
@@ -307,7 +307,6 @@ class GamesTest(TestCase):
 
         result = GameManager._end_auction(self.game)
 
-
         if not isinstance(result, ResponseAuction):
             raise GameLogicError("Wrong type")
         
@@ -317,12 +316,12 @@ class GamesTest(TestCase):
         self.game.refresh_from_db()
         self.assertEqual(self.game.phase, GameManager.BUSINESS)
         self.assertIsNone(self.game.current_auction)
-
         
         with self.assertRaises(PropertyRelationship.DoesNotExist):
             PropertyRelationship.objects.get(game=self.game, square=self.server_square)
 
-    def test_auction_tie(self):
+    @patch('magnate.tasks.auction_callback.apply_async')
+    def test_auction_tie(self, mock_auction_task):
         if not self.property_square:
             raise GameLogicError("no property square")
 
@@ -336,7 +335,6 @@ class GamesTest(TestCase):
         async_to_sync(GameManager.process_action)(self.game, self.player2, bid_p2)
 
         result = GameManager._end_auction(self.game)
-
 
         if not isinstance(result, ResponseAuction):
             raise GameLogicError("Wrong type")
@@ -685,8 +683,9 @@ class GamesTest(TestCase):
         with self.assertRaises(MaliciousUserInput):
             async_to_sync(GameManager.process_action)(self.game, self.player1, proposal)
 
+    @patch('magnate.tasks.auction_callback.apply_async')
     @patch('magnate.games.random.randint')
-    def test_doubles_streak_full_flow(self, mock_randint):
+    def test_doubles_streak_full_flow(self, mock_randint, mock_auction_task):
         """
         1. P1 rolls doubles (streak 0 -> 1)
         2. P1 buys the square (MANAGEMENT -> BUSINESS)

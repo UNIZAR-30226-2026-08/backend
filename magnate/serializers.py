@@ -204,7 +204,7 @@ class ActionNextPhaseSerializer(ActionSerializer):
 class ActionBidSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
         model = ActionBid
-        fields = ActionSerializer.Meta.fields + ['amount', 'auction']
+        fields = ActionSerializer.Meta.fields + ['amount']
 
 class ActionDropPurchaseSerializer(ActionSerializer):
     square = SquareCustomIdField()
@@ -221,7 +221,7 @@ class AuctionSerializer(serializers.ModelSerializer):
     
     def get_bids(self, obj):
         # Return dict of user_id -> amount to maintain frontend compatibility
-        return {str(bid.player.pk): bid.amount for bid in obj.bids.all()}
+        return obj.bids
 
 class GeneralActionSerializer(serializers.ModelSerializer):
     serializer_mapping = {

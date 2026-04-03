@@ -123,7 +123,7 @@ class GameClient:
             return
         
         while True:
-            print("\nAvailable commands: throw, move, buy, sell, build, demolish, next, mortgage, unmortgage, drop, take_tram, skip_tram, choose_card, bid, trade, trade_answer, bail, surrender, exit")
+            print("\nAvailable commands: throw, move, buy, build, demolish, next, mortgage, unmortgage, drop, take_tram, skip_tram, choose_card, bid, trade, trade_answer, bail, surrender, exit")
             cmd = await get_input("Enter command: ")
             cmd = cmd.strip().lower()
 
@@ -151,9 +151,6 @@ class GameClient:
         elif cmd == "buy":
             sq_id = await get_input("Enter Square Custom ID to buy: ")
             return {"type": "ActionBuySquare", "square": int(sq_id)}
-        elif cmd == "sell": 
-            sq_id = await get_input("Enter Square Custom ID to sell: ")
-            return {"type": "ActionSellSquare", "square": int(sq_id)}
         elif cmd == "next":
             return {"type": "ActionNextPhase"}
         elif cmd == "build":
@@ -182,9 +179,8 @@ class GameClient:
             choice = await get_input("Use card? (y/n): ")
             return {"type": "ActionChooseCard", "chosen_card": choice.lower() == 'y'}
         elif cmd == "bid":
-            auction_id = await get_input("Enter Auction ID: ")
             amount = await get_input("Enter bid amount: ")
-            return {"type": "ActionBid", "auction": int(auction_id), "amount": int(amount)}
+            return {"type": "ActionBid", "amount": int(amount)}
         elif cmd == "trade":
             dest_user = await get_input("Enter destination User ID: ")
             offered_money = await get_input("Offered money: ")

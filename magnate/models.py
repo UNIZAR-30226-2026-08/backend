@@ -256,8 +256,9 @@ class Game(models.Model):
 class Auction(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='auctions')
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='auctioned_in')
-    winner = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='won_auctions')
+    bids = models.JSONField(default=dict, blank=True) #  user_id -> amount
     final_amount = models.PositiveIntegerField(null=True, blank=True)
+    winner = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='won_auctions') # type: ignore
     is_active = models.BooleanField(default=True)
     is_tie = models.BooleanField(default=False)
 
@@ -533,7 +534,6 @@ class ActionBid(Action):
       "amount": 150
     }
     """
-    auction = models.ForeignKey('Auction', on_delete=models.CASCADE, related_name='bids', null=True, blank=True)
     amount = models.PositiveIntegerField(default=0)
 
 ###############################################################################

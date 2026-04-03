@@ -1,0 +1,45 @@
+name: Deploy MkDocs to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/docs.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies for PDF generation
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 libjpeg-dev libopenjp2-7-dev libffi-dev
+
+      - name: Install Python dependencies
+        run: |
+          # 1. Install your Django project dependencies so mkdocstrings can read your code without import errors
+          pip install -r requirements.txt 
+          
+          # 2. Install MkDocs and your specific plugins
+          pip install mkdocs mkdocstrings[python] mkdocs-with-pdf
+
+      - name: Deploy to GitHub Pages
+        run: mkdocs gh-deploy --force

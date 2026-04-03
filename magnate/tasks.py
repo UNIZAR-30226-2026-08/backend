@@ -39,43 +39,16 @@ def auction_callback(game_pk: int) -> None:
     if response:
         broadcast_to_game(game, response)
 
+
 @shared_task
 def kick_out_callback(game_pk: int, user_pk: int) -> None:
-    """
-    triggered in _next_turn, after setting phase to ROLL_THE_DICES and saving -> DONE
-    TODO: also scheduled before first turn -> ¿consumers?
-    TODO: This should change user to AI
-    cancel at the start of _roll_dices_logic and _pay_bail_logic
-    """
-
-    # TODO: Remove this, but the agents test does not work if removed
-    return
-
     game = Game.objects.get(pk=game_pk)
     user = CustomUser.objects.get(pk=user_pk)
+    
+    GameManager._bankrupt_player(game, user)
 
-    # remove user things from game
-    game.money.pop(str(user.pk), None)
-    game.positions.pop(str(user.pk), None)
-    game.jail_remaining_turns.pop(str(user.pk), None)
-    game.ordered_players = [pk for pk in game.ordered_players if pk != user.pk]
-    game.players.remove(user)
-    game.save()
-
-    # remove properties, houses, mortgages
-    PropertyRelationship.objects.filter(game=game, owner=user).delete()
-    user.active_game = None
-    user.save()
-
-    remaining = game.players.count()
-    if remaining == 1:
-        game.phase = GameManager.END_GAME
-        game.save()
-        return
-
-    was_active = game.active_turn_player.pk == user.pk
-    if was_active:
-        GameManager._next_turn(game, game.active_turn_player)
+    response = Response()
+    broadcast_to_game(game, response)
 
 @shared_task
 def next_phase_callback(game_pk: int, user_pk: int) -> None:

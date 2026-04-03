@@ -892,30 +892,51 @@ class GameManager:
         game.save()
 
     @classmethod
-    def _bankrupt_player(cls, game: Game, user: CustomUser) -> None:
-        properties = PropertyRelationship.objects.filter(game=game, owner=user)
-        
-        #reset all properties
-        for rel in properties:
-            rel.owner = None 
-            rel.houses = -1  
-            rel.mortgage = False
-            rel.save()
+    def _bankrupt_player(cls, game: Game, user: CustomUser):
+        try:
+            current_idx = game.ordered_players.index(user.pk)
+            next_pk = game.ordered_players[(current_idx + 1) % len(game.ordered_players)]
+            next_player = CustomUser.objects.get(pk=next_pk)
+        except ValueError:
+            next_player = None
+
+        if user.pk in game.ordered_players:
+            game.ordered_players.remove(user.pk)
             
-
-        game.money[str(user.pk)] = 0
-
-        # next_turns fails if we dont do this sh
-        game.ordered_players = [pk for pk in game.ordered_players if pk != user.pk]
-        game.save()
-
-        if game.active_turn_player == user:
-            cls._next_turn(game, user)
-
         game.players.remove(user)
-        game.save()
+        game.money.pop(str(user.pk), None)
+        game.positions.pop(str(user.pk), None)
+        game.jail_remaining_turns.pop(str(user.pk), None)
         
-        # TODO: if only one left -> he wins
+
+        PropertyRelationship.objects.filter(game=game, owner=user).delete()
+        user.active_game = None
+        user.save()
+
+
+        if game.players.count() == 1:
+            #TODO: endgame logic
+            game.save()
+
+        if game.active_turn_player == user and next_player:
+            game.active_turn_player = next_player
+            game.active_phase_player = next_player
+            game.phase = GameManager.ROLL_THE_DICES
+            game.streak = 0
+            
+            if game.next_phase_task_id:
+                app.control.revoke(game.next_phase_task_id, terminate=True)
+                game.next_phase_task_id = None
+            if game.kick_out_task_id:
+                app.control.revoke(game.kick_out_task_id, terminate=True)
+                game.kick_out_task_id = None
+                
+            # new task
+            from .tasks import kick_out_callback
+            task = kick_out_callback.apply_async(args=[game.pk, next_player.pk], countdown=50)
+            game.kick_out_task_id = task.id
+                
+        game.save()
 
     #TODO: llegar a fase final donde se reparte esto
     @classmethod

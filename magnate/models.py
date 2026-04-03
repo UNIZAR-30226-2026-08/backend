@@ -121,6 +121,60 @@ class PrivateRoom(models.Model):
     players: models.QuerySet['CustomUser']
     
 class FantasyEvent(models.Model):
+    """
+    Fantasy events are triggered when a player lands on a fantasy square. One
+    of these effects takes place:
+    
+    - winPlainMoney: Grants a flat amount of money.
+        Cost: 130 | Possible values: [20, 60, 120, 150, 200]
+    - winRatioMoney: Increases money by a percentage ratio.
+        Cost: 500 | Possible values: [1, 2, 5, 10]
+    - losePlainMoney: Deducts a flat amount of money.
+        Cost: 80 | Possible values: [40, 80, 120, 150, 200]
+    - loseRatioMoney: Deducts money by a percentage ratio.
+        Cost: 30 | Possible values: [1%, 2%, 5%, 10%]
+    - breakOpponentHouse: Demolishes a house on an opponent's property.
+        Cost: 150
+    - breakOwnHouse: Demolishes a house on the player's own property.
+        Cost: 30
+    - shufflePositions: Moves all players to random squares.
+        Cost: 50
+    - moveAnywhereRandom: Moves the player to a random square.
+        Cost: 50
+    - moveOpponentAnywhereRandom: Moves a random opponent to a random square.
+        Cost: 60
+    - shareMoneyAll: Gives a specific amount of the player's money to all opponents.
+        Cost: 5 | Possible values: [20, 30, 50]
+    - freeHouse: Builds a free house on one of the player's properties.
+        Cost: 80
+    - goToJail: Sends the player directly to jail.
+        Cost: 25
+    - sendToJail: Sends a random opponent directly to jail.
+        Cost: 80
+    - everybodyToJail: Sends all players to jail.
+        Cost: 50
+    - doubleOrNothing: 50/50 chance to either double current money or lose it all.
+        Cost: 50
+    - getParkingMoney: Awards the accumulated parking money to the player.
+        Cost: 500
+    - reviveProperty: Unmortgages a property for free (deshipotecas gratis).
+        Cost: 100
+    - earthquake: Every developed property on the board loses one house (todas las calles pierden una casa).
+        Cost: 200
+    - everybodySendsYouMoney: Every opponent pays a specific amount to the player.
+        Cost: 120 | Possible values: [20, 30, 50]
+    - magnetism: Pulls all other players to the player's current square (todo el mundo va a ti).
+        Cost: 100
+    - goToStart: Sends the player directly to the Start (Exit) square, collecting the pass-go money.
+        Cost: 90
+
+    Frontend Fantasy Payload Example:
+    {
+      "type":"win_plain_money",
+      "values":[20,60,120,150,200],
+      "cost": 130
+    }
+    """
     class FantasyType(models.TextChoices):
         winPlainMoney = 'winPlainMoney',
         winRatioMoney = 'winRatioMoney',

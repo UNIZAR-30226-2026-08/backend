@@ -20,6 +20,7 @@ nav:
     - WebSockets (Real-time): websockets.md
     - Actions: actions.md
     - Responses: responses.md
+    - Fantasy events: fantasy_events.md
   - Technical reference:
     - Game logic: games.md
     # - Exceptions: exceptions.md

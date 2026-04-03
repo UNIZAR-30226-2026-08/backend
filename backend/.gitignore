@@ -1,6 +1,0 @@
-**/__pycache__/
-**/migrations/
-site/
-db.sqlite3
-.env
-dump.rdb

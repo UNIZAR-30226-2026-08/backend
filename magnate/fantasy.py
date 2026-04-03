@@ -8,6 +8,12 @@ from magnate.game_utils import _build_square, _demolish_square, _get_jail_square
 class FantasyEventFactory:
     @staticmethod
     def generate() -> FantasyEvent:
+        """
+        Generates a random FantasyEvent with an associated card cost and potential value.
+
+        Returns:
+            FantasyEvent: An instance of FantasyEvent configured with the rolled type, values, and cost.
+        """
         fantasy_type = random.choice(FantasyEvent.FantasyType.values)
 
         values = None
@@ -141,6 +147,30 @@ class FantasyEventFactory:
 
 #@database_sync_to_async
 def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent) -> FantasyResult:
+    """
+    Applies the effects of a given FantasyEvent to the game state and updates player statistics.
+
+    This function handles the logic for all variations of fantasy events as defined in the rules:
+    - Monetary transactions (win_plain_money, win_ratio_money, lose_plain_money, lose_ratio_money, 
+      share_money_all, everybody_sends_you_money, double_or_nothing, get_parking_money).
+    - Positional events (shuffle_positions, move_anywhere_random, move_opponent_anywhere_random, 
+      go_to_start, magnetism - pulling everyone to you).
+    - Jail events (go_to_jail, send_to_jail, everybody_to_jail).
+    - Property interactions (break_opponent_house, break_own_house, free_house, 
+      reviveProperty - unmortgages for free, earthquake - removes a house from all streets).
+
+    Args:
+        game (Game): The current game instance.
+        user (CustomUser): The player who triggered the event.
+        fantasy_event (FantasyEvent): The event details (type and specific values).
+
+    Returns:
+        FantasyResult: A result object containing the event type and any updated square/player data 
+                       needed by the frontend.
+
+    Raises:
+        Exception: If an event requiring values has None, or if internal targeting logic fails.
+    """
     stats = PlayerGameStatistic.objects.get(user=user,game=game)
     stats.num_fantasy_events += 1
     stats.save()

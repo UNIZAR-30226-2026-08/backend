@@ -32,8 +32,6 @@ def broadcast_to_game(game: Game, response: Response) -> None:
 
 @shared_task
 def auction_callback(game_pk: int) -> None:
-    print("Auction ending")
-    #return # TODO: remobe this
     game = Game.objects.get(pk=game_pk)
     response = GameManager._end_auction(game)
     if response:
@@ -60,6 +58,8 @@ def next_phase_callback(game_pk: int, user_pk: int) -> None:
     triggered at the end of _answer_trade_proposal_logic, after saving (phase is now BUSINESS)
     - Cancel at the start of every action handler that is not _roll_dices_logic or _pay_bail_logic
     """
+
+    response = None
 
     game = Game.objects.get(pk=game_pk)
     user = CustomUser.objects.get(pk=user_pk)
@@ -101,12 +101,13 @@ def next_phase_callback(game_pk: int, user_pk: int) -> None:
         game.active_phase_player = proposal.player
         game.proposal = None
         game.save()
+        GameManager._set_next_phase_timer(game, proposal.player)
     elif game.phase == GameManager.CHOOSE_FANTASY:
         # choose the random one
         action = ActionChooseCard.objects.create(game=game, player=user, chosen_revealed_card=False)
         GameManager._choose_fantasy_logic(game, user, action)
 
     if not response:
-        reponse = ResponseSkipPhase()
+        response = ResponseSkipPhase()
     broadcast_to_game(game, response)
 

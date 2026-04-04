@@ -3,6 +3,8 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.utils import timezone
 from django.db import transaction
+
+from magnate.tasks import kick_out_callback
 from .models import  PublicQueuePosition, PrivateRoom, Game, CustomUser
 from .games import *
 import os
@@ -143,6 +145,9 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             game.ordered_players = [u.pk for u in users]
             game.ordered_players = random.sample(game.ordered_players, len(game.ordered_players)) #random order of players
 
+
+            task = kick_out_callback.apply_async(args=[game.pk, users[0].pk], countdown=50) #necessary for first turn
+            game.kick_out_task_id = task.id
             game.save()
 
             
@@ -273,13 +278,13 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                     await self.send_error("Todos los jugadores deben estar listos para iniciar la partida.")
                     return
                 
-                # TODO: use room_id as game_id?? or generate it for public and private games
+                game_pk = await self.create_private_game(self.room_code)
 
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
                         'type': 'game_start',
-                        'game_id': self.room_code
+                        'game_id': game_pk
                     })
 
 
@@ -349,6 +354,51 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                 'owner': event['owner'], 
                 'is_owner': (self.user.username == event['owner'])
             }))
+
+    @database_sync_to_async
+    def create_private_game(self, room_code):
+        import random
+        from django.utils import timezone
+        from .models import PrivateRoom, Game, CustomUser
+        from .games import GameManager
+       
+
+        room = PrivateRoom.objects.get(room_code=room_code)
+        users = list(room.players.all())
+
+        game = Game.objects.create(
+            datetime=timezone.now(),
+            active_turn_player=users[0], # Se ajusta abajo
+            active_phase_player=users[0],
+            phase=GameManager.ROLL_THE_DICES
+        )
+
+        game.money = {str(u.pk): 1500 for u in users}
+        game.positions = {str(u.pk): "000" for u in users}
+
+        game.players.set(users)
+        ordered_pks = [u.pk for u in users]
+        random.shuffle(ordered_pks)
+        game.ordered_players = ordered_pks
+
+        first_player = CustomUser.objects.get(pk=ordered_pks[0])
+        game.active_turn_player = first_player
+        game.active_phase_player = first_player
+
+        for user in users:
+            user.active_game = game
+            user.played_games.add(game)
+            user.current_private_room = None 
+            user.save()
+            
+        room.delete()
+
+        from .tasks import kick_out_callback
+        task = kick_out_callback.apply_async(args=[game.pk, first_player.pk], countdown=50)
+        game.kick_out_task_id = task.id
+        game.save()
+
+        return game.pk
 
 
 

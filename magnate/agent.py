@@ -66,7 +66,9 @@ class Agent:
             if (isinstance(jail_sq, JailSquare)
                     and game.money[str(self.user.pk)] >= jail_sq.bail_price
                     and random.random() < 0.5):
-                return ActionPayBail(game=game, player=self.user)
+                action = ActionPayBail(game=game, player=self.user) 
+                action.save()
+                return action
 
         action = ActionThrowDices(game=game, player=self.user)
         action.save()
@@ -264,7 +266,7 @@ class Agent:
         )
 
 
-    def _random_auction(self, game: Game) -> Action | None: # TODO: None?
+    def _random_auction(self, game: Game) -> Action:
         auction = game.current_auction
         # checking
         if auction is None:
@@ -274,18 +276,18 @@ class Agent:
 
         is_jailed = game.jail_remaining_turns.get(str(self.user.pk), 0) > 0
 
-        already_bid = auction.bids.filter(player=self.user).exists()
+        already_bid = str(self.user.pk) in auction.bids
 
         dropped = ActionDropPurchase.objects.filter(game=game, player=self.user, square=auction.square).exists()
 
         if dropped or money <= 0 or is_jailed or already_bid:
-            return None
+            return ActionBid(game=game, player=self.user, amount=0)
 
         if random.random() < 0.5:
-            return None
+            return ActionBid(game=game, player=self.user, amount=0)
 
         amount = random.randint(1, money)
-        return ActionBid(game=game, player=self.user, auction=auction, amount=amount)
+        return ActionBid(game=game, player=self.user, amount=amount)
 
 
     def _heuristic_action(self, game: Game) -> Action | None:
@@ -417,7 +419,7 @@ class Agent:
 
         money = game.money[str(self.user.pk)]
         is_jailed = game.jail_remaining_turns.get(str(self.user.pk), 0) > 0
-        already_bid = auction.bids.filter(player=self.user).exists()
+        already_bid = str(self.user.pk) in auction.bids
         dropped = ActionDropPurchase.objects.filter(
             game=game, player=self.user, square=auction.square
         ).exists()
@@ -429,17 +431,17 @@ class Agent:
         ev = self._ev_buying(game, square)
 
         if ev <= 0: # no vale la pena
-            return ActionBid(game=game, player=self.user, auction=auction, amount=0)
+            return ActionBid(game=game, player=self.user,amount=0)
 
         max_willing = self._max_willing_to_pay(game, square, money)
         if max_willing <= 0:
-            return ActionBid(game=game, player=self.user, auction=auction, amount=0)
+            return ActionBid(game=game, player=self.user,  amount=0)
 
         bid = random.randint(max_willing *2 // 3, max_willing) # para que no siempre pague lo mismo
 
         bid = max(bid, 1)
 
-        return ActionBid(game=game, player=self.user, auction=auction, amount=bid)
+        return ActionBid(game=game, player=self.user, amount=bid)
 
     def _max_willing_to_pay(self, game: Game, square: BaseSquare, money: int) -> int:
         return 0

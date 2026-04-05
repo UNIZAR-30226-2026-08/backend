@@ -7,9 +7,13 @@ from asgiref.sync import async_to_sync
 from ..games import *
 from ..agent import *
 from ..serializers import *
+from unittest.mock import patch
+
 
 import time
 
+@patch('magnate.tasks.kick_out_callback.apply_async', **{'return_value.id': 'mock_kick_id'})  # type: ignore
+@patch('magnate.tasks.next_phase_callback.apply_async', **{'return_value.id': 'mock_phase_id'})  # type: ignore
 class AgentsTest(TestCase):
     @classmethod
     def setUpTestData(cls) -> None:
@@ -45,7 +49,7 @@ class AgentsTest(TestCase):
 
         self.game.save()
 
-    def test_simulate_game(self):
+    def test_simulate_game(self, mock_next_phase, mock_kick_out):
         agent1 = Agent(self.game, self.agent1, 'very_easy')
         agent2 = Agent(self.game, self.agent2, 'very_easy')
         

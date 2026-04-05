@@ -900,8 +900,6 @@ class GameManager:
     def _next_turn(cls, game: Game, user: CustomUser) -> None:
         players_list = list(game.players.all()) 
         num_players = len(players_list)
-        print(f"players list: {players_list}")
-        print(f"ordered players: {game.ordered_players}")
         current_index = -1
         current_player_id = -1
         for p in players_list:
@@ -914,7 +912,6 @@ class GameManager:
             raise GameLogicError('current player not found')
         
         next_index = (current_index + 1) % num_players
-        print(f"next index: {next_index}")
         # The next active user is for both: phase and turn
         next_player = game.players.filter(pk=game.ordered_players[next_index]).first()
         if next_player is None:

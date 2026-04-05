@@ -462,7 +462,9 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def leave_room_and_update_host(self, room_code, user):
-        room = PrivateRoom.objects.get(room_code=room_code)
+        room = PrivateRoom.objects.filter(room_code=room_code).first()
+        if not room:
+            return None
         user_from_db = CustomUser.objects.get(username=user.username)
         
         user_from_db.current_private_room = None

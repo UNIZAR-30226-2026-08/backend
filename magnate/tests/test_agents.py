@@ -50,7 +50,7 @@ class AgentsTest(TestCase):
         self.game.save()
 
     def test_simulate_game(self, mock_next_phase, mock_kick_out):
-        agent1 = Agent(self.game, self.agent1, 'very_easy')
+        agent1 = Agent(self.game, self.agent1, 'expert')
         agent2 = Agent(self.game, self.agent2, 'very_easy')
         
         print('\n' + '=' * 60)
@@ -62,9 +62,9 @@ class AgentsTest(TestCase):
             active_player = self.game.active_phase_player
 
             if active_player == self.agent1:
-                action = agent1.choose_action(self.game)
+                action = agent1.choose_action()
             elif active_player == self.agent2:
-                action = agent2.choose_action(self.game)
+                action = agent2.choose_action()
 
             if action is None:
                 continue

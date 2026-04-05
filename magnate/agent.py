@@ -7,6 +7,8 @@ from magnate.models import *
 from magnate.game_utils import _get_relationship, _get_user_square, _get_square_by_custom_id
 import random
 
+from magnate.game_utils import _get_possible_destinations_ids, _compute_dice_combinations
+
 EPSILON = {
     "very_easy": 1.0,   #  random
     "easy":      0.8,
@@ -15,6 +17,8 @@ EPSILON = {
     "very_hard": 0.2,
     "expert":    0.0,   #  EV
 }
+
+OPTIMAL_JAIL_EXIT_TURN = 10 #TODO: estudiar esto
 
 class Agent:
     def __init__(self, game: Game, user: CustomUser, level: str):
@@ -342,31 +346,22 @@ class Agent:
         raise GameLogicError(f"Agent EV: unrecognised phase {phase}")
     
     def _ev_roll_the_dices(self, game: Game) -> Action:
+        # primero decidir si salir de la carcel voluntariamente
         remaining = game.jail_remaining_turns.get(str(self.user.pk), 0)
         if remaining > 0:
             jail_sq = _get_user_square(game, self.user).get_real_instance()
             if isinstance(jail_sq, JailSquare):
                 money = game.money[str(self.user.pk)]
                 if money >= jail_sq.bail_price:
-                    #only thing that changes -> compare th benefits
-                    ev_free = self._ev_being_free(game)
-                    ev_jailed = self._ev_being_jailed(game)
-                    if ev_free > ev_jailed:
+                    if game.current_turn < OPTIMAL_JAIL_EXIT_TURN:
                         action = ActionPayBail(game=game, player=self.user)
                         action.save()
                         return action
 
-
+        # si no quiero salir tiro dados
         action = ActionThrowDices(game=game, player=self.user)
         action.save()
-        return action
-    
-    def _ev_being_free(self, game: Game) -> float:
-        return 0.0
-    
-    def _ev_being_jailed(self, game: Game) -> float:
-        return 0.0
-    
+        return action    
   
     def _ev_choose_square(self, game: Game) -> Action:
         destinations = game.possible_destinations
@@ -375,11 +370,11 @@ class Agent:
 
         best_id = None
         best_ev = float('-inf')
-        for sid in destinations:
-            ev = self._ev_square(game, sid)
+        for square_id in destinations:
+            ev = self._ev_square(game, square_id)
             if ev > best_ev:
                 best_ev = ev
-                best_id = sid
+                best_id = square_id
 
         square = _get_square_by_custom_id(best_id) #type: ignore -> never gon be none
         action= ActionMoveTo(game=game, player=self.user, square=square)
@@ -387,6 +382,15 @@ class Agent:
         return action
     
     def _ev_square(self, game: Game, square_id: str) -> float:
+        square = _get_square_by_custom_id(int(square_id)).get_real_instance()
+        if isinstance(square, GoToJailSquare):
+            return (game.current_turn - OPTIMAL_JAIL_EXIT_TURN) * 50 #TODO: mirar este valor
+        
+        elif isinstance(square, PropertySquare):
+            relationship = _get_relationship(game=game,square=square)
+            if relationship is None:
+                return 123456.0 #TODO: mirar valor
+
         return 0.0
     
     def _ev_management(self, game: Game) -> Action:

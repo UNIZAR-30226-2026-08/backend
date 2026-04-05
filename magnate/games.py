@@ -918,6 +918,7 @@ class GameManager:
         game.active_phase_player = next_player
         game.active_turn_player = next_player
         game.phase = GameManager.ROLL_THE_DICES
+        game.current_turn += 1
         game.save()
 
         GameManager._cancel_all_timers(game)

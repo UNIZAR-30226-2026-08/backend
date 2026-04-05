@@ -258,6 +258,8 @@ class Game(models.Model):
     kick_out_task_id = models.CharField(max_length=255, null=True, blank=True)
     next_phase_task_id = models.CharField(max_length=255, null=True, blank=True)
 
+    current_turn = models.PositiveIntegerField(default=1)
+
 class Auction(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='auctions')
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='auctioned_in')

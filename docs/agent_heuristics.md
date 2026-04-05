@@ -1,15 +1,16 @@
 # Heurísticas del Agente: Probabilidades y Sinergias Dinámicas
 
 ## 0. Conceptos Centrales
-* **Visitas Esperadas:** Probabilidad de caer (basada en mapa de calor, no distribución uniforme) * Número de Oponentes * Turnos estimados restantes.
+* **Visitas Esperadas:** Probabilidad de caer (simplificamos a distribución uniforme) * Número de Oponentes * Turnos estimados restantes.
 * **EV_Propiedad:** Alquiler actual * Visitas Esperadas.
-* **EV_Especiales:** Parking (Dinero acumulado * Probabilidad de caer) + Fantasy (Valor promedio neto de eventos * Probabilidad).
+* **EV_Especiales:** Parking (Dinero acumulado * Probabilidad de caer) + Fantasy (Valor promedio neto de eventos * Probabilidad de caer).
 
 ## 1. Cárcel (Fórmula de Libertad Justa)
-* **Ganancia Esperada al Moverse:** (Probabilidad de pasar por Salida * Dinero de Salida) + Suma de [MAX(0, EV_Propiedad - Precio de compra) * Probabilidad de caer] + EV_Especiales.
-* **Pérdida Esperada al Moverse:** Suma de (Alquileres de casillas rivales * Probabilidad de caer en ellas).
-* **EV_Libertad:** Ganancia Esperada al Moverse - Pérdida Esperada al Moverse.
-* **Decisión:** Si EV_Libertad > 0, pagar fianza; si EV_Libertad <= 0, permanecer en la cárcel.
+* **Turno óptimo de salida:** Simplificamos la decisión de salir de la cárcel. En un
+escenario ideal habría que valorar el estado del tablero (casillas por vender, valor
+de los alquileres rivales, dinero de cada jugador...) para tomar la decisión de cuándo
+salir. Observamos que en general a partir de cierto número de turnos de partida
+casi siempre interesa permanecer en la cárcel para evitar grandes pérdidas.
 
 ## 2. Reserva de Seguridad
 * **Fondo:** Valor del alquiler más alto actualmente cobrable por cualquier rival en el tablero.

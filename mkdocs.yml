@@ -24,3 +24,4 @@ nav:
   - Technical reference:
     - Game logic: games.md
     - Exceptions: exceptions.md
+    - Agent heuristics: agent_heuristics.md

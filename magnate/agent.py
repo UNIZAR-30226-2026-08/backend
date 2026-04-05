@@ -317,6 +317,7 @@ class Agent:
         return action
 
 
+################################ heuristicas ###################################
     def _heuristic_action(self, game: Game) -> Action | None:
         phase = game.phase
 

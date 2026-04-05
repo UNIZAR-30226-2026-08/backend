@@ -479,12 +479,6 @@ def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
         path_log.append(curr.custom_id)
 
     if isinstance(curr, GoToJailSquare):
-        jail = JailSquare.objects.first()
-        if jail is None:
-            raise GameDesignError('no jail in game')
-        curr = jail
-        if curr is None:
-            raise GameDesignError(f"no jail square")
         return {"final_id": curr.custom_id, 
             "path": path_log, "passed_go": passed_go, "jailed": True}
 

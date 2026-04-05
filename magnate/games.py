@@ -305,7 +305,11 @@ class GameManager:
 
             if move_result["jailed"]:
                 # landing in go to jail; update state to jail the player.
-                game.positions[str(user.pk)] = move_result["final_id"]
+                jail = JailSquare.objects.first()
+                if jail is None:
+                    raise GameDesignError('no jail in game')
+                
+                game.positions[str(user.pk)] = jail.custom_id
                 game.jail_remaining_turns[str(user.pk)] = 3
                 game.phase = GameManager.LIQUIDATION
                 stats = PlayerGameStatistic.objects.get(user=user, game=game)
@@ -352,27 +356,34 @@ class GameManager:
         current_pos_id = game.positions[str(user.pk)]
         current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
 
-        steps = game.possible_destinations.get(str(square.custom_id), 0)
+        steps = game.possible_destinations.get(str(square.custom_id))
         
         move_result = _move_player_logic(current_pos_square, steps)
         
-        if steps == 0:
-            response.path = [current_pos_id, square.custom_id]
-        else:
-            response.path = move_result["path"]
+        response.path = move_result["path"]
 
-        game.positions[str(user.pk)] = square.custom_id
+        if move_result["jailed"]:
+            # landing in go to jail; update state to jail the player.
+            jail = JailSquare.objects.first()
+            if jail is None:
+                raise GameDesignError('no jail in game')
+            
+            game.positions[str(user.pk)] = jail.custom_id
+            game.jail_remaining_turns[str(user.pk)] = 3
+            game.phase = GameManager.LIQUIDATION
+            stats = PlayerGameStatistic.objects.get(user=user, game=game)
+            stats.times_in_jail += 1
+            stats.save()
+        else:
+            game.positions[str(user.pk)] = square.custom_id
+            square = _get_square_by_custom_id(square.custom_id)
+            _apply_square_arrival(game, user, response, square, move_result["passed_go"])
 
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
         stats.walked_squares += steps
         stats.save()
 
         game.possible_destinations = dict()
-
-        # Use the passed_go flag correctly computed by _move_player_logic.
-        _apply_square_arrival(game, user, response, action.square, move_result["passed_go"])
-
-
         game.save()
 
         GameManager._set_next_phase_timer(game, user)

@@ -33,6 +33,8 @@ class CustomUser(AbstractUser):
     points = models.PositiveIntegerField(default=0)
     exp = models.PositiveIntegerField(default=0)
     elo = models.PositiveIntegerField(default=0)
+    is_bot = models.BooleanField(default=False)
+    bot_level = models.CharField(max_length=20, null=True, blank=True) # "easy" /"expert" etc
 
 class Item(models.Model):
     class ItemType(models.TextChoices):
@@ -119,6 +121,9 @@ class PrivateRoom(models.Model):
     # Players will be linked from CustomUser.current_private_room
     room_code: str = models.CharField(max_length=10, unique=True) #type: ignore
     players: models.QuerySet['CustomUser']
+    # Number of players total -> to include bots
+    target_players = models.PositiveIntegerField(default=4)
+    bot_level = models.CharField(max_length=20, default='medium')
     
 class FantasyEvent(models.Model):
     """

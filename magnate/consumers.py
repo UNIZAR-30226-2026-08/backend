@@ -320,6 +320,29 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                                 'message': message
                             }
                         )
+
+            elif command == 'update_settings': # owner changes target users and bot level
+                is_owner = await self.is_owner(self.user, self.room_code)
+                if not is_owner:
+                    await self.send_error("Solo el host puede cambiar la configuración.")
+                    return
+
+                bot_level = data.get('bot_level')
+                target_players = data.get('target_players')
+
+                await self.update_room_settings(self.room_code, bot_level, target_players)
+
+                # Avisar a todos los de la sala del cambio
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'lobby_update',
+                        'action': 'settings_changed',
+                        'bot_level': bot_level,
+                        'target_players': target_players
+                    }
+                )
+
         except json.JSONDecodeError:
             await self.send_error("Datos invalidos.")
             return
@@ -354,6 +377,22 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                 'owner': event['owner'], 
                 'is_owner': (self.user.username == event['owner'])
             }))
+        elif event['action'] == 'settings_changed':
+            await self.send(text_data=json.dumps({
+                'action': event['action'],
+                'bot_level': event['bot_level'],
+                'target_players': event['target_players']
+            }))
+
+    
+    @database_sync_to_async
+    def update_room_settings(self, room_code, bot_level, target_players):
+        room = PrivateRoom.objects.get(room_code=room_code)
+        if bot_level: 
+            room.bot_level = bot_level
+        if target_players: 
+            room.target_players = target_players
+        room.save()
 
     @database_sync_to_async
     def create_private_game(self, room_code):
@@ -364,7 +403,23 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
        
 
         room = PrivateRoom.objects.get(room_code=room_code)
-        users = list(room.players.all())
+        real_users = list(room.players.all())
+        users = real_users.copy()
+
+        # fill with bots
+        huecos = room.target_players - len(real_users)
+        for i in range(huecos):
+            # Generar un nombre único para la partida
+            bot_username = f"Bot_{room_code}_{i+1}" 
+            bot_user, _ = CustomUser.objects.get_or_create(
+                username=bot_username,
+                defaults={'email': f"{bot_username}@magnate.com", 'is_bot': True } #change level
+            )
+
+            bot_user.bot_level = room.bot_level
+            bot_user.save()
+            
+            users.append(bot_user)
 
         game = Game.objects.create(
             datetime=timezone.now(),
@@ -389,14 +444,20 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             user.active_game = game
             user.played_games.add(game)
             user.current_private_room = None 
+            
             user.save()
+            PlayerGameStatistic.objects.get_or_create(user=user, game=game)
             
         room.delete()
 
-        from .tasks import kick_out_callback
-        task = kick_out_callback.apply_async(args=[game.pk, first_player.pk], countdown=50)
-        game.kick_out_task_id = task.id
+        GameManager._set_kick_out_timer(game, first_player)
+        if first_player.is_bot:
+            from .tasks import bot_play_callback
+            bot_play_callback.apply_async(args=[game.pk, first_player.pk], countdown=5) # wait 5 for front to charge -> check this time with the boys
+        
         game.save()
+
+        
 
         return game.pk
 

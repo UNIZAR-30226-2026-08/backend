@@ -147,10 +147,7 @@ class GameManager:
             GameLogicError: If the user does not have enough money.
         """
 
-        if game.kick_out_task_id:
-            from .celery import app
-            app.control.revoke(game.kick_out_task_id, terminate=True)
-            game.kick_out_task_id = None
+        GameManager._cancel_all_timers(game)
 
         square = _get_user_square(game, user).get_real_instance()
 
@@ -174,9 +171,8 @@ class GameManager:
         stats.lost_money += bail_price
         stats.save()
         # roll the dices -> continue normally
-        from .tasks import kick_out_callback
-        task = kick_out_callback.apply_async(args=[game.pk, user.pk], countdown=50)
-        game.kick_out_task_id = task.id
+        GameManager._set_next_phase_timer(game, user)
+
         game.save()
         return Response()
 
@@ -194,10 +190,7 @@ class GameManager:
             Response: Standard response.
         """
 
-        if game.kick_out_task_id:
-            from .celery import app
-            app.control.revoke(game.kick_out_task_id, terminate=True)
-            game.kick_out_task_id = None
+        GameManager._cancel_all_timers(game)
 
         response: ResponseThrowDices = ResponseThrowDices()
 
@@ -344,6 +337,8 @@ class GameManager:
         Raises:
             MaliciousUserInput: If the chosen square is not in `possible_destinations`.
         """
+
+        GameManager._cancel_all_timers(game)
         response: ResponseChooseSquare = ResponseChooseSquare()
 
         if not isinstance(action, ActionMoveTo):
@@ -385,6 +380,8 @@ class GameManager:
     
     @staticmethod
     def _choose_fantasy_logic(game: Game, user: CustomUser, action: ActionChooseCard) -> Response:
+        GameManager._cancel_all_timers(game)
+
         response = ResponseChooseFantasy()
         fantasy_event = game.fantasy_event
         generate = not action.chosen_revealed_card
@@ -407,17 +404,12 @@ class GameManager:
         else:
             game.phase = GameManager.ROLL_THE_DICES
 
-        game.save()
         if game.phase == GameManager.BUSINESS:
             GameManager._set_next_phase_timer(game, user)
         elif game.phase == GameManager.ROLL_THE_DICES:
-            app.control.revoke(game.next_phase_task_id, terminate=True)
-            game.next_phase_task_id = None
-            from .tasks import kick_out_callback
-            task = kick_out_callback.apply_async(args=[game.pk, user.pk], countdown=50)
-            game.kick_out_task_id = task.id
-            game.save()
+            GameManager._set_kick_out_timer(game, user)
             
+        game.save()     
         return response
        
     @staticmethod
@@ -439,6 +431,8 @@ class GameManager:
         Raises:
             MaliciousUserInputAction: If the action does not fit the phase/context.
         """
+        GameManager._cancel_all_timers(game)
+
         current_square = _get_user_square(game, user).get_real_instance()
         prop_rel = _get_relationship(game, current_square)
 
@@ -518,16 +512,12 @@ class GameManager:
             else:
                 game.phase = GameManager.ROLL_THE_DICES
 
-        game.save()
         if game.phase == GameManager.BUSINESS:
             GameManager._set_next_phase_timer(game, user)
         elif game.phase == GameManager.ROLL_THE_DICES:
-            app.control.revoke(game.next_phase_task_id, terminate=True)
-            game.next_phase_task_id = None
-            from .tasks import kick_out_callback
-            task = kick_out_callback.apply_async(args=[game.pk, user.pk], countdown=50)
-            game.kick_out_task_id = task.id
-            game.save()
+            GameManager._set_kick_out_timer(game, user)
+
+        game.save()
         return Response()
 
     @staticmethod
@@ -547,6 +537,8 @@ class GameManager:
         Raises:
             MaliciousUserInput: If restrictions (e.g., negative balance on next turn) are unmet.
         """
+
+        GameManager._cancel_all_timers(game)
         # Logic for the business phase where players can build houses, trade, etc.
         if isinstance(action, ActionBuild):
             # Check owner 
@@ -680,8 +672,8 @@ class GameManager:
         Returns:
             Response: Standard response.
         """
+        GameManager._cancel_all_timers(game)
 
-        app.control.revoke(game.next_phase_task_id, terminate=True)
         game.next_phase_task_id = None
         game.phase = GameManager.AUCTION
 
@@ -690,8 +682,7 @@ class GameManager:
         game.save()
 
         # TODO: Remove magic number
-        from .tasks import auction_callback
-        auction_callback.apply_async(args=[game.pk], countdown=10)
+        GameManager._set_auction_timer(game)
         # TODO: Remove in production
         game.refresh_from_db()
 
@@ -791,13 +782,13 @@ class GameManager:
 
             game.current_auction = None
             game.save()
+
             if game.phase == GameManager.BUSINESS:
                 GameManager._set_next_phase_timer(game, game.active_turn_player)
             elif game.phase == GameManager.ROLL_THE_DICES:
-                from .tasks import kick_out_callback
-                task = kick_out_callback.apply_async(args=[game.pk, game.active_turn_player.pk], countdown=50)
-                game.kick_out_task_id = task.id
-                game.save()
+                GameManager._set_kick_out_timer(game, game.active_turn_player)
+            
+            game.save()
             return ResponseAuction(auction=auction)
 
         max_bid_amount = max(bids.values())
@@ -821,10 +812,9 @@ class GameManager:
             if game.phase == GameManager.BUSINESS:
                 GameManager._set_next_phase_timer(game, game.active_turn_player)
             elif game.phase == GameManager.ROLL_THE_DICES:
-                from .tasks import kick_out_callback
-                task = kick_out_callback.apply_async(args=[game.pk, game.active_turn_player.pk], countdown=50)
-                game.kick_out_task_id = task.id
-                game.save()
+                GameManager._set_kick_out_timer(game, game.active_turn_player)
+
+            game.save()
             return ResponseAuction(auction=auction)
 
         winner_id = winners[0]
@@ -839,9 +829,7 @@ class GameManager:
             if game.phase == GameManager.BUSINESS:
                 GameManager._set_next_phase_timer(game, game.active_turn_player)
             elif game.phase == GameManager.ROLL_THE_DICES:
-                from .tasks import kick_out_callback
-                task = kick_out_callback.apply_async(args=[game.pk, game.active_turn_player.pk], countdown=50)
-                game.kick_out_task_id = task.id
+                GameManager._set_kick_out_timer(game, game.active_turn_player)
             
             game.save()
             return ResponseAuction(auction=auction)
@@ -889,10 +877,9 @@ class GameManager:
         if game.phase == GameManager.BUSINESS:
             GameManager._set_next_phase_timer(game, game.active_turn_player)
         elif game.phase == GameManager.ROLL_THE_DICES:
-            from .tasks import kick_out_callback
-            task = kick_out_callback.apply_async(args=[game.pk, game.active_turn_player.pk], countdown=50)
-            game.kick_out_task_id = task.id
-            game.save()
+            GameManager._set_kick_out_timer(game, game.active_turn_player)
+        
+        game.save()
 
         return ResponseAuction(auction=auction)
 
@@ -922,15 +909,10 @@ class GameManager:
         game.phase = GameManager.ROLL_THE_DICES
         game.save()
 
-        if game.next_phase_task_id:
-            app.control.revoke(game.next_phase_task_id, terminate=True)
-            game.next_phase_task_id = None
-            
-        from .tasks import kick_out_callback
+        GameManager._cancel_all_timers(game)
 
-        task = kick_out_callback.apply_async(args=[game.pk, next_player.pk], countdown=50)
-        game.kick_out_task_id = task.id
-        
+        GameManager._set_kick_out_timer(game, next_player)
+
         game.save()
  
     @classmethod
@@ -1004,12 +986,8 @@ class GameManager:
 
         if game.players.count() == 1:          
             game.phase = GameManager.END_GAME
-            if game.next_phase_task_id:
-                app.control.revoke(game.next_phase_task_id, terminate=True)
-                game.next_phase_task_id = None
-            if game.kick_out_task_id:
-                app.control.revoke(game.kick_out_task_id, terminate=True)
-                game.kick_out_task_id = None
+            GameManager._cancel_all_timers(game)
+
             if game.current_auction:
                 auction = game.current_auction
                 auction.is_active = False
@@ -1025,17 +1003,10 @@ class GameManager:
             game.phase = GameManager.ROLL_THE_DICES
             game.streak = 0
             
-            if game.next_phase_task_id:
-                app.control.revoke(game.next_phase_task_id, terminate=True)
-                game.next_phase_task_id = None
-            if game.kick_out_task_id:
-                app.control.revoke(game.kick_out_task_id, terminate=True)
-                game.kick_out_task_id = None
+            GameManager._cancel_all_timers(game)
                 
             # new task
-            from .tasks import kick_out_callback
-            task = kick_out_callback.apply_async(args=[game.pk, next_player.pk], countdown=50)
-            game.kick_out_task_id = task.id
+            GameManager._set_kick_out_timer(game, next_player)
                 
         game.save()
 
@@ -1071,12 +1042,7 @@ class GameManager:
 
     @classmethod
     def _end_game_logic(cls, game: Game, user: CustomUser, action: Action) -> Response:
-        if game.next_phase_task_id:
-            app.control.revoke(game.next_phase_task_id, terminate=True)
-            game.next_phase_task_id = None
-        if game.kick_out_task_id:
-            app.control.revoke(game.kick_out_task_id, terminate=True)
-            game.kick_out_task_id = None
+        GameManager._cancel_all_timers(game)
 
         if not game.finished:
             game.finished = True
@@ -1090,15 +1056,56 @@ class GameManager:
 
     @staticmethod
     def _set_next_phase_timer(game: Game, user: CustomUser):
-        from .tasks import next_phase_callback
+        from .tasks import next_phase_callback, bot_play_callback
+        from .celery import app
+        
+        GameManager._cancel_all_timers(game)
+        
+        task = next_phase_callback.apply_async(args=[game.pk, user.pk], countdown=50)
+        game.next_phase_task_id = task.id
+        game.save()
+
+        if user.is_bot:
+            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
+
+    @staticmethod
+    def _set_kick_out_timer(game: Game, user: CustomUser):
+        from .tasks import kick_out_callback, bot_play_callback
+        from .celery import app
+        
+        if game.kick_out_task_id:
+            app.control.revoke(game.kick_out_task_id, terminate=True)
+            
+        task = kick_out_callback.apply_async(args=[game.pk, user.pk], countdown=50)
+        game.kick_out_task_id = task.id
+        game.save()
+
+        if user.is_bot:
+            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
+
+    @staticmethod
+    def _cancel_all_timers(game: Game):
         from .celery import app
         
         if game.next_phase_task_id:
             app.control.revoke(game.next_phase_task_id, terminate=True)
+            game.next_phase_task_id = None
             
-        # 50 segundos para la siguiente fase (ajustable)
-        task = next_phase_callback.apply_async(args=[game.pk, user.pk], countdown=50)
-        game.next_phase_task_id = task.id
+        if game.kick_out_task_id:
+            app.control.revoke(game.kick_out_task_id, terminate=True)
+            game.kick_out_task_id = None
+            
         game.save()
+
+    @staticmethod
+    def _set_auction_timer(game: Game):
+        import random
+        from .tasks import auction_callback, bot_play_callback
         
+        auction_callback.apply_async(args=[game.pk], countdown=10)
+        
+        for player in game.players.all():
+            if player.is_bot:
+                bot_play_callback.apply_async(args=[game.pk, player.pk], countdown=random.randint(2, 6))
+
     ############################################################

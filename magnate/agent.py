@@ -81,7 +81,9 @@ class Agent:
 
         chosen_id = random.choice(list(destinations.keys()))
         square = _get_square_by_custom_id(chosen_id)
-        return ActionMoveTo(game=game, player=self.user, square=square)
+        action = ActionMoveTo(game=game, player=self.user, square=square)
+        action.save()
+        return action
 
 
     def _random_choose_fantasy(self, game: Game) -> Action:
@@ -92,10 +94,14 @@ class Agent:
         can_afford_shown = (fantasy_event is not None and fantasy_event.card_cost is not None and money >= fantasy_event.card_cost)
 
         if can_afford_shown:
-            return ActionChooseCard(game=game, player=self.user, chosen_revealed_card=random.choice([True, False]))
+            action = ActionChooseCard(game=game, player=self.user, chosen_revealed_card=random.choice([True, False]))
+            action.save()
+            return action
 
         # if we can't afford
-        return ActionChooseCard(game=game, player=self.user, chosen_revealed_card=False)
+        action = ActionChooseCard(game=game, player=self.user, chosen_revealed_card=False)
+        action.save()
+        return action
 
 
     def _random_management(self, game: Game) -> Action:
@@ -110,8 +116,12 @@ class Agent:
                 if other_trams:
                     destination = random.choice(other_trams)
                     if money >= destination.buy_price:
-                        return ActionTakeTram(game=game, player=self.user, square=destination)
-            return ActionTakeTram(game=game, player=self.user, square=current_square)
+                        action = ActionTakeTram(game=game, player=self.user, square=destination)
+                        action.save()
+                        return action
+            action = ActionTakeTram(game=game, player=self.user, square=current_square)
+            action.save()
+            return action
 
         # buyable squares with no current owner
         is_buyable = isinstance(current_square, (PropertySquare, ServerSquare, BridgeSquare))
@@ -120,7 +130,9 @@ class Agent:
         if is_buyable and is_unowned:
             can_afford = money >= current_square.buy_price
             if can_afford and random.random() < 0.5:
-                return ActionBuySquare(game=game, player=self.user, square=current_square)
+                action = ActionBuySquare(game=game, player=self.user, square=current_square)
+                action.save()
+                return action
             else:
                 # auction -> bot cannot bid
                 action = ActionDropPurchase(game=game, player=self.user, square=current_square)
@@ -128,7 +140,9 @@ class Agent:
                 return action
 
         # TODO: can't think if there's something missing here -> review
-        return ActionNextPhase(game=game, player=self.user)
+        action = ActionNextPhase(game=game, player=self.user)
+        action.save()
+        return action
 
 
     def _random_business(self, game: Game) -> Action:
@@ -139,7 +153,9 @@ class Agent:
         # pass
         options.append(ActionNextPhase(game=game, player=self.user))
 
-        return random.choice(options)
+        action = random.choice(options)
+        action.save()
+        return action
 
     def _get_legal_business_actions(self, game: Game, money: int) -> list:
         actions = []
@@ -225,7 +241,9 @@ class Agent:
             return random.choice(options)
 
         # No liquidation moves left and still in debt → surrender
-        return ActionSurrender(game=game, player=self.user)
+        action =  ActionSurrender(game=game, player=self.user)
+        action.save()
+        return action
 
     def _get_legal_liquidation_actions(self, game: Game) -> list:
         actions = []
@@ -258,12 +276,15 @@ class Agent:
         else:
             accept = random.choice([True, False])
 
-        return ActionTradeAnswer(
+        action = ActionTradeAnswer(
             game=game,
             player=self.user,
             choose=accept,
             proposal=proposal
         )
+        action.save()
+        return action
+    
 
 
     def _random_auction(self, game: Game) -> Action:
@@ -281,13 +302,19 @@ class Agent:
         dropped = ActionDropPurchase.objects.filter(game=game, player=self.user, square=auction.square).exists()
 
         if dropped or money <= 0 or is_jailed or already_bid:
-            return ActionBid(game=game, player=self.user, amount=0)
+            action = ActionBid(game=game, player=self.user, amount=0)
+            action.save()
+            return action
 
         if random.random() < 0.5:
-            return ActionBid(game=game, player=self.user, amount=0)
+            action = ActionBid(game=game, player=self.user, amount=0)
+            action.save()
+            return action
 
         amount = random.randint(1, money)
-        return ActionBid(game=game, player=self.user, amount=amount)
+        action = ActionBid(game=game, player=self.user, amount=amount)
+        action.save()
+        return action
 
 
     def _heuristic_action(self, game: Game) -> Action | None:
@@ -323,9 +350,14 @@ class Agent:
                     ev_free = self._ev_being_free(game)
                     ev_jailed = self._ev_being_jailed(game)
                     if ev_free > ev_jailed:
-                        return ActionPayBail(game=game, player=self.user)
+                        action = ActionPayBail(game=game, player=self.user)
+                        action.save()
+                        return action
 
-        return ActionThrowDices(game=game, player=self.user)
+
+        action = ActionThrowDices(game=game, player=self.user)
+        action.save()
+        return action
     
     def _ev_being_free(self, game: Game) -> float:
         return 0.0
@@ -348,7 +380,9 @@ class Agent:
                 best_id = sid
 
         square = _get_square_by_custom_id(best_id) #type: ignore -> never gon be none
-        return ActionMoveTo(game=game, player=self.user, square=square)
+        action= ActionMoveTo(game=game, player=self.user, square=square)
+        action.save()
+        return action
     
     def _ev_square(self, game: Game, square_id: str) -> float:
         return 0.0
@@ -369,16 +403,22 @@ class Agent:
             safety_cash = self._minimum_safety_cash(game) # depending on the game situation (start is 0 then more)
 
             if ev_buy > 0 and (money - current_square.buy_price) >= safety_cash:
-                return ActionBuySquare(game=game, player=self.user, square=current_square)
+                action = ActionBuySquare(game=game, player=self.user, square=current_square)
+                action.save()
+                return action
 
             action = ActionDropPurchase(game=game, player=self.user, square=current_square)
             action.save()
             return action
 
-        return ActionNextPhase(game=game, player=self.user)
-    
+        action = ActionNextPhase(game=game, player=self.user)
+        action.save()
+        return action
+
     def _ev_move_tram(self, game: Game) -> Action:
-        return ActionNextPhase(game=game, player=self.user)
+        action = ActionNextPhase(game=game, player=self.user)
+        action.save()
+        return action
     
     def _ev_buying(self, game: Game, square: BaseSquare) -> float:
         return 0.0
@@ -391,8 +431,10 @@ class Agent:
         options = self._get_legal_business_actions(game, money)
 
         if not options:
-            return ActionNextPhase(game=game, player=self.user)
-
+            action = ActionNextPhase(game=game, player=self.user)
+            action.save()
+            return action
+        
         best_action = None
         best_ev = -float('inf')
 
@@ -406,8 +448,10 @@ class Agent:
         if best_ev > 0:
             return best_action #type: ignore
 
-        return ActionNextPhase(game=game, player=self.user)
-    
+        action = ActionNextPhase(game=game, player=self.user)
+        action.save()
+        return action
+
     def _ev_business_action(self, game: Game, action: Action, money: int) -> float:
         return 0.0
 
@@ -431,17 +475,23 @@ class Agent:
         ev = self._ev_buying(game, square)
 
         if ev <= 0: # no vale la pena
-            return ActionBid(game=game, player=self.user,amount=0)
+            action = ActionBid(game=game, player=self.user, amount=0)
+            action.save()
+            return action
 
         max_willing = self._max_willing_to_pay(game, square, money)
         if max_willing <= 0:
-            return ActionBid(game=game, player=self.user,  amount=0)
+            action = ActionBid(game=game, player=self.user, amount=0)
+            action.save()
+            return action
 
         bid = random.randint(max_willing *2 // 3, max_willing) # para que no siempre pague lo mismo
 
         bid = max(bid, 1)
 
-        return ActionBid(game=game, player=self.user, amount=bid)
+        action = ActionBid(game=game, player=self.user, amount=bid)
+        action.save()
+        return action
 
     def _max_willing_to_pay(self, game: Game, square: BaseSquare, money: int) -> int:
         return 0
@@ -450,7 +500,9 @@ class Agent:
         options = self._get_legal_liquidation_actions(game)
 
         if not options:
-            return ActionSurrender(game=game, player=self.user)
+            action = ActionSurrender(game=game, player=self.user)
+            action.save()
+            return action
 
         best_action = None
         best_ev = float('-inf')
@@ -475,12 +527,16 @@ class Agent:
         offering_money = game.money[str(proposal.player.pk)]
 
         if proposal.asked_money > money or proposal.offered_money > offering_money:
-            return ActionTradeAnswer(game=game, player=self.user, choose=False, proposal=proposal)
+            action = ActionTradeAnswer(game=game, player=self.user, choose=False, proposal=proposal)
+            action.save()
+            return action
 
         ev = self._ev_trade(game, proposal)
         accept = ev > 0
 
-        return ActionTradeAnswer(game=game, player=self.user, choose=accept, proposal=proposal)
+        action = ActionTradeAnswer(game=game, player=self.user, choose=accept, proposal=proposal)
+        action.save()
+        return action
 
     def _ev_trade(self, game: Game, proposal: ActionTradeProposal) -> float:
         # tener en cuenta que te da y que pierdes

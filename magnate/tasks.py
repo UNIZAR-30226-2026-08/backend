@@ -12,6 +12,7 @@ import random
 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from .agent import Agent
 
 def broadcast_to_game(game: Game, response: Response) -> None:
     channel_layer = get_channel_layer()
@@ -111,3 +112,27 @@ def next_phase_callback(game_pk: int, user_pk: int) -> None:
         response = ResponseSkipPhase()
     broadcast_to_game(game, response)
 
+
+
+
+@shared_task
+def bot_play_callback(game_pk: int, user_pk: int) -> None:
+    game = Game.objects.get(pk=game_pk)
+    active_player = game.active_phase_player
+
+    if not active_player or not active_player.is_bot or game.phase == GameManager.END_GAME:
+        return
+
+    from .celery import app
+
+    if game.kick_out_task_id:
+        app.control.revoke(game.kick_out_task_id, terminate=True)
+    if game.next_phase_task_id:
+        app.control.revoke(game.next_phase_task_id, terminate=True)
+    # decision
+    agent = Agent(game, active_player, active_player.bot_level)
+    action = agent.choose_action(game)
+
+    if action:
+        response = async_to_sync(GameManager.process_action)(game, active_player, action)
+        broadcast_to_game(game, response)

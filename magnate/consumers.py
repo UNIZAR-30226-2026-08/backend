@@ -749,25 +749,25 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def game_state(self, event):
         await self.send(text_data=json.dumps({
-            'action': 'game_state',
+            'event_type': 'game_state',
             'game_state': event['game_state']
         }))
 
     async def game_action_event(self, event):
         await self.send(text_data=json.dumps({
-            'action': 'game_action',
+            'event_type': 'game_action',
             'data': event['data']
         }))
 
     async def game_response_event(self, event):
         await self.send(text_data=json.dumps({
-            'action': 'game_response',
+            'event_type': 'game_response',
             'data': event['data']
         }))
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
-            'action': 'chat_message',
+            'event_type': 'chat_message',
             'game': event['game'],
             'user': event['user'],
             'msg': event['msg']
@@ -775,7 +775,7 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def send_error(self, message):
         await self.send(text_data=json.dumps({
-            'action': 'error',
+            'event_type': 'error',
             'message': message
         }))
 

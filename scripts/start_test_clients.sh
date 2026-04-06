@@ -4,8 +4,6 @@
 
 sh scripts/reset_db.sh
 
-cd ..
-
 redis-server --port 26379 &
 sleep 1
 

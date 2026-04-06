@@ -7,6 +7,15 @@ class SquareCustomIdField(serializers.SlugRelatedField):
         super().__init__(slug_field='custom_id', queryset=BaseSquare.objects.all(), **kwargs)
 
 ###############################################################################
+#############      Game serializers     #######################################
+###############################################################################
+
+class GameStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        exclude = ['kick_out_task_id', 'next_phase_task_id']
+
+###############################################################################
 #############      Square serializers     #####################################
 ###############################################################################
 class BaseSquareSerializer(serializers.ModelSerializer):

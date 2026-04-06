@@ -1,8 +1,8 @@
 #!/bin/sh
 
-. ../venv/bin/activate
+. venv/bin/activate
 
-sh reset_db.sh
+sh scripts/reset_db.sh
 
 cd ..
 

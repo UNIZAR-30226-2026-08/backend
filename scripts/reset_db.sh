@@ -1,5 +1,7 @@
 #!/bin/sh
 
+. venv/bin/activate
+
 rm -rf db.sqlite3
 cd ..
 for f in magnate; do

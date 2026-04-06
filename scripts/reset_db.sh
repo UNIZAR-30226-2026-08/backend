@@ -3,14 +3,9 @@
 . venv/bin/activate
 
 rm -rf db.sqlite3
-<<<<<<< Updated upstream
 for f in magnate
 do
     rm -rf $f/migrations
-=======
-for f in magnate; do
-  rm -rf $f/migrations
->>>>>>> Stashed changes
 done
 
 for f in magnate

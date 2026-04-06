@@ -174,11 +174,13 @@ class FantasyEvent(models.Model):
         Cost: 90
 
     Frontend Fantasy Payload Example:
+    ```json
     {
       "type":"win_plain_money",
       "values":[20,60,120,150,200],
       "cost": 130
     }
+    ```
     """
     class FantasyType(models.TextChoices):
         winPlainMoney = 'winPlainMoney',
@@ -351,11 +353,13 @@ class Action(models.Model):
     Represents generic action, so every action shares these fields
     
     Frontend Request Payload Example:
+    ```json
     {
       "type": "Action",
       "game": 1,
       "player": 2,
     }
+    ```
     """
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='in_game')
     player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='made_by')
@@ -365,11 +369,13 @@ class ActionThrowDices(Action):
     Action to throw the dices. It is basically empty.
     
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionThrowDices",
       "game": 1,
       "player": 2,
     }
+    ```
     """
     pass
 
@@ -378,12 +384,14 @@ class ActionMoveTo(Action):
     Action to move to a square. 
     
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionThrowDices",
       "game": 1,
       "player": 2,
       "square": 101,
     }
+    ```
     """
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='move_to')
 
@@ -392,12 +400,14 @@ class ActionTakeTram(Action):
     Action to take the tram when possible
     
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionTakeTram",
       "game": 1,
       "player": 2,
       "square": 200,
     }
+    ```
     """
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='tram_move_to')
 
@@ -406,12 +416,14 @@ class ActionDropPurchase(Action):
     Action to decline purchasing a property.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionDropPurchase",
       "game": 1,
       "player": 2,
       "square": 15
     }
+    ```
     """
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='dropped')
 
@@ -420,12 +432,14 @@ class ActionBuySquare(Action):
     Action to buy an unowned property.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionBuySquare",
       "game": 1,
       "player": 2,
       "square": 15
     }
+    ```
     """
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bought')
 
@@ -434,12 +448,14 @@ class ActionSellSquare(Action):
     Action to sell a property.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionSellSquare",
       "game": 1,
       "player": 2,
       "square": 15
     }
+    ```
     """
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='sold')
 
@@ -448,6 +464,7 @@ class ActionBuild(Action):
     Action to build houses/hotels on a property.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionBuild",
       "game": 1,
@@ -455,6 +472,7 @@ class ActionBuild(Action):
       "houses": 1,
       "square": 12
     }
+    ```
     """
     houses = models.IntegerField(default=1)
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='build_square')
@@ -464,6 +482,7 @@ class ActionDemolish(Action):
     Action to demolish houses/hotels on a property.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionDemolish",
       "game": 1,
@@ -471,6 +490,7 @@ class ActionDemolish(Action):
       "houses": 1,
       "square": 12
     }
+    ```
     """
     houses = models.IntegerField(default=0)
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='demolish_square')
@@ -480,12 +500,14 @@ class ActionChooseCard(Action):
     Action to interact with or draw a fantasy card.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionChooseCard",
       "game": 1,
       "player": 2,
       "chosen_revealed_card": true
     }
+    ```
     """
     chosen_revealed_card = models.BooleanField(default=False)
 
@@ -494,11 +516,13 @@ class ActionSurrender(Action):
     Action to quit/surrender the game. It is empty.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionSurrender",
       "game": 1,
       "player": 2
     }
+    ```
     """
     pass
 
@@ -507,6 +531,7 @@ class ActionTradeProposal(Action):
     Action to propose a trade to another player.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionTradeProposal",
       "game": 1,
@@ -517,6 +542,7 @@ class ActionTradeProposal(Action):
       "offered_properties": [5, 6],
       "asked_properties": [12]
     }
+    ```
     """
     destination_user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='destination_user')
     offered_money = models.PositiveIntegerField(default=0)
@@ -529,6 +555,7 @@ class ActionTradeAnswer(Action):
     Action to accept or decline a trade proposal.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionTradeAnswer",
       "game": 1,
@@ -536,6 +563,7 @@ class ActionTradeAnswer(Action):
       "choose": true,
       "proposal": 8
     }
+    ```
     """
     choose = models.BooleanField(default=False)
     proposal = models.OneToOneField('ActionTradeProposal', on_delete=models.CASCADE, related_name='proposal')
@@ -545,12 +573,14 @@ class ActionMortgageSet(Action):
     Action to mortgage a property.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionMortgageSet",
       "game": 1,
       "player": 2,
       "square": 15
     }
+    ```
     """
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='mortgage_set_square')
 
@@ -559,12 +589,14 @@ class ActionMortgageUnset(Action):
     Action to lift a mortgage from a property.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionMortgageUnset",
       "game": 1,
       "player": 2,
       "square": 15
     }
+    ```
     """
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='mortgage_unset_square')
 
@@ -573,11 +605,13 @@ class ActionPayBail(Action):
     Action to pay the bail fee to get out of jail. It is empty.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionPayBail",
       "game": 1,
       "player": 2
     }
+    ```
     """
     pass
 
@@ -586,11 +620,13 @@ class ActionNextPhase(Action):
     Action to transition to the next game phase or end turn. It is empty.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionNextPhase",
       "game": 1,
       "player": 2
     }
+    ```
     """
     pass
 
@@ -599,6 +635,7 @@ class ActionBid(Action):
     Action to place a bid on a property auction.
 
     Frontend Request Payload Example:
+    ```json
     {
       "type": "ActionBid",
       "game": 1,
@@ -606,6 +643,7 @@ class ActionBid(Action):
       "auction": 4,
       "amount": 150
     }
+    ```
     """
     amount = models.PositiveIntegerField(default=0)
 
@@ -616,6 +654,7 @@ class Response(models.Model):
     Base model for game state updates broadcasted to the frontend.
     
     Frontend Response Payload Example:
+    ```json
     {
       "type": "Response",
       "money": {"1": 1500, "2": 1200},
@@ -623,6 +662,7 @@ class Response(models.Model):
       "active_turn_player": 2,
       "phase": "management"
     }
+    ```
     """
     money = models.JSONField(default=dict, blank=True)
     active_phase_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_phase_to_play')
@@ -635,6 +675,7 @@ class ResponseSkipPhase(Response):
     Base response for an event that skips a phase
     
     Frontend Response Payload Example:
+    ```json
     {
       "type": "Response",
       "money": {"1": 1500, "2": 1200},
@@ -642,6 +683,7 @@ class ResponseSkipPhase(Response):
       "active_turn_player": 2,
       "phase": "management"
     }
+    ```
     """
     pass
 
@@ -650,6 +692,7 @@ class ResponseMovement(Response):
     Base response for an event that moves a player across the board.
     
     Frontend Response Payload Example:
+    ```json
     {
       "type": "ResponseMovement",
       "money": {"1": 1500, "2": 1200},
@@ -659,6 +702,7 @@ class ResponseMovement(Response):
       "path": [10, 11, 12, 13, 14, 15],
       "fantasy_event": null
     }
+    ```
     """
     path = models.JSONField(default=list, blank=True)
     fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.CASCADE, null=True, blank=True)
@@ -668,6 +712,7 @@ class ResponseThrowDices(ResponseMovement):
     Response detailing the result of a dice roll and valid movement destinations.
     
     Frontend Response Payload Example:
+    ```json
     {
       "type": "ResponseThrowDices",
       "money": {"1": 1500, "2": 1200},
@@ -683,6 +728,7 @@ class ResponseThrowDices(ResponseMovement):
       "triple": false,
       "streak": 0
     }
+    ```
     """
     dice1 = models.PositiveIntegerField(default=0)
     dice2 = models.PositiveIntegerField(default=0)
@@ -696,6 +742,7 @@ class ResponseChooseSquare(ResponseMovement):
     Response confirming a player's movement to a specifically chosen square.
     
     Frontend Response Payload Example:
+    ```json
     {
       "type": "ResponseChooseSquare",
       "money": {"1": 1500, "2": 1200},
@@ -705,6 +752,7 @@ class ResponseChooseSquare(ResponseMovement):
       "path": [10, 25],
       "fantasy_event": null
     }
+    ```
     """
     pass
 
@@ -713,6 +761,7 @@ class ResponseChooseFantasy(Response):
     Response delivering the result of a drawn Chance/Community Chest card.
     
     Frontend Response Payload Example:
+    ```json
     {
       "type": "ResponseChooseFantasy",
       "money": {"1": 1600, "2": 1200},
@@ -721,6 +770,7 @@ class ResponseChooseFantasy(Response):
       "phase": "management",
       "fantasy_event": 5
     }
+    ```
     """
     fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.CASCADE, null=True, blank=True)
 
@@ -730,6 +780,7 @@ class ResponseAuction(Response):
     Note: The @property decorators will likely be serialized as regular fields.
     
     Frontend Response Payload Example:
+    ```json
     {
       "type": "ResponseAuction",
       "money": {"1": 1150, "2": 1200},
@@ -741,6 +792,7 @@ class ResponseAuction(Response):
       "final_amount": 350,
       "is_tie": false
     }
+    ```
     """
     auction = models.OneToOneField('Auction', on_delete=models.CASCADE, related_name='response')
 
@@ -761,6 +813,7 @@ class ResponseBonus(Response):
     Response delivering the result of a drawn Chance/Community Chest card.
     
     Frontend Response Payload Example:
+    ```json
     {
     "type": "ResponseBonus",
     "money": {"1": 1600, "2": 1200},
@@ -774,6 +827,7 @@ class ResponseBonus(Response):
 }
     }
     }
+    ```
     """
     bonuses = models.JSONField(default=dict, blank=True)
 

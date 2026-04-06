@@ -1,6 +1,6 @@
 # WebSockets
 
-::: magnate.consumers.py
+::: magnate.consumers
     options:
       members:
         - PublicQueueConsumer

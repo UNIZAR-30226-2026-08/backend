@@ -3,6 +3,7 @@
 from unittest.mock import Base
 from redis.retry import T
 import random
+from .serializers import *
 
 from magnate.exceptions import *
 from magnate.models import *
@@ -27,7 +28,7 @@ EPSILON = {
 PROB_CAER = 1 / 54       # Probability of landing on a square (excluding jail)
 CTE_FANTASIA = 0.0       # Default neutral value for unknown fantasy cards
 CTE_SUBASTA_ROI = 0.75   # Maximum bid capped at 75% of EV to ensure ROI
-TOTAL_TURNS = 20         # Dynamic baseline, multiplied by other players
+TOTAL_TURNS = 500         # Dynamic baseline, multiplied by other players
 
 class Agent:
     """
@@ -54,10 +55,26 @@ class Agent:
         possible_actions = self._get_possible_actions()
         if len(possible_actions) == 0:
             return None
-        elif random.random() < self.epsilon:
-            return random.choice(possible_actions)
+        #elif random.random() < self.epsilon:
+        #    return random.choice(possible_actions)
+        #else:
+        #    return max(possible_actions, key=self._ev_action)
+        
+        print(f"\n[DEBUG] Fase: {self.game.phase} | Jugador: {self.user.username}")
+        for action in possible_actions:
+            ev = self._ev_action(action)
+            # Imprime el tipo de acción y su valor esperado
+            datos_bonitos = GeneralActionSerializer(action).data
+            print(f"-> {action.__class__.__name__} | EV: {ev:.2f} | Datos: {datos_bonitos}")
+        
+        if random.random() < self.epsilon:
+            chosen = random.choice(possible_actions)
+            print(f"[DEBUG] Elegida por RANDOM: {type(chosen).__name__}\n")
+            return chosen
         else:
-            return max(possible_actions, key=self._ev_action)
+            chosen = max(possible_actions, key=self._ev_action)
+            print(f"[DEBUG] Elegida por MEJOR EV: {type(chosen).__name__} (EV: {self._ev_action(chosen):.2f})\n")
+            return chosen
 
     ################################################################################
     ########################## ACTION GENERATORS ###################################
@@ -268,8 +285,9 @@ class Agent:
 
         my_properties = list(PropertyRelationship.objects.filter(game=self.game, owner=self.user).select_related('square'))
         
-        best_trade = None
-        best_ev = 0.0
+        best_trade_params = None
+        
+        best_ev = float('-inf')
 
         for _ in range(5):
             target = random.choice(opponents)
@@ -281,6 +299,7 @@ class Agent:
             wanted_sq = wanted_rel.square.get_real_instance()
 
             offered_sqs = []
+            offer_rel = None
             offered_money = 0
             
             if my_properties and random.choice([True, False]):
@@ -289,7 +308,7 @@ class Agent:
             else:
                 max_offer = int(self._ev_buying(wanted_sq) * 0.8)
                 if max_offer > 0:
-                    offered_money = random.randint(1, min(max_offer, money))
+                    offered_money = random.randint(min(max_offer, money)//2, min(max_offer, money))
 
             if not offered_sqs and offered_money == 0:
                 continue
@@ -301,15 +320,30 @@ class Agent:
 
             if ev_intercambio > best_ev:
                 best_ev = ev_intercambio
-                best_trade = ActionTradeProposal(
-                    game=self.game, player=self.user, target_player=target,
-                    offered_properties=[sq.basesquare_ptr for sq in offered_sqs],
-                    asked_properties=[wanted_sq.basesquare_ptr],
-                    offered_money=offered_money, asked_money=0
-                )
-
-        return best_trade
-
+                best_trade_params = {
+                    'target': target,
+                    'wanted_rel': wanted_rel,
+                    'offer_rel': offer_rel,
+                    'offered_money': offered_money
+                }
+                
+        if not best_trade_params:
+            return None
+        
+        final_trade = ActionTradeProposal.objects.create(
+            game=self.game, 
+            player=self.user, 
+            destination_user=best_trade_params['target'], 
+            offered_money=best_trade_params['offered_money'], 
+            asked_money=0
+        )
+        final_trade.asked_properties.add(best_trade_params['wanted_rel'])
+        if best_trade_params['offer_rel']:
+            final_trade.offered_properties.add(best_trade_params['offer_rel'])
+            
+        return final_trade
+        
+        
     ################################################################################
     ############################### EV DISPATCHER ##################################
     ################################################################################
@@ -354,6 +388,8 @@ class Agent:
             return -float('inf')
         elif isinstance(action, ActionTradeAnswer):
             return self._ev_trade_answer(action.choose, action.proposal)
+        elif isinstance(action, ActionTradeProposal):
+            return self._ev_trade_proposal(action)
     
         return 0.0
 
@@ -427,7 +463,7 @@ class Agent:
         if max_rival_delta > 0:
             ev_bloqueo = (max_rival_delta * self._expected_visits()) / num_opponents
 
-        return (ev_propiedad + ev_bloqueo) - float(square.buy_price)
+        return (ev_propiedad + ev_bloqueo) - float(square.buy_price) + float(square.buy_price)//2 #residual value
 
     def _ev_bid(self, amount: int) -> float:
         """EV of placing a bid in an auction (Square worth minus bid amount)."""
@@ -524,16 +560,18 @@ class Agent:
             return 0.0
             
         opponents = max(1, self.game.players.count() - 1)
+        my_props_gained = [rel.square.get_real_instance() for rel in proposal.offered_properties.all()]
+        my_props_lost = [rel.square.get_real_instance() for rel in proposal.asked_properties.all()]
         
         my_benefit = self._evaluate_trade_net_benefit(
-            player=self.user, properties_gained=proposal.offered_properties.all(),
-            properties_lost=proposal.asked_properties.all(), money_gained=proposal.offered_money,
+            player=self.user, properties_gained=my_props_gained,
+            properties_lost=my_props_lost, money_gained=proposal.offered_money,
             money_lost=proposal.asked_money
         )
         
         rival_benefit = self._evaluate_trade_net_benefit(
-            player=proposal.player, properties_gained=proposal.asked_properties.all(),
-            properties_lost=proposal.offered_properties.all(), money_gained=proposal.asked_money,
+            player=proposal.player, properties_gained=my_props_lost,
+            properties_lost=my_props_gained, money_gained=proposal.asked_money,
             money_lost=proposal.offered_money
         )
         
@@ -543,11 +581,11 @@ class Agent:
         """Helper to compute the net EV gain/loss of a trade payload for a specific player."""
         gain = float(money_gained)
         for sq in properties_gained:
-            gain += self._calculate_rent_delta(sq, player, gaining=True) * self._expected_visits()
+            gain += self._calculate_rent_delta(sq, player, gaining=True) * self._expected_visits() + sq.buy_price//2 #residual value
             
         loss = float(money_lost)
         for sq in properties_lost:
-            loss += self._calculate_rent_delta(sq, player, gaining=False) * self._expected_visits()
+            loss += self._calculate_rent_delta(sq, player, gaining=False) * self._expected_visits() + sq.buy_price//2 #residual value
             
         return gain - loss
 
@@ -581,6 +619,34 @@ class Agent:
             else:
                 break
         return ev_sum / 12.0
+    
+    def _ev_trade_proposal(self, action: ActionTradeProposal) -> float:
+        """EV of proposing a trade (Net benefit differential against the target)."""
+        opponents = max(1, self.game.players.exclude(pk=self.user.pk).count())
+        
+        # Extraemos las instancias reales de las propiedades
+        my_props_gained = [rel.square.get_real_instance() for rel in action.asked_properties.all()]
+        my_props_lost = [rel.square.get_real_instance() for rel in action.offered_properties.all()]
+        
+        # Beneficio para nuestro agente
+        my_benefit = self._evaluate_trade_net_benefit(
+            player=self.user, 
+            properties_gained=my_props_gained,
+            properties_lost=my_props_lost, 
+            money_gained=action.asked_money,
+            money_lost=action.offered_money
+        )
+        
+        # Beneficio para el rival
+        rival_benefit = self._evaluate_trade_net_benefit(
+            player=action.destination_user, 
+            properties_gained=my_props_lost,
+            properties_lost=my_props_gained, 
+            money_gained=action.offered_money,
+            money_lost=action.asked_money
+        )
+        
+        return my_benefit - (rival_benefit / opponents)
 
     ################################################################################
     ########################## STATE & MATH HELPERS ################################

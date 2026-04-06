@@ -131,7 +131,7 @@ def bot_play_callback(game_pk: int, user_pk: int) -> None:
         app.control.revoke(game.next_phase_task_id, terminate=True)
     # decision
     agent = Agent(game, active_player, active_player.bot_level)
-    action = agent.choose_action(game)
+    action = agent.choose_action()
 
     if action:
         response = async_to_sync(GameManager.process_action)(game, active_player, action)

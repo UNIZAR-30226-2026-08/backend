@@ -18,6 +18,7 @@ nav:
   - Home: index.md
   - Integration:
     - WebSockets (Real-time): websockets.md
+    - Game: game.md
     - Actions: actions.md
     - Responses: responses.md
     - Fantasy events: fantasy_events.md

@@ -74,10 +74,10 @@ class GameClient:
         
         async for message in self.websocket:
             data = json.loads(message)
-            action = data.get("action")
-            print(action)
+            event_type = data.get("event_type")
+            print(event_type)
             
-            if action == "game_state":
+            if event_type == "game_state":
                 self.game_state = data["game_state"]
                 
                 # Logic to identify your ID from the game state
@@ -112,16 +112,16 @@ class GameClient:
                     sys.exit(0) # Simula cambiar de página
                 # -----------------------------------------------------------
             
-            elif action == "init_identity":
+            elif event_type == "init_identity":
                 self.player_id = data["player_id"]
                 self.username = data["username"]
                 print(f"AUTHENTICATED AS: {self.username} (ID: {self.player_id})")
             
-            elif action == "game_action":
+            elif event_type == "game_action":
                 print("\n--- Game Action Received ---")
                 print(json.dumps(data["data"], indent=2))
 
-            elif action == "game_response":
+            elif event_type == "game_response":
                 print("\n--- Game Response Received ---")
                 print(json.dumps(data["data"], indent=2))
 
@@ -141,11 +141,11 @@ class GameClient:
                     await self.websocket.close()
                     sys.exit(0) # Simula cambiar de página
                 # -----------------------------------------------------------
-            elif action == "chat_message":
+            elif event_type == "chat_message":
                 print("\n--- Game Message Received ---")
                 print(f"[{data.get('user')}]: {data.get('msg')}")
 
-            elif action == "error":
+            elif event_type == "error":
                 print(f"\nSERVER ERROR: {data.get('message')}")
 
             else:

@@ -171,7 +171,7 @@ class ConsumersTest(TransactionTestCase):
         self.assertTrue(connected, "El servidor rechazó la conexión al tablero")
         
         res = await comm.receive_json_from()
-        self.assertEqual(res['action'], 'game_state')
+        self.assertEqual(res['event_type'], 'game_state')
         self.assertIn('game_state', res)
         self.assertEqual(res['game_state']['phase'], GameManager.MANAGEMENT)
         self.assertEqual(res['game_state']['money'][str(user.pk)], 1500)

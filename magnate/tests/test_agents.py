@@ -43,8 +43,8 @@ class AgentsTest(TestCase):
             str(self.agent2.pk): 1500,
         }
         self.game.positions = {
-            str(self.agent1.pk): "001",
-            str(self.agent2.pk): "001",
+            str(self.agent1.pk): "000",
+            str(self.agent2.pk): "000",
         }
 
         self.game.save()
@@ -58,7 +58,7 @@ class AgentsTest(TestCase):
         print('=' * 60)
         
         turn = 0
-        while turn < 26:
+        while turn < 50:
             active_player = self.game.active_phase_player
 
             if active_player == self.agent1:

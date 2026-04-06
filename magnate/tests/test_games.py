@@ -10,7 +10,8 @@ from asgiref.sync import async_to_sync
 from unittest.mock import patch
 from magnate.exceptions import *
 
-
+@patch('magnate.tasks.kick_out_callback.apply_async', **{'return_value.id': 'mock_kick_id'}) #type: ignore
+@patch('magnate.tasks.next_phase_callback.apply_async', **{'return_value.id': 'mock_phase_id'}) #type: ignore
 class GamesTest(TestCase):
     @classmethod
     def setUpTestData(cls) -> None:
@@ -58,7 +59,7 @@ class GamesTest(TestCase):
     ##########################
 
     @patch('magnate.games.random.randint')
-    def test_jail_entry_on_third_double(self, mock_randint):
+    def test_jail_entry_on_third_double(self, mock_randint, mock_next_phase, mock_kick_out):
         self.game.streak = 2
         self.game.phase = GameManager.ROLL_THE_DICES
         self.game.save()
@@ -81,7 +82,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.phase, GameManager.LIQUIDATION)
 
     @patch('magnate.games.random.randint')
-    def test_jail_exit_via_doubles(self, mock_randint):
+    def test_jail_exit_via_doubles(self,  mock_randint, mock_next_phase, mock_kick_out):
         jail_sq = JailSquare.objects.first()
 
         if not jail_sq:
@@ -105,7 +106,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.phase, GameManager.CHOOSE_SQUARE)
 
     @patch('magnate.games.random.randint')
-    def test_jail_stay_on_no_doubles(self, mock_randint):
+    def test_jail_stay_on_no_doubles(self, mock_randint,  mock_next_phase, mock_kick_out):
         
         jail_sq = JailSquare.objects.first()
         if not jail_sq:
@@ -129,7 +130,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.phase, GameManager.BUSINESS)
 
     @patch('magnate.games.random.randint')
-    def test_jail_forced_payment_on_third_turn(self, mock_randint):
+    def test_jail_forced_payment_on_third_turn(self, mock_randint,  mock_next_phase, mock_kick_out):
         
         jail_sq = JailSquare.objects.first()
 
@@ -153,7 +154,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 0)
         self.assertEqual(self.game.phase, GameManager.MANAGEMENT) # Moved out
 
-    def test_jail_manual_bail_payment(self):
+    def test_jail_manual_bail_payment(self,  mock_next_phase, mock_kick_out):
         
         jail_sq = JailSquare.objects.first()
         if not jail_sq:
@@ -177,7 +178,7 @@ class GamesTest(TestCase):
     ###### BUSINESS TESTS ######
     ##########################
 
-    def test_buy_property(self):
+    def test_buy_property(self, mock_next_phase, mock_kick_out):
         self.game.phase = GameManager.MANAGEMENT
         self.game.save()
         action = ActionBuySquare(game=self.game, player=self.player1, square=self.property_square)
@@ -195,7 +196,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.money[str(self.player1.pk)], expected_money)
 
 
-    def test_build_and_demolish_houses(self):
+    def test_build_and_demolish_houses(self, mock_next_phase, mock_kick_out):
         if self.property_square is None:
             raise GameLogicError("no property square")
         
@@ -221,7 +222,7 @@ class GamesTest(TestCase):
         rel.refresh_from_db()
         self.assertEqual(rel.houses, 0)
 
-    def test_set_and_unset_mortgage(self):
+    def test_set_and_unset_mortgage(self, mock_next_phase, mock_kick_out):
 
         PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=self.property_square, houses=-1)
         self.game.phase = GameManager.BUSINESS
@@ -244,14 +245,14 @@ class GamesTest(TestCase):
     ##########################
     ###### ACUTION  TESTS ######
     ##########################
-    def test_auction_complete_flow(self):
+    @patch('magnate.tasks.auction_callback.apply_async')
+    def test_auction_complete_flow(self, mock_auction_task, mock_next_phase, mock_kick_out):
         """
         1. P1 do not purchase
         2. Initiate auction
         3. Players bid
         4. Terminate
         """
-
         if self.property_square is None:
             raise GameLogicError("no property square")
 
@@ -276,12 +277,11 @@ class GamesTest(TestCase):
 
         self.game.refresh_from_db()
         auction = self.game.current_auction
-        bids = auction.bids.all()
-        self.assertEqual(bids.count(), 3)
-        self.assertEqual(auction.bids.get(player=self.player2).amount, 300)
+        bids = auction.bids
+        self.assertEqual(len(bids), 3)
+        self.assertEqual(bids.get(str(self.player2.pk)), 300)
 
         result = GameManager._end_auction(self.game)
-
 
         if not isinstance(result, ResponseAuction):
             raise GameLogicError("Wrong type")
@@ -296,7 +296,8 @@ class GamesTest(TestCase):
         self.assertEqual(rel.owner, self.player2)
         self.assertEqual(self.game.money[str(self.player2.pk)], 1500 - 300)
 
-    def test_auction_desert(self):
+    @patch('magnate.tasks.auction_callback.apply_async')
+    def test_auction_desert(self, mock_auction_task,  mock_next_phase, mock_kick_out):
         if self.server_square is None:
             raise GameLogicError("no server square")
 
@@ -307,7 +308,6 @@ class GamesTest(TestCase):
 
         result = GameManager._end_auction(self.game)
 
-
         if not isinstance(result, ResponseAuction):
             raise GameLogicError("Wrong type")
         
@@ -317,12 +317,12 @@ class GamesTest(TestCase):
         self.game.refresh_from_db()
         self.assertEqual(self.game.phase, GameManager.BUSINESS)
         self.assertIsNone(self.game.current_auction)
-
         
         with self.assertRaises(PropertyRelationship.DoesNotExist):
             PropertyRelationship.objects.get(game=self.game, square=self.server_square)
 
-    def test_auction_tie(self):
+    @patch('magnate.tasks.auction_callback.apply_async')
+    def test_auction_tie(self, mock_auction_task,  mock_next_phase, mock_kick_out):
         if not self.property_square:
             raise GameLogicError("no property square")
 
@@ -337,7 +337,6 @@ class GamesTest(TestCase):
 
         result = GameManager._end_auction(self.game)
 
-
         if not isinstance(result, ResponseAuction):
             raise GameLogicError("Wrong type")
         
@@ -351,7 +350,7 @@ class GamesTest(TestCase):
     ###### MOVEMENT & RENT TESTS ######
     ##################################
 
-    def test_bridge_rent(self):
+    def test_bridge_rent(self, mock_next_phase, mock_kick_out):
         bridges = BridgeSquare.objects.all()[:2]
         PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=bridges[0])
         PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=bridges[1])
@@ -359,7 +358,7 @@ class GamesTest(TestCase):
         rent = _calculate_rent_price(self.game, self.player2, bridges[0])
         self.assertEqual(rent, bridges[0].rent_prices[1]) # price for 2 bridges
 
-    def test_trade_restriction_with_houses(self):
+    def test_trade_restriction_with_houses(self,  mock_next_phase, mock_kick_out):
         
         if not self.property_square:
             raise GameLogicError("no property square")
@@ -381,7 +380,7 @@ class GamesTest(TestCase):
         with self.assertRaises(MaliciousUserInput):
             async_to_sync(GameManager.process_action)(self.game, self.player1, proposal)
 
-    def test_calculate_net_worth(self):
+    def test_calculate_net_worth(self,  mock_next_phase, mock_kick_out):
         if self.property_square is None:
             raise GameLogicError("no property square")
             
@@ -397,7 +396,7 @@ class GamesTest(TestCase):
         expected = 1000 + self.property_square.buy_price + (2 * self.property_square.build_price)
         self.assertEqual(nw, expected)
 
-    def test_pay_rent_on_owned_property(self):
+    def test_pay_rent_on_owned_property(self,  mock_next_phase, mock_kick_out):
         """
         P2 lands in a P1 property with 1 house
         Calculate rent and pay it to P1
@@ -426,7 +425,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.money[str(self.player2.pk)], 1500 - expected_rent)
         self.assertEqual(self.game.money[str(self.player1.pk)], 1500 + expected_rent)
 
-    def test_take_tram(self):
+    def test_take_tram(self,  mock_next_phase, mock_kick_out):
         """
         P1 taking tram
         """
@@ -449,7 +448,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.positions[str(self.player1.pk)], tram_square_2.custom_id)
         self.assertEqual(self.game.money[str(self.player1.pk)], 1500 - tram_square_2.buy_price)
 
-    def test_not_take_tram(self):
+    def test_not_take_tram(self,  mock_next_phase, mock_kick_out):
         """
         P1 not taking tram
         """
@@ -479,7 +478,7 @@ class GamesTest(TestCase):
     ###### TRADING TESTS ######
     ##########################
 
-    def test_trade_proposal_and_acceptance(self):
+    def test_trade_proposal_and_acceptance(self,  mock_next_phase, mock_kick_out):
         """p1 and p2 exchange multiple properties and money"""
         squares = PropertySquare.objects.filter(buy_price__gt=0)[:4]
         
@@ -533,7 +532,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.active_phase_player, self.player1)
 
 
-    def test_trade_proposal_rejection(self):
+    def test_trade_proposal_rejection(self,  mock_next_phase, mock_kick_out):
         """p1 proposes a trade but p2 rejects it"""
         squares = PropertySquare.objects.filter(buy_price__gt=0)[:2]
         
@@ -581,7 +580,7 @@ class GamesTest(TestCase):
     #################################
 
     @patch('magnate.games.random.randint')
-    def test_roll_dices_bus_icon(self, mock_randint):
+    def test_roll_dices_bus_icon(self, mock_randint,  mock_next_phase, mock_kick_out):
         """roll with bus icon (d3 > 3). player can choose between 3 paths"""
         # d1=2, d2=3, d3=6 (bus icon)
         mock_randint.side_effect = [2, 3, 6] 
@@ -601,7 +600,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.streak, 0)
 
     @patch('magnate.games.random.randint')
-    def test_roll_dices_triples(self, mock_randint):
+    def test_roll_dices_triples(self, mock_randint,  mock_next_phase, mock_kick_out):
         """roll triples. player can choose any square on the board"""
         # d1=2, d2=2, d3=2 (numeric bus matching d1 and d2)
         mock_randint.side_effect = [2, 2, 2] 
@@ -624,7 +623,7 @@ class GamesTest(TestCase):
         self.assertEqual(len(self.game.possible_destinations), total_squares-1)
 
     @patch('magnate.games.random.randint')
-    def test_roll_dices_doubles_streak(self, mock_randint):
+    def test_roll_dices_doubles_streak(self, mock_randint,  mock_next_phase, mock_kick_out):
         """roll doubles adds to streak, third double sends to jail"""
         # first double
         mock_randint.side_effect = [4, 4, 6] # double, non-numeric bus
@@ -663,7 +662,7 @@ class GamesTest(TestCase):
     ###### MALICIOUS TESTS ######
     ##########################
 
-    def test_trade_proposal_malicious_unowned_properties(self):
+    def test_trade_proposal_malicious_unowned_properties(self, mock_next_phase, mock_kick_out):
         """p1 tries to trade a property they don't own, raises error"""
         squares = PropertySquare.objects.filter(buy_price__gt=0)[:2]
         
@@ -685,8 +684,9 @@ class GamesTest(TestCase):
         with self.assertRaises(MaliciousUserInput):
             async_to_sync(GameManager.process_action)(self.game, self.player1, proposal)
 
+    @patch('magnate.tasks.auction_callback.apply_async')
     @patch('magnate.games.random.randint')
-    def test_doubles_streak_full_flow(self, mock_randint):
+    def test_doubles_streak_full_flow(self, mock_randint, mock_auction_task,  mock_next_phase, mock_kick_out):
         """
         1. P1 rolls doubles (streak 0 -> 1)
         2. P1 buys the square (MANAGEMENT -> BUSINESS)
@@ -775,7 +775,7 @@ class GamesTest(TestCase):
     ##########################
 
     @patch('magnate.games.FantasyEventFactory.generate')
-    def test_fantasy_choose_first(self, mock_generate):
+    def test_fantasy_choose_first(self, mock_generate,  mock_next_phase, mock_kick_out):
         """Landa on fantasy square and choose the first card offered"""
         # Setup initial event
         initial_event = FantasyEvent.objects.create(
@@ -800,7 +800,7 @@ class GamesTest(TestCase):
         self.assertIsNone(self.game.fantasy_event)
 
     @patch('magnate.games.FantasyEventFactory.generate')
-    def test_fantasy_choose_other(self, mock_generate):
+    def test_fantasy_choose_other(self,  mock_generate, mock_next_phase, mock_kick_out):
         """Land on fantasy square and choose to get another card"""
         # Setup initial event (this one should NOT be applied)
         initial_event = FantasyEvent.objects.create(
@@ -838,7 +838,7 @@ class GamesTest(TestCase):
     ###### STATS TESTS ######
     ##########################
 
-    def test_stats_walked_squares(self):
+    def test_stats_walked_squares(self, mock_next_phase, mock_kick_out):
         """P1 moves to a square, walked_squares should increment"""
         if self.property_square is None:
             raise GameLogicError("no property square")
@@ -853,7 +853,7 @@ class GamesTest(TestCase):
         stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
         self.assertEqual(stats.walked_squares, 5)
 
-    def test_stats_lost_money_on_buy(self):
+    def test_stats_lost_money_on_buy(self, mock_next_phase, mock_kick_out):
         """P1 buys a property, lost_money should increment by buy_price"""
         if self.property_square is None:
             raise GameLogicError("no property square")
@@ -867,7 +867,7 @@ class GamesTest(TestCase):
         stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
         self.assertEqual(stats.lost_money, self.property_square.buy_price)
 
-    def test_stats_rent_paid_and_received(self):
+    def test_stats_rent_paid_and_received(self,  mock_next_phase, mock_kick_out):
         """P2 lands on P1 property: P2 lost_money and num_paid_rents increment, P1 won_money increments"""
         if self.property_square is None:
             raise GameLogicError("no property square")
@@ -892,7 +892,7 @@ class GamesTest(TestCase):
         self.assertEqual(stats_p2.num_paid_rents, 1)
         self.assertEqual(stats_p1.won_money, expected_rent)
 
-    def test_stats_built_and_demolished_houses(self):
+    def test_stats_built_and_demolished_houses(self,  mock_next_phase, mock_kick_out):
         """P1 builds 1 house then demolishes it: built_houses=1, demolished_houses=1"""
         if self.property_square is None:
             raise GameLogicError("no property square")
@@ -916,7 +916,7 @@ class GamesTest(TestCase):
         stats.refresh_from_db()
         self.assertEqual(stats.demolished_houses, 1)
 
-    def test_stats_times_and_turns_in_jail(self):
+    def test_stats_times_and_turns_in_jail(self, mock_next_phase, mock_kick_out):
         """P1 goes to jail via third double: times_in_jail=1. Then stays one turn: turns_in_jail=1"""
         self.game.streak = 2
         self.game.phase = GameManager.ROLL_THE_DICES
@@ -941,7 +941,7 @@ class GamesTest(TestCase):
         stats.refresh_from_db()
         self.assertEqual(stats.turns_in_jail, 1)
 
-    def test_stats_turns_in_jail_forced_payment(self):
+    def test_stats_turns_in_jail_forced_payment(self, mock_next_phase, mock_kick_out):
         """P1 on last jail turn pays bail: turns_in_jail increments"""
         jail_sq = JailSquare.objects.first()
         if not jail_sq:
@@ -960,7 +960,7 @@ class GamesTest(TestCase):
         self.assertEqual(stats.turns_in_jail, 1)
         self.assertEqual(stats.lost_money, jail_sq.bail_price)
 
-    def test_stats_lost_money_on_bail_payment(self):
+    def test_stats_lost_money_on_bail_payment(self, mock_next_phase, mock_kick_out):
         """P1 manually pays bail: lost_money increments by bail_price"""
         jail_sq = JailSquare.objects.first()
         if not jail_sq:
@@ -977,7 +977,7 @@ class GamesTest(TestCase):
         stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
         self.assertEqual(stats.lost_money, jail_sq.bail_price)
 
-    def test_stats_trades(self):
+    def test_stats_trades(self, mock_next_phase, mock_kick_out):
         """P1 and P2 complete a trade: num_trades increments for both"""
         squares = PropertySquare.objects.filter(buy_price__gt=0)[:2]
         rel1 = PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=squares[0], houses=-1)
@@ -1010,7 +1010,7 @@ class GamesTest(TestCase):
         self.assertEqual(stats_p2.lost_money, 40)
         self.assertEqual(stats_p2.won_money, 0)
     
-    def test_stats_num_mortgages(self):
+    def test_stats_num_mortgages(self, mock_next_phase, mock_kick_out):
         """P1 sets and unsets mortgage: num_mortgages=2"""
         PropertyRelationship.objects.create(
             game=self.game, owner=self.player1, square=self.property_square, houses=-1
@@ -1027,7 +1027,7 @@ class GamesTest(TestCase):
         stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
         self.assertEqual(stats.num_mortgages, 1)
 
-    def test_stats_num_fantasy_events(self):
+    def test_stats_num_fantasy_events(self, mock_next_phase, mock_kick_out):
         """P1 triggers a fantasy event: num_fantasy_events increments"""
         event = FantasyEvent.objects.create(
             fantasy_type='winPlainMoney',
@@ -1048,7 +1048,7 @@ class GamesTest(TestCase):
     ###### BONUS TESTS ######
     ##########################
 
-    def test_bonus_winner_receives_money(self):
+    def test_bonus_winner_receives_money(self, mock_next_phase, mock_kick_out):
         """player with more walked_squares receives bonus"""
         BonusCategory.objects.create(stat_field='walked_squares', bonus_amount=200)
 
@@ -1070,7 +1070,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.money[str(self.player2.pk)], 1500)
         self.assertEqual(self.game.money[str(self.player3.pk)], 1500)
 
-    def test_bonus_tie_both_winners_receive_money(self):
+    def test_bonus_tie_both_winners_receive_money(self, mock_next_phase, mock_kick_out):
         """2 players tie, both receive bonus"""
         BonusCategory.objects.create(stat_field='num_trades', bonus_amount=300)
 
@@ -1092,7 +1092,7 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.money[str(self.player2.pk)], 1800)  # 1500 + 300
         self.assertEqual(self.game.money[str(self.player3.pk)], 1500)
 
-    def test_bonus_all_zero_no_winner(self):
+    def test_bonus_all_zero_no_winner(self,  mock_next_phase, mock_kick_out):
         """0 in stats, no bonus"""
         BonusCategory.objects.create(stat_field='built_houses', bonus_amount=200)
 
@@ -1111,7 +1111,7 @@ class GamesTest(TestCase):
     ##########################
     #TODO: check action enviada en estos tests
 
-    def test_end_game_sets_finished_and_bonus_response(self):
+    def test_end_game_sets_finished_and_bonus_response(self, mock_next_phase, mock_kick_out):
         """call _end_game_logic, game.finished=True, bonus_response saved"""
         BonusCategory.objects.create(stat_field='walked_squares', bonus_amount=200)
         BonusCategory.objects.create(stat_field='num_trades', bonus_amount=200)
@@ -1125,7 +1125,7 @@ class GamesTest(TestCase):
         self.assertIsNotNone(self.game.bonus_response)
         self.assertIsInstance(self.game.bonus_response, ResponseBonus)
 
-    def test_end_game_winner_receives_bonus(self):
+    def test_end_game_winner_receives_bonus(self, mock_next_phase, mock_kick_out    ):
         """more walked_squares player wins bonus"""
         BonusCategory.objects.create(stat_field='walked_squares', bonus_amount=200)
         BonusCategory.objects.create(stat_field='num_trades', bonus_amount=200)

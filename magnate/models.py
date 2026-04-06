@@ -33,6 +33,8 @@ class CustomUser(AbstractUser):
     points = models.PositiveIntegerField(default=0)
     exp = models.PositiveIntegerField(default=0)
     elo = models.PositiveIntegerField(default=0)
+    is_bot = models.BooleanField(default=False)
+    bot_level = models.CharField(max_length=20, null=True, blank=True) # "easy" /"expert" etc
 
 class Item(models.Model):
     class ItemType(models.TextChoices):
@@ -119,6 +121,9 @@ class PrivateRoom(models.Model):
     # Players will be linked from CustomUser.current_private_room
     room_code: str = models.CharField(max_length=10, unique=True) #type: ignore
     players: models.QuerySet['CustomUser']
+    # Number of players total -> to include bots
+    target_players = models.PositiveIntegerField(default=4)
+    bot_level = models.CharField(max_length=20, default='medium')
     
 class FantasyEvent(models.Model):
     """
@@ -253,11 +258,14 @@ class Game(models.Model):
     kick_out_task_id = models.CharField(max_length=255, null=True, blank=True)
     next_phase_task_id = models.CharField(max_length=255, null=True, blank=True)
 
+    current_turn = models.PositiveIntegerField(default=1)
+
 class Auction(models.Model):
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='auctions')
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='auctioned_in')
-    winner = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='won_auctions')
+    bids = models.JSONField(default=dict, blank=True) #  user_id -> amount
     final_amount = models.PositiveIntegerField(null=True, blank=True)
+    winner = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, blank=True, related_name='won_auctions') # type: ignore
     is_active = models.BooleanField(default=True)
     is_tie = models.BooleanField(default=False)
 
@@ -533,7 +541,6 @@ class ActionBid(Action):
       "amount": 150
     }
     """
-    auction = models.ForeignKey('Auction', on_delete=models.CASCADE, related_name='bids', null=True, blank=True)
     amount = models.PositiveIntegerField(default=0)
 
 ###############################################################################

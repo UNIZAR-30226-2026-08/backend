@@ -128,11 +128,16 @@ class ConsumersTest(TransactionTestCase):
         
         self.assertEqual(start_res_owner['action'], 'game_start')
         self.assertEqual(start_res_guest['action'], 'game_start')
-        self.assertEqual(start_res_owner['game_id'], room_code)
+        
+        # FIX: Check that the game_id is an integer (the new DB primary key)
+        self.assertIsInstance(start_res_owner['game_id'], int)
+        
+        # BONUS: Ensure both players received the exact same game ID
+        self.assertEqual(start_res_owner['game_id'], start_res_guest['game_id'])
 
         await comm_owner.disconnect()
         await comm_guest.disconnect()
-
+        
     ############################
     ##### GAME CONSUMER TEST ####
     ############################

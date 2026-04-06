@@ -67,7 +67,7 @@ class GameClient:
                     task.cancel()
         except Exception as e:
             print(f"Game Connection Error: {e}")
-
+            
     async def listen(self):
         if not self.websocket:
             return
@@ -96,6 +96,21 @@ class GameClient:
                 is_my_turn = self.game_state.get("active_turn_player") == self.username
                 turn_status = "YOUR TURN " if is_my_turn else "⌛ Waiting for opponent..."
                 print(f"\n{turn_status}")
+
+                # --- NUEVO: COMPROBACIÓN DE FIN DE PARTIDA O BANCARROTA ---
+                phase = self.game_state.get("phase")
+                money_dict = self.game_state.get("money", {})
+
+                if phase == "end_game":
+                    print("\n🏆 El juego ha terminado. (Simulando redirección a pantalla final...)")
+                    await self.websocket.close()
+                    sys.exit(0) # Simula cambiar de página
+                    
+                if self.player_id and str(self.player_id) not in money_dict:
+                    print("\n💀 Has sido eliminado o te has rendido. (Simulando redirección a pantalla final...)")
+                    await self.websocket.close()
+                    sys.exit(0) # Simula cambiar de página
+                # -----------------------------------------------------------
             
             elif action == "init_identity":
                 self.player_id = data["player_id"]
@@ -110,6 +125,22 @@ class GameClient:
                 print("\n--- Game Response Received ---")
                 print(json.dumps(data["data"], indent=2))
 
+                # --- NUEVO: COMPROBACIÓN DE FIN DE PARTIDA O BANCARROTA ---
+                # Las acciones (rendirse) y tareas de celery envían el estado en 'data'
+                game_data = data.get("data", {})
+                phase = game_data.get("phase")
+                money_dict = game_data.get("money", {})
+
+                if phase == "end_game":
+                    print("\n🏆 El juego ha terminado. (Simulando redirección a pantalla final...)")
+                    await self.websocket.close()
+                    sys.exit(0) # Simula cambiar de página
+                    
+                if self.player_id and str(self.player_id) not in money_dict:
+                    print("\n💀 Has sido eliminado o te has rendido. (Simulando redirección a pantalla final...)")
+                    await self.websocket.close()
+                    sys.exit(0) # Simula cambiar de página
+                # -----------------------------------------------------------
             elif action == "chat_message":
                 print("\n--- Game Message Received ---")
                 print(f"[{data.get('user')}]: {data.get('msg')}")
@@ -127,7 +158,7 @@ class GameClient:
             return
         
         while True:
-            print("\nAvailable commands: throw, move, buy, sell, build, demolish, next, mortgage, unmortgage, drop, take_tram, skip_tram, choose_card, bid, trade, trade_answer, bail, surrender, exit")
+            print("\nAvailable commands: throw, move, buy, build, demolish, next, mortgage, unmortgage, drop, take_tram, skip_tram, choose_card, bid, trade, trade_answer, bail, surrender, exit")
             cmd = await get_input("Enter command: ")
             cmd = cmd.strip().lower()
 
@@ -157,9 +188,6 @@ class GameClient:
         elif cmd == "buy":
             sq_id = await get_input("Enter Square Custom ID to buy: ")
             return {"type": "ActionBuySquare", "square": int(sq_id)}
-        elif cmd == "sell": 
-            sq_id = await get_input("Enter Square Custom ID to sell: ")
-            return {"type": "ActionSellSquare", "square": int(sq_id)}
         elif cmd == "next":
             return {"type": "ActionNextPhase"}
         elif cmd == "build":
@@ -188,9 +216,8 @@ class GameClient:
             choice = await get_input("Use card? (y/n): ")
             return {"type": "ActionChooseCard", "chosen_card": choice.lower() == 'y'}
         elif cmd == "bid":
-            auction_id = await get_input("Enter Auction ID: ")
             amount = await get_input("Enter bid amount: ")
-            return {"type": "ActionBid", "auction": int(auction_id), "amount": int(amount)}
+            return {"type": "ActionBid", "amount": int(amount)}
         elif cmd == "trade":
             dest_user = await get_input("Enter destination User ID: ")
             offered_money = await get_input("Offered money: ")

@@ -76,12 +76,18 @@ class GameManager:
             MaliciousUserInput: If the user acts out of turn or phase.
             GameLogicError: If an unrecognized phase is encountered.
         """
+       
+
         if isinstance(action, ActionSurrender):
             # TODO
-            pass
+            cls._bankrupt_player(game, user)
+            response = Response()
+            return _add_basic_response_data(game, response)
 
         if user != game.active_phase_player and not isinstance(action, ActionBid): # if aucction there are no turns
             raise MaliciousUserInput(user, "is not the active player")
+
+
 
         if game.phase == cls.ROLL_THE_DICES:
             if isinstance(action, ActionPayBail):
@@ -140,6 +146,9 @@ class GameManager:
             MaliciousUserInput: If the user is not actually in jail.
             GameLogicError: If the user does not have enough money.
         """
+
+        GameManager._cancel_all_timers(game)
+
         square = _get_user_square(game, user).get_real_instance()
 
         if not isinstance(square, JailSquare):
@@ -162,7 +171,9 @@ class GameManager:
         stats.lost_money += bail_price
         stats.save()
         # roll the dices -> continue normally
+        GameManager._set_next_phase_timer(game, user)
 
+        game.save()
         return Response()
 
     @staticmethod
@@ -178,6 +189,9 @@ class GameManager:
         Returns:
             Response: Standard response.
         """
+
+        GameManager._cancel_all_timers(game)
+
         response: ResponseThrowDices = ResponseThrowDices()
 
         d1 = random.randint(1,6)
@@ -220,6 +234,7 @@ class GameManager:
                     stats.turns_in_jail += 1
                     stats.save()
                     response.path = [current_pos_id]
+                    GameManager._set_next_phase_timer(game, user)
                     return response
             else:
                 raise GameLogicError(f"Cannot be in jail status and not in jail square")
@@ -238,6 +253,7 @@ class GameManager:
             game.phase = GameManager.CHOOSE_SQUARE
             response.path = [current_pos_id]
             game.save()
+            GameManager._set_next_phase_timer(game, user)
             return response
         elif doubles: # doubles streak only if not getting out of jail via doubles
             if game.streak >= 2:
@@ -258,6 +274,7 @@ class GameManager:
                 game.phase = GameManager.LIQUIDATION
 
                 game.save()
+                GameManager._set_next_phase_timer(game, user)
                 return response
             elif not is_jailed:
                 game.streak = game.streak + 1
@@ -288,7 +305,11 @@ class GameManager:
 
             if move_result["jailed"]:
                 # landing in go to jail; update state to jail the player.
-                game.positions[str(user.pk)] = move_result["final_id"]
+                jail = JailSquare.objects.first()
+                if jail is None:
+                    raise GameDesignError('no jail in game')
+                
+                game.positions[str(user.pk)] = jail.custom_id
                 game.jail_remaining_turns[str(user.pk)] = 3
                 game.phase = GameManager.LIQUIDATION
                 stats = PlayerGameStatistic.objects.get(user=user, game=game)
@@ -301,6 +322,7 @@ class GameManager:
                 
 
         game.save()
+        GameManager._set_next_phase_timer(game, user)
         return response
 
     @staticmethod
@@ -319,6 +341,8 @@ class GameManager:
         Raises:
             MaliciousUserInput: If the chosen square is not in `possible_destinations`.
         """
+
+        GameManager._cancel_all_timers(game)
         response: ResponseChooseSquare = ResponseChooseSquare()
 
         if not isinstance(action, ActionMoveTo):
@@ -332,32 +356,43 @@ class GameManager:
         current_pos_id = game.positions[str(user.pk)]
         current_pos_square = _get_square_by_custom_id(current_pos_id).get_real_instance()
 
-        steps = game.possible_destinations.get(str(square.custom_id), 0)
+        steps = game.possible_destinations.get(str(square.custom_id))
         
         move_result = _move_player_logic(current_pos_square, steps)
         
-        if steps == 0:
-            response.path = [current_pos_id, square.custom_id]
-        else:
-            response.path = move_result["path"]
+        response.path = move_result["path"]
 
-        game.positions[str(user.pk)] = square.custom_id
+        if move_result["jailed"]:
+            # landing in go to jail; update state to jail the player.
+            jail = JailSquare.objects.first()
+            if jail is None:
+                raise GameDesignError('no jail in game')
+            
+            game.positions[str(user.pk)] = jail.custom_id
+            game.jail_remaining_turns[str(user.pk)] = 3
+            game.phase = GameManager.LIQUIDATION
+            stats = PlayerGameStatistic.objects.get(user=user, game=game)
+            stats.times_in_jail += 1
+            stats.save()
+        else:
+            game.positions[str(user.pk)] = square.custom_id
+            square = _get_square_by_custom_id(square.custom_id)
+            _apply_square_arrival(game, user, response, square, move_result["passed_go"])
 
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
         stats.walked_squares += steps
         stats.save()
 
         game.possible_destinations = dict()
-
-        # Use the passed_go flag correctly computed by _move_player_logic.
-        _apply_square_arrival(game, user, response, action.square, move_result["passed_go"])
-
-
         game.save()
+
+        GameManager._set_next_phase_timer(game, user)
         return response
     
     @staticmethod
     def _choose_fantasy_logic(game: Game, user: CustomUser, action: ActionChooseCard) -> Response:
+        GameManager._cancel_all_timers(game)
+
         response = ResponseChooseFantasy()
         fantasy_event = game.fantasy_event
         generate = not action.chosen_revealed_card
@@ -380,8 +415,12 @@ class GameManager:
         else:
             game.phase = GameManager.ROLL_THE_DICES
 
-        game.save()
+        if game.phase == GameManager.BUSINESS:
+            GameManager._set_next_phase_timer(game, user)
+        elif game.phase == GameManager.ROLL_THE_DICES:
+            GameManager._set_kick_out_timer(game, user)
             
+        game.save()     
         return response
        
     @staticmethod
@@ -403,6 +442,8 @@ class GameManager:
         Raises:
             MaliciousUserInputAction: If the action does not fit the phase/context.
         """
+        GameManager._cancel_all_timers(game)
+
         current_square = _get_user_square(game, user).get_real_instance()
         prop_rel = _get_relationship(game, current_square)
 
@@ -446,7 +487,7 @@ class GameManager:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionDropPurchase):
             if isinstance(action.square, (PropertySquare, ServerSquare, BridgeSquare)):
-                GameManager._initiate_auction(game, action.square)
+                return GameManager._initiate_auction(game, action.square)
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionTakeTram):
@@ -482,6 +523,11 @@ class GameManager:
             else:
                 game.phase = GameManager.ROLL_THE_DICES
 
+        if game.phase == GameManager.BUSINESS:
+            GameManager._set_next_phase_timer(game, user)
+        elif game.phase == GameManager.ROLL_THE_DICES:
+            GameManager._set_kick_out_timer(game, user)
+
         game.save()
         return Response()
 
@@ -502,6 +548,8 @@ class GameManager:
         Raises:
             MaliciousUserInput: If restrictions (e.g., negative balance on next turn) are unmet.
         """
+
+        GameManager._cancel_all_timers(game)
         # Logic for the business phase where players can build houses, trade, etc.
         if isinstance(action, ActionBuild):
             # Check owner 
@@ -537,9 +585,9 @@ class GameManager:
                     GameManager._next_turn(game, user)
                 else:
                     raise MaliciousUserInput(user, "Cannot end in NEGATIVE")
+            return Response() # timers set in next turn
 
-        #TODO: elif with a timeout -> auto sell in case user can reach positive status or kick out in case
-        
+        GameManager._set_next_phase_timer(game, user)
         return Response()
                    
     @staticmethod
@@ -617,6 +665,7 @@ class GameManager:
             game.phase = GameManager.BUSINESS
             game.active_phase_player = offering
             game.save()
+            GameManager._set_next_phase_timer(game, offering)
 
             return Response()
         else:
@@ -634,15 +683,17 @@ class GameManager:
         Returns:
             Response: Standard response.
         """
+        GameManager._cancel_all_timers(game)
+
+        game.next_phase_task_id = None
         game.phase = GameManager.AUCTION
 
-        auction = Auction.objects.create(game=game, square=square)
+        auction = Auction.objects.create(game=game, square=square, is_active=True, bids = {})
         game.current_auction = auction
         game.save()
 
         # TODO: Remove magic number
-        from .tasks import auction_callback
-        auction_callback.apply_async(args=[game.pk], countdown=50)
+        GameManager._set_auction_timer(game)
         # TODO: Remove in production
         game.refresh_from_db()
 
@@ -672,8 +723,10 @@ class GameManager:
         if not auction:
             raise GameLogicError("No active auction")
 
+
+        bids = auction.bids
         # user has not bid yet
-        if auction.bids.filter(player=user).exists():
+        if bids.get(str(user.pk)):
             raise MaliciousUserInput(user, "User already placed a bid in this auction")
         
         # user who started the bid cant bid
@@ -687,11 +740,15 @@ class GameManager:
             raise MaliciousUserInput(user, "Bid amount exceeds current balance")
 
       
+        bids[str(user.pk)] = amount
+        auction.bids = bids
+        auction.save()
+
         game.save()
         return Response()
     
     @staticmethod
-    def _end_auction(game: Game) -> Response:
+    def _end_auction(game: Game) -> Response | None:
         """
         Ends an active auction, resolves the winner based on the highest bid, 
         handles ties, and transitions the game state back to BUSINESS.
@@ -707,6 +764,9 @@ class GameManager:
         """
         ## call this with a timer -> end of the auction
 
+        if game.phase == GameManager.END_GAME:
+            return None # Inevitable if the auction callback is triggered after the game has ended, just ignore it
+        
         if game.phase != GameManager.AUCTION:
             raise GameLogicError("Tried to end auction but game is not in auction phase")
 
@@ -715,11 +775,11 @@ class GameManager:
             raise GameLogicError("Game is in AUCTION phase but no auction object found")
 
         square = auction.square.get_real_instance()
-        bids = auction.bids.all()
+        bids = auction.bids
 
 
         # no one bid
-        if not bids.exists():
+        if not bids:
             if game.streak == 0:
                 game.phase = GameManager.BUSINESS
             else:
@@ -734,12 +794,18 @@ class GameManager:
             game.current_auction = None
             game.save()
 
+            if game.phase == GameManager.BUSINESS:
+                GameManager._set_next_phase_timer(game, game.active_turn_player)
+            elif game.phase == GameManager.ROLL_THE_DICES:
+                GameManager._set_kick_out_timer(game, game.active_turn_player)
+            
+            game.save()
             return ResponseAuction(auction=auction)
 
-        max_bid_amount = bids.aggregate(Max('amount'))['amount__max']
-        winners = bids.filter(amount=max_bid_amount)
-        
-        if winners.count() > 1:
+        max_bid_amount = max(bids.values())
+        winners = [int(uid) for uid, amt in bids.items() if amt == max_bid_amount]
+            
+        if len(winners)> 1:
             if game.streak == 0:
                 game.phase = GameManager.BUSINESS
             else:
@@ -753,11 +819,34 @@ class GameManager:
 
             game.current_auction = None
             game.save()
+
+            if game.phase == GameManager.BUSINESS:
+                GameManager._set_next_phase_timer(game, game.active_turn_player)
+            elif game.phase == GameManager.ROLL_THE_DICES:
+                GameManager._set_kick_out_timer(game, game.active_turn_player)
+
+            game.save()
             return ResponseAuction(auction=auction)
 
-        winner_action = winners.first()
-        winner = winner_action.player
-        highest_bid = winner_action.amount
+        winner_id = winners[0]
+        if str(winner_id) not in game.money: # surrends mid auction -> no winner
+            game.phase = GameManager.BUSINESS if game.streak == 0 else GameManager.ROLL_THE_DICES
+            auction.is_active = False
+            auction.save()
+            
+            game.current_auction = None
+            game.save()
+            
+            if game.phase == GameManager.BUSINESS:
+                GameManager._set_next_phase_timer(game, game.active_turn_player)
+            elif game.phase == GameManager.ROLL_THE_DICES:
+                GameManager._set_kick_out_timer(game, game.active_turn_player)
+            
+            game.save()
+            return ResponseAuction(auction=auction)
+        
+        winner = CustomUser.objects.get(pk=winner_id)
+        highest_bid = max_bid_amount
         
         game.money[str(winner.pk)] -= highest_bid
         stats = PlayerGameStatistic.objects.get(user=winner,game=game)
@@ -796,14 +885,19 @@ class GameManager:
         game.current_auction = None
         game.save()
 
+        if game.phase == GameManager.BUSINESS:
+            GameManager._set_next_phase_timer(game, game.active_turn_player)
+        elif game.phase == GameManager.ROLL_THE_DICES:
+            GameManager._set_kick_out_timer(game, game.active_turn_player)
+        
+        game.save()
+
         return ResponseAuction(auction=auction)
 
     @classmethod
     def _next_turn(cls, game: Game, user: CustomUser) -> None:
         players_list = list(game.players.all()) 
         num_players = len(players_list)
-        print(f"players list: {players_list}")
-        print(f"ordered players: {game.ordered_players}")
         current_index = -1
         current_player_id = -1
         for p in players_list:
@@ -816,7 +910,6 @@ class GameManager:
             raise GameLogicError('current player not found')
         
         next_index = (current_index + 1) % num_players
-        print(f"next index: {next_index}")
         # The next active user is for both: phase and turn
         next_player = game.players.filter(pk=game.ordered_players[next_index]).first()
         if next_player is None:
@@ -825,17 +918,13 @@ class GameManager:
         game.active_phase_player = next_player
         game.active_turn_player = next_player
         game.phase = GameManager.ROLL_THE_DICES
+        game.current_turn += 1
         game.save()
 
-        if game.next_phase_task_id:
-            app.control.revoke(game.next_phase_task_id, terminate=True)
-            game.next_phase_task_id = None
-            
-        from .tasks import kick_out_callback
+        GameManager._cancel_all_timers(game)
 
-        #task = kick_out_callback.apply_async(args=[game.pk, next_player.pk], countdown=50)
-        #game.kick_out_task_id = task.id
-        
+        GameManager._set_kick_out_timer(game, next_player)
+
         game.save()
  
     @classmethod
@@ -882,32 +971,56 @@ class GameManager:
         game.active_phase_player = action.destination_user
         game.proposal = action # type: ignore
         game.save()
+        GameManager._set_next_phase_timer(game, action.destination_user)
 
     @classmethod
-    def _bankrupt_player(cls, game: Game, user: CustomUser) -> None:
-        properties = PropertyRelationship.objects.filter(game=game, owner=user)
-        
-        #reset all properties
-        for rel in properties:
-            rel.owner = None 
-            rel.houses = -1  
-            rel.mortgage = False
-            rel.save()
+    def _bankrupt_player(cls, game: Game, user: CustomUser):
+        try:
+            current_idx = game.ordered_players.index(user.pk)
+            next_pk = game.ordered_players[(current_idx + 1) % len(game.ordered_players)]
+            next_player = CustomUser.objects.get(pk=next_pk)
+        except ValueError:
+            next_player = None
+
+        if user.pk in game.ordered_players:
+            game.ordered_players.remove(user.pk)
             
-
-        game.money[str(user.pk)] = 0
-
-        # next_turns fails if we dont do this sh
-        game.ordered_players = [pk for pk in game.ordered_players if pk != user.pk]
-        game.save()
-
-        if game.active_turn_player == user:
-            cls._next_turn(game, user)
-
         game.players.remove(user)
-        game.save()
+        game.money.pop(str(user.pk), None)
+        game.positions.pop(str(user.pk), None)
+        game.jail_remaining_turns.pop(str(user.pk), None)
         
-        # TODO: if only one left -> he wins
+
+        PropertyRelationship.objects.filter(game=game, owner=user).delete()
+        user.active_game = None
+        user.save()
+
+
+        if game.players.count() == 1:          
+            game.phase = GameManager.END_GAME
+            GameManager._cancel_all_timers(game)
+
+            if game.current_auction:
+                auction = game.current_auction
+                auction.is_active = False
+                auction.save()
+                game.current_auction = None
+
+            game.save()   
+            return #TODO: endgame logic
+
+        if game.active_turn_player == user and next_player:
+            game.active_turn_player = next_player
+            game.active_phase_player = next_player
+            game.phase = GameManager.ROLL_THE_DICES
+            game.streak = 0
+            
+            GameManager._cancel_all_timers(game)
+                
+            # new task
+            GameManager._set_kick_out_timer(game, next_player)
+                
+        game.save()
 
     #TODO: llegar a fase final donde se reparte esto
     @classmethod
@@ -941,6 +1054,8 @@ class GameManager:
 
     @classmethod
     def _end_game_logic(cls, game: Game, user: CustomUser, action: Action) -> Response:
+        GameManager._cancel_all_timers(game)
+
         if not game.finished:
             game.finished = True
             response = cls._apply_end_bonuses(game, num_bonuses=3)
@@ -950,5 +1065,59 @@ class GameManager:
             return response
         else:
             raise GameLogicError('game was already ended')
+
+    @staticmethod
+    def _set_next_phase_timer(game: Game, user: CustomUser):
+        from .tasks import next_phase_callback, bot_play_callback
+        from .celery import app
         
+        GameManager._cancel_all_timers(game)
+        
+        task = next_phase_callback.apply_async(args=[game.pk, user.pk], countdown=50)
+        game.next_phase_task_id = task.id
+        game.save()
+
+        if user.is_bot:
+            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
+
+    @staticmethod
+    def _set_kick_out_timer(game: Game, user: CustomUser):
+        from .tasks import kick_out_callback, bot_play_callback
+        from .celery import app
+        
+        if game.kick_out_task_id:
+            app.control.revoke(game.kick_out_task_id, terminate=True)
+            
+        task = kick_out_callback.apply_async(args=[game.pk, user.pk], countdown=50)
+        game.kick_out_task_id = task.id
+        game.save()
+
+        if user.is_bot:
+            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
+
+    @staticmethod
+    def _cancel_all_timers(game: Game):
+        from .celery import app
+        
+        if game.next_phase_task_id:
+            app.control.revoke(game.next_phase_task_id, terminate=True)
+            game.next_phase_task_id = None
+            
+        if game.kick_out_task_id:
+            app.control.revoke(game.kick_out_task_id, terminate=True)
+            game.kick_out_task_id = None
+            
+        game.save()
+
+    @staticmethod
+    def _set_auction_timer(game: Game):
+        import random
+        from .tasks import auction_callback, bot_play_callback
+        
+        auction_callback.apply_async(args=[game.pk], countdown=10)
+        
+        for player in game.players.all():
+            if player.is_bot:
+                bot_play_callback.apply_async(args=[game.pk, player.pk], countdown=random.randint(2, 6))
+
     ############################################################

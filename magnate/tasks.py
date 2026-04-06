@@ -12,6 +12,7 @@ import random
 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from .agent import Agent
 
 def broadcast_to_game(game: Game, response: Response) -> None:
     channel_layer = get_channel_layer()
@@ -32,49 +33,21 @@ def broadcast_to_game(game: Game, response: Response) -> None:
 
 @shared_task
 def auction_callback(game_pk: int) -> None:
-    #return # TODO: remobe this
     game = Game.objects.get(pk=game_pk)
     response = GameManager._end_auction(game)
     if response:
         broadcast_to_game(game, response)
 
+
 @shared_task
 def kick_out_callback(game_pk: int, user_pk: int) -> None:
-    """
-    triggered in _next_turn, after setting phase to ROLL_THE_DICES and saving -> DONE
-    TODO: also scheduled before first turn -> ¿consumers?
-    TODO: This should change user to AI
-    cancel at the start of _roll_dices_logic and _pay_bail_logic
-    """
-
-    # TODO: Remove this, but the agents test does not work if removed
-    return
-
     game = Game.objects.get(pk=game_pk)
     user = CustomUser.objects.get(pk=user_pk)
+    
+    GameManager._bankrupt_player(game, user)
 
-    # remove user things from game
-    game.money.pop(str(user.pk), None)
-    game.positions.pop(str(user.pk), None)
-    game.jail_remaining_turns.pop(str(user.pk), None)
-    game.ordered_players = [pk for pk in game.ordered_players if pk != user.pk]
-    game.players.remove(user)
-    game.save()
-
-    # remove properties, houses, mortgages
-    PropertyRelationship.objects.filter(game=game, owner=user).delete()
-    user.active_game = None
-    user.save()
-
-    remaining = game.players.count()
-    if remaining == 1:
-        game.phase = GameManager.END_GAME
-        game.save()
-        return
-
-    was_active = game.active_turn_player.pk == user.pk
-    if was_active:
-        GameManager._next_turn(game, game.active_turn_player)
+    response = Response()
+    broadcast_to_game(game, response)
 
 @shared_task
 def next_phase_callback(game_pk: int, user_pk: int) -> None:
@@ -86,6 +59,8 @@ def next_phase_callback(game_pk: int, user_pk: int) -> None:
     triggered at the end of _answer_trade_proposal_logic, after saving (phase is now BUSINESS)
     - Cancel at the start of every action handler that is not _roll_dices_logic or _pay_bail_logic
     """
+
+    response = None
 
     game = Game.objects.get(pk=game_pk)
     user = CustomUser.objects.get(pk=user_pk)
@@ -127,12 +102,37 @@ def next_phase_callback(game_pk: int, user_pk: int) -> None:
         game.active_phase_player = proposal.player
         game.proposal = None
         game.save()
+        GameManager._set_next_phase_timer(game, proposal.player)
     elif game.phase == GameManager.CHOOSE_FANTASY:
         # choose the random one
         action = ActionChooseCard.objects.create(game=game, player=user, chosen_revealed_card=False)
         GameManager._choose_fantasy_logic(game, user, action)
 
     if not response:
-        reponse = ResponseSkipPhase()
+        response = ResponseSkipPhase()
     broadcast_to_game(game, response)
 
+
+
+
+@shared_task
+def bot_play_callback(game_pk: int, user_pk: int) -> None:
+    game = Game.objects.get(pk=game_pk)
+    active_player = game.active_phase_player
+
+    if not active_player or not active_player.is_bot or game.phase == GameManager.END_GAME:
+        return
+
+    from .celery import app
+
+    if game.kick_out_task_id:
+        app.control.revoke(game.kick_out_task_id, terminate=True)
+    if game.next_phase_task_id:
+        app.control.revoke(game.next_phase_task_id, terminate=True)
+    # decision
+    agent = Agent(game, active_player, active_player.bot_level)
+    action = agent.choose_action()
+
+    if action:
+        response = async_to_sync(GameManager.process_action)(game, active_player, action)
+        broadcast_to_game(game, response)

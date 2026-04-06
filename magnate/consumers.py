@@ -542,20 +542,17 @@ class GameConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        ##### THIS IS HERE JUST FOR DEBUG IN CLIENT.PY
-        #await self.send(text_data=json.dumps({
-        #    'action': 'init_identity',
-        #    'player_id': self.user.pk,
-        #    'username': self.user.username
-        #}))
+        game = await self.get_game()
+        game_state = await database_sync_to_async(
+                lambda: GameStatusSerializer(game).data)()
 
-        # TODO: Game state includes all info bout the game start. Talk with the boys to dicuss it.
-        game_state = await self.get_game_state(self.game_id, self.user)
-
-        await self.send(text_data=json.dumps({
-            'action': 'game_state',
-            'game_state': game_state
-        }))
+        await self.channel_layer.send(
+            self.channel_name,
+            {
+                'type': 'game_state',
+                'game_state': game_state
+            }
+        )
 
     async def disconnect(self, close_code):
         # Triggered when user leaves game -> notify opponent.
@@ -572,7 +569,7 @@ class GameConsumer(AsyncWebsocketConsumer):
         Manages DB interactions over purchases, rents etc
         """
        
-        game = await self.get_game(self.game_id)
+        game = await self.get_game()
         if game is None:
             await self.send_error("Game not found")
             return
@@ -680,24 +677,9 @@ class GameConsumer(AsyncWebsocketConsumer):
             return False
 
     @database_sync_to_async
-    def get_game_state(self, game_id, user):
-        game = Game.objects.get(pk=game_id)
-        # Envías la info vital para pintar el tablero inicial
-        state = {
-            "phase": game.phase,
-            "money": game.money,
-            "positions": game.positions,
-            "active_turn_player": game.active_turn_player.username if game.active_turn_player else None,
-            "streak": game.streak
-        }
-        if game.current_auction:
-            state["auction"] = AuctionSerializer(game.current_auction).data
-        return state
-    
-    @database_sync_to_async
-    def get_game(self, game_id):
+    def get_game(self):
         try:
-            return Game.objects.get(pk=game_id)
+            return Game.objects.get(pk=self.game_id)
         except Game.DoesNotExist:
             return None
         

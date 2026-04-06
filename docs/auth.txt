@@ -1,0 +1,42 @@
+REGISTER
+
+POST http://localhost:8000/auth/register/
+
+{
+    "username": "mario",
+    "email": "mario@example.com",
+    "password": "Segura123!",
+    "password2": "Segura123!"
+}
+
+Devuelve si ha sido exitoso, info del user y los tokens access y refresh
+
+
+
+LOGIN
+
+POST http://localhost:8000/auth/login/
+
+{
+    "username": "mario",
+    "password": "Segura123!"
+}
+
+Devuelve si ha sido exitoso, info del user y los tokens access y refresh
+
+
+
+
+REFRESH 
+El token access se usa siempre para la autenticación. Caduca a los 5 minutos.
+Hay que refrescarlo con el token refresh. Caduca a los 7 días.
+
+
+
+
+EJEMPLO DE USO
+Acceder a info del user 
+
+GET http://localhost:8000/auth/profile/
+
+en headers: "Authorization": "Bearer <access token>"

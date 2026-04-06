@@ -10,6 +10,15 @@ from .serializers import LoginSerializer, RegisterSerializer, UserProfileSeriali
 
 
 def get_tokens_for_user(user: CustomUser):
+    """
+    Generates a JWT token pair for the given user.
+
+    Args:
+        user: The authenticated CustomUser instance.
+
+    Returns:
+        A dict with 'access' and 'refresh' JWT tokens as strings.
+    """
     refresh = RefreshToken.for_user(user)
     return {
         'refresh': str(refresh),
@@ -18,6 +27,24 @@ def get_tokens_for_user(user: CustomUser):
 
 
 class RegisterView(APIView):
+    """
+    Endpoint for registering a new user.
+
+    POST /auth/register/
+
+    Request body:
+        {
+            "username": "mario",
+            "email": "mario@example.com",
+            "password": "Segura123!",
+            "password2": "Segura123!"
+        }
+
+    Responses:
+        201: User created successfully. Returns user data and JWT tokens.
+        400: Validation error (passwords don't match, email already exists, etc).
+    """
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -27,7 +54,7 @@ class RegisterView(APIView):
             assert isinstance(user, CustomUser)
             tokens = get_tokens_for_user(user)
             return Response({
-                'message': 'Usuario registrado correctamente.',
+                'message': 'correctly registered user',
                 'user':    UserProfileSerializer(user).data,
                 'tokens':  tokens,
             }, status=status.HTTP_201_CREATED)
@@ -35,6 +62,24 @@ class RegisterView(APIView):
 
 
 class LoginView(APIView):
+    """
+    Endpoint for authenticating an existing user.
+
+    POST /auth/login/
+
+    Request body:
+        {
+            "username": "mario",
+            "password": "Segura123!"
+        }
+
+    Responses:
+        200: Login successful. Returns user data and JWT tokens.
+        400: Missing or malformed fields.
+        401: Invalid credentials.
+        403: Bots are not allowed to log in.
+    """
+
     permission_classes = [AllowAny]
 
     def post(self, request):
@@ -50,7 +95,7 @@ class LoginView(APIView):
         )
         if auth_user is None:
             return Response(
-                {'error': 'Credenciales inválidas.'},
+                {'error': 'bad credentials'},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -58,19 +103,32 @@ class LoginView(APIView):
 
         if auth_user.is_bot:
             return Response(
-                {'error': 'Los bots no pueden iniciar sesión.'},
+                {'error': 'bots cant login'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         tokens = get_tokens_for_user(auth_user)
         return Response({
-            'message': 'Login exitoso.',
+            'message': 'succesful login',
             'user':    UserProfileSerializer(auth_user).data,
             'tokens':  tokens,
         }, status=status.HTTP_200_OK)
 
 
 class ProfileView(APIView):
+    """
+    Endpoint for retrieving the authenticated user's profile.
+
+    GET /auth/profile/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Responses:
+        200: Returns the user's profile data.
+        401: Missing or invalid access token.
+    """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):

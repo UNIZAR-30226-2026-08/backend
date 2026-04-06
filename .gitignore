@@ -7,3 +7,4 @@ venv/
 site/
 db.sqlite3
 dump.rdb
+mario_*

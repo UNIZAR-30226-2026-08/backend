@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import LoginView, ProfileView, RegisterView
+from .views import *
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -25,4 +25,7 @@ urlpatterns = [
     path('auth/login/',    LoginView.as_view(),    name='login'),
     path('auth/refresh/',  TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/profile/',  ProfileView.as_view(),  name='profile'),
+
+    path('shop/items/',    ShopItemListView.as_view(), name='shop_items'),
+    path('shop/buy/',      BuyItemView.as_view(),      name='shop_buy'),
 ]

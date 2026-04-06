@@ -6,7 +6,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CustomUser
-from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer
+from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer, ItemSerializer, PurchaseSerializer
+from .models import CustomUser, Item
 
 
 def get_tokens_for_user(user: CustomUser):
@@ -133,3 +134,66 @@ class ProfileView(APIView):
 
     def get(self, request):
         return Response(UserProfileSerializer(request.user).data)
+    
+class ShopItemListView(APIView):
+    """
+    Returns the full list of available shop items.
+    Each item includes an 'owned' flag for the requesting user.
+
+    GET /shop/items/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Responses:
+        200: List of all items with id, itemType, price and owned flag.
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        items = Item.objects.all()
+        serializer = ItemSerializer(items, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class BuyItemView(APIView):
+    """
+    Purchases an item for the authenticated user.
+    Deducts the item price from the user's points and adds it to owned_items.
+
+    POST /shop/buy/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Request body:
+        { "item_id": 1 }
+
+    Responses:
+        200: Purchase successful. Returns updated points and item data.
+        400: Item not found, already owned, or insufficient points.
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = PurchaseSerializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data: dict = serializer.validated_data  # type: ignore
+        item = Item.objects.get(id=data['custom_id'])
+
+        user: CustomUser = request.user  # type: ignore
+        user.points -= item.price
+        user.save()
+        user.owned_items.add(item)
+
+        return Response({
+            'message': 'Purchase successful.',
+            'item':    ItemSerializer(item, context={'request': request}).data,
+            'points_remaining': user.points,
+        }, status=status.HTTP_200_OK)

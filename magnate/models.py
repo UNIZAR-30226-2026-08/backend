@@ -40,7 +40,9 @@ class Item(models.Model):
     class ItemType(models.TextChoices):
         ficha = 'ficha'
         iconos = 'iconos'
+    custom_id = models.PositiveIntegerField(unique=True)
     itemType = models.CharField(choices=ItemType, max_length=10, default='ficha')
+    price = models.PositiveIntegerField(default=0)
 
 
 ###############################################################################

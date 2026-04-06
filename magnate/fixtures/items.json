@@ -1,0 +1,7 @@
+[
+    {"model": "magnate.item", "pk": 1, "fields": {"custom_id": 1, "itemType": "ficha",  "price": 100}},
+    {"model": "magnate.item", "pk": 2, "fields": {"custom_id": 2, "itemType": "ficha",  "price": 200}},
+    {"model": "magnate.item", "pk": 3, "fields": {"custom_id": 3, "itemType": "ficha",  "price": 300}},
+    {"model": "magnate.item", "pk": 4, "fields": {"custom_id": 4, "itemType": "iconos", "price": 150}},
+    {"model": "magnate.item", "pk": 5, "fields": {"custom_id": 5, "itemType": "iconos", "price": 250}}
+]

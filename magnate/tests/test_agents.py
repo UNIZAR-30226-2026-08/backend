@@ -20,8 +20,8 @@ class AgentsTest(TestCase):
         call_command('init_boards')
 
     def setUp(self):
-        self.agent1 = CustomUser.objects.create(username="a1", email="a1@gmail.com")
-        self.agent2 = CustomUser.objects.create(username="a2", email="a2@gmail.com")
+        self.agent1 = Bot.objects.create(username="a1", email="a1@gmail.com")
+        self.agent2 = Bot.objects.create(username="a2", email="a2@gmail.com")
         
         self.game = Game.objects.create(
             datetime=timezone.now(),
@@ -58,12 +58,12 @@ class AgentsTest(TestCase):
         print('=' * 60)
         
         turn = 0
-        while turn < 50:
+        while turn < 500:
             active_player = self.game.active_phase_player
-
-            if active_player == self.agent1:
+            
+            if active_player.pk == self.agent1.pk:
                 action = agent1.choose_action()
-            elif active_player == self.agent2:
+            elif active_player.pk == self.agent2.pk:
                 action = agent2.choose_action()
 
             if action is None:

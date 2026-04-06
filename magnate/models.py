@@ -33,7 +33,9 @@ class CustomUser(AbstractUser):
     points = models.PositiveIntegerField(default=0)
     exp = models.PositiveIntegerField(default=0)
     elo = models.PositiveIntegerField(default=0)
-    is_bot = models.BooleanField(default=False)
+    
+
+class Bot(CustomUser):
     bot_level = models.CharField(max_length=20, null=True, blank=True) # "easy" /"expert" etc
 
 class Item(models.Model):

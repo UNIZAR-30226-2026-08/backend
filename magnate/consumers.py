@@ -409,11 +409,10 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         # fill with bots
         huecos = room.target_players - len(real_users)
         for i in range(huecos):
-            # Generar un nombre único para la partida
             bot_username = f"Bot_{room_code}_{i+1}" 
-            bot_user, _ = CustomUser.objects.get_or_create(
+            bot_user, _ = Bot.objects.get_or_create(
                 username=bot_username,
-                defaults={'email': f"{bot_username}@magnate.com", 'is_bot': True } #change level
+                defaults={'email': f"{bot_username}@magnate.com" }
             )
 
             bot_user.bot_level = room.bot_level
@@ -451,7 +450,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         room.delete()
 
         GameManager._set_kick_out_timer(game, first_player)
-        if first_player.is_bot:
+        if isinstance(first_player, Bot):
             from .tasks import bot_play_callback
             bot_play_callback.apply_async(args=[game.pk, first_player.pk], countdown=5) # wait 5 for front to charge -> check this time with the boys
         

@@ -40,7 +40,7 @@ class Agent:
     ############################### CORE LOGIC #####################################
     ################################################################################
 
-    def __init__(self, game: Game, user: CustomUser, level: str):
+    def __init__(self, game: Game, user: Bot, level: str):
         if level not in EPSILON:
             raise InvalidBotLevel(game, level)
         self.epsilon = EPSILON[level]
@@ -279,19 +279,28 @@ class Agent:
 
     def _get_random_trade_proposal(self, money: int) -> Action | None:
         """Helper to generate and evaluate up to 5 random trade proposals."""
+        def is_tradable(rel):
+            sq = rel.square.get_real_instance()
+            if not isinstance(sq, PropertySquare):
+                return True
+            return not PropertyRelationship.objects.filter(
+                game=self.game, 
+                square__propertysquare__group=sq.group, 
+                houses__gt=0
+            ).exists()
+        
         opponents = self.game.players.exclude(pk=self.user.pk)
         if not opponents.exists():
             return None
 
-        my_properties = list(PropertyRelationship.objects.filter(game=self.game, owner=self.user).select_related('square'))
-        
+        my_properties = [rel for rel in PropertyRelationship.objects.filter(game=self.game, owner=self.user).select_related('square') if is_tradable(rel)]        
         best_trade_params = None
         
         best_ev = float('-inf')
-
+        max_offer = 0
         for _ in range(5):
             target = random.choice(opponents)
-            their_properties = list(PropertyRelationship.objects.filter(game=self.game, owner=target).select_related('square'))
+            their_properties = [rel for rel in PropertyRelationship.objects.filter(game=self.game, owner=target).select_related('square') if is_tradable(rel)]
             if not their_properties:
                 continue
 
@@ -307,8 +316,10 @@ class Agent:
                 offered_sqs.append(offer_rel.square.get_real_instance())
             else:
                 max_offer = int(self._ev_buying(wanted_sq) * 0.8)
-                if max_offer > 0:
+                if max_offer > 0 and money > 0:
                     offered_money = random.randint(min(max_offer, money)//2, min(max_offer, money))
+                else:
+                    offered_money = 0
 
             if not offered_sqs and offered_money == 0:
                 continue

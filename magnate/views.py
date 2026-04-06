@@ -135,6 +135,10 @@ class ProfileView(APIView):
     def get(self, request):
         return Response(UserProfileSerializer(request.user).data)
     
+
+############################################################################
+########################### shop ###########################################
+############################################################################
 class ShopItemListView(APIView):
     """
     Returns the full list of available shop items.

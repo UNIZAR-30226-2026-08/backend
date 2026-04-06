@@ -11,6 +11,33 @@ class SquareCustomIdField(serializers.SlugRelatedField):
 ###############################################################################
 
 class GameStatusSerializer(serializers.ModelSerializer):
+    """
+    Example:
+        A standard serialized response during the 'roll_the_dices' phase:
+        ```json
+        {
+            "id": 1,
+            "datetime": "2026-04-06T18:30:00Z",
+            "positions": {"42": 0, "85": 12},
+            "money": {"42": 1500, "85": 1350},
+            "active_phase_player": 42,
+            "active_turn_player": 42,
+            "phase": "roll_the_dices",
+            "players": [42, 85],
+            "ordered_players": [42, 85],
+            "streak": 0,
+            "possible_destinations": {},
+            "parking_money": 200,
+            "jail_remaining_turns": {},
+            "proposal": null,
+            "fantasy_event": null,
+            "current_auction": null,
+            "finished": false,
+            "bonus_response": null,
+            "current_turn": 5
+        }
+        ```
+    """
     class Meta:
         model = Game
         exclude = ['kick_out_task_id', 'next_phase_task_id']

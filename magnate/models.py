@@ -215,16 +215,82 @@ class FantasyResult(models.Model):
 ###############################################################################
 
 class Game(models.Model):
+    """
+    Represents the core state and data of a single "Magnate" game session.
+
+    Attributes:
+        datetime (DateTimeField): The timestamp of when the game was created or started.
+        positions (JSONField): Maps a player's user ID (str/int) to their current square's custom ID (int).
+        money (JSONField): Maps a player's user ID (str/int) to their current money balance (int).
+        active_phase_player (ForeignKey): The user who must take action in the current micro-phase 
+            (e.g., the user who needs to respond to a trade, which might differ from the active_turn_player).
+        active_turn_player (ForeignKey): The user whose actual turn it is on the board.
+        phase (CharField): The current `GamePhase` of the game state machine.
+        players (ManyToManyField): The pool of users actively participating in this game.
+        ordered_players (JSONField): A list of player primary keys `[pk1, pk2, pk3, ...]` 
+            representing the strict turn order of the game.
+        streak (IntegerField): Tracks consecutive identical dice rolls (e.g., rolling doubles). 
+            Usually triggers jail time if it hits 3.
+        possible_destinations (JSONField): Maps a target `square_id` (str) to the `dice_combination` (int) 
+            required to get there. Used when a player has multiple routing options (e.g., taking a tram).
+        parking_money (PositiveIntegerField): The accumulated jackpot for landing on the "Free Parking" equivalent.
+        jail_remaining_turns (JSONField): Maps a player's user ID (str/int) to the number of turns (int) 
+            they have left to serve in jail.
+        proposal (ForeignKey): A reference to an active trade proposal (`ActionTradeProposal`) currently 
+            blocking the game state awaiting a response.
+        fantasy_event (ForeignKey): A reference to an active chance/community chest style event 
+            (`FantasyEvent`) currently being resolved.
+        current_auction (ForeignKey): A reference to an active property auction (`Auction`) taking place.
+        finished (BooleanField): Flag indicating if the game has concluded.
+        bonus_response (ForeignKey): Reference to a specific bonus or penalty modifier (`ResponseBonus`) 
+            applied to the current state.
+        kick_out_task_id (CharField): The ID of the scheduled Celery task responsible for kicking 
+            a player if they fail to act within the time limit.
+        next_phase_task_id (CharField): The ID of the scheduled Celery task responsible for auto-advancing 
+            the game to the next phase if a timeout occurs.
+        current_turn (PositiveIntegerField): The global counter for the number of turns that have elapsed.
+    """
     datetime = models.DateTimeField()
     # Maps user_id -> square_custom_id
     positions = models.JSONField(default=dict, blank=True)
     # Maps user_id -> amount
     money = models.JSONField(default=dict, blank=True)
-    # TODO: Look for better names
     active_phase_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='phase_to_play')
     active_turn_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='turns_to_play')
 
     class GamePhase(models.TextChoices):
+        """
+        Enumeration of the possible states (phases) within a game's turn cycle.
+        
+        Attributes:
+            roll_the_dices: The initial phase of a turn. The `active_turn_player` 
+                must throw the dice to determine movement.
+            choose_square: Triggered when a player's movement path presents a fork 
+                or routing option (e.g., deciding whether to take a tram/subway line). 
+                The player must select their specific destination square.
+            choose_fantasy: Triggered when a player lands on a dynamic event square 
+                The player must acknowledge and resolve the active `fantasy_event`.
+            management: Triggered when a player lands on an unowned property. The 
+                player must choose to either purchase the property at its list price 
+                or decline the purchase (which typically immediately triggers an `auction`).
+            business: A versatile phase usually occurring at the end of a turn 
+                or before a roll. The player can build/demolish houses, mortgage/unmortgage 
+                properties, or finalize their board state before passing the turn.
+            liquidation: An emergency phase triggered when a player owes a debt 
+                (to the bank or another player) that exceeds their current liquid cash. 
+                They are forced to sell assets or mortgage properties to cover the debt, 
+                or face bankruptcy.
+            auction: A competitive, multi-player phase triggered when a property 
+                is declined in the `management` phase. The standard turn loop pauses, and 
+                players take turns placing bids until a winner is determined.
+            proposal_acceptance: An interruptive phase triggered when one player 
+                sends a trade request to another. The game loop pauses, the 
+                `active_phase_player` switches to the recipient, and they must either 
+                accept or decline the pending `proposal`.
+            end_game: A terminal state indicating the match has concluded, usually 
+                because all other players have gone bankrupt. No further actions can 
+                be taken.
+        """
         roll_the_dices = 'roll_the_dices'
         choose_square = 'choose_square'
         choose_fantasy = 'choose_fantasy'

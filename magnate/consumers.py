@@ -578,6 +578,21 @@ class GameConsumer(AsyncWebsocketConsumer):
             return
         
         data = json.loads(text_data)
+
+        if data.get('type') == 'ChatMessage':
+            message = data.get('msg')
+            if message:
+                await self.channel_layer.group_send(
+                    self.game_group_name,
+                    {
+                        'type': 'chat_message',
+                        'game': self.game_id,
+                        'user': self.user.username,
+                        'msg': message
+                    }
+                )
+            return
+
         data['game'] = self.game_id
         data['player'] = self.user.pk
 
@@ -638,6 +653,14 @@ class GameConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'action': 'game_response',
             'data': event['data']
+        }))
+
+    async def chat_message(self, event):
+        await self.send(text_data=json.dumps({
+            'action': 'chat_message',
+            'game': event['game'],
+            'user': event['user'],
+            'msg': event['msg']
         }))
 
     async def send_error(self, message):

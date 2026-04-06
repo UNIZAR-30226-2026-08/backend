@@ -110,6 +110,10 @@ class GameClient:
                 print("\n--- Game Response Received ---")
                 print(json.dumps(data["data"], indent=2))
 
+            elif action == "chat_message":
+                print("\n--- Game Message Received ---")
+                print(f"[{data.get('user')}]: {data.get('msg')}")
+
             elif action == "error":
                 print(f"\nSERVER ERROR: {data.get('message')}")
 
@@ -145,6 +149,8 @@ class GameClient:
         
         if cmd == "throw":
             return {"type": "ActionThrowDices"}
+        elif cmd == "chat":
+            return {"type": "ChatMessage", "msg": "Hello world!"}
         elif cmd == "move": 
             sq_id = await get_input("Enter Square Custom ID to move to: ")
             return {"type": "ActionMoveTo", "square": int(sq_id)}

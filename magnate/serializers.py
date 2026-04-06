@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import *
+from django.contrib.auth.password_validation import validate_password
+from .models import CustomUser
 
 # handling baseSquare by custom_id
 class SquareCustomIdField(serializers.SlugRelatedField):
@@ -381,3 +383,48 @@ class GeneralResponseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Response
+
+
+###############################################################################
+############      Tokens     ####################################
+###############################################################################
+
+class RegisterSerializer(serializers.ModelSerializer):
+    password  = serializers.CharField(write_only=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, label='Confirmar contraseña')
+
+    class Meta:
+        model  = CustomUser
+        fields = ('username', 'email', 'password', 'password2')
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({'password': 'Las contraseñas no coinciden.'})
+        if CustomUser.objects.filter(email=attrs['email']).exists():
+            raise serializers.ValidationError({'email': 'Este email ya está registrado.'})
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop('password2')
+        return CustomUser.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+        )
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = CustomUser
+        fields = (
+            'id', 'username', 'email', 'role',
+            'points', 'exp', 'elo',
+            'ready_to_play', 'is_bot',
+            'date_joined',
+        )
+        read_only_fields = fields

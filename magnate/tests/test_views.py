@@ -267,3 +267,32 @@ class ChangeUserPieceViewTest(AuthTestCase):
     def test_change_piece_unauthenticated(self):
         response: DRFResponse = self.client.post(reverse('change_piece'), {'custom_id': 1}, format='json')  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class UserEmojisViewTest(AuthTestCase):
+
+    def test_list_user_emojis_authenticated_with_emojis(self):
+        # Add an emoji to the user
+        self.user.owned_items.add(self.emoji)
+        # Also add a piece, but it should not appear
+        self.user.owned_items.add(self.piece)
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('user_emojis'))  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertEqual(len(response.data), 1)  # Only the emoji
+        emoji = response.data[0]
+        self.assertEqual(emoji['custom_id'], 2)
+        self.assertEqual(emoji['itemType'], 'emoji')
+        self.assertTrue(emoji['owned'])
+
+    def test_list_user_emojis_authenticated_no_emojis(self):
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('user_emojis'))  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertEqual(len(response.data), 0)  # No emojis owned
+
+    def test_list_user_emojis_unauthenticated(self):
+        response: DRFResponse = self.client.get(reverse('user_emojis'))  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

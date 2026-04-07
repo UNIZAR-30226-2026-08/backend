@@ -141,7 +141,7 @@ class ProfileView(APIView):
     
 
 ############################################################################
-########################### shop ###########################################
+########################### shop and items ###########################################
 ############################################################################
 class ShopItemListView(APIView):
     """
@@ -264,3 +264,26 @@ class ChangeUserPieceView(APIView):
             'message': 'Piece changed successfully.',
             'user_piece': user.user_piece,
         }, status=status.HTTP_200_OK)
+
+
+class UserEmojisView(APIView):
+    """
+    Returns the list of emojis owned by the authenticated user.
+
+    GET /shop/user-emojis/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Responses:
+        200: List of owned emojis with id, itemType, price and owned flag (always true).
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user: CustomUser = request.user  # type: ignore
+        emojis = user.owned_items.filter(itemType='emoji')
+        serializer = ItemSerializer(emojis, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)

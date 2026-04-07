@@ -35,7 +35,9 @@ class CustomUser(AbstractUser):
     elo = models.PositiveIntegerField(default=0)
     is_bot = models.BooleanField(default=False)
     bot_level = models.CharField(max_length=20, null=True, blank=True) # "easy" /"expert" etc
-    user_piece = models.PositiveIntegerField(default=1) #TODO: poner default cuando tengamos fichas finales
+    user_piece = models.PositiveIntegerField(default=1) #TODO: poner default cuando tengamos fichas definidas
+    num_played_games = models.PositiveIntegerField(default=0) #TODO: ir aumentando este dato
+    num_won_games = models.PositiveIntegerField(default=0) #TODO: ir aumentando este dato
 
 class Item(models.Model):
     class ItemType(models.TextChoices):

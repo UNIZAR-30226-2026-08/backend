@@ -116,6 +116,10 @@ class LoginView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+###################################################################
+#################### general info #################################
+###################################################################
+
 class ProfileView(APIView):
     """
     Endpoint for retrieving the authenticated user's profile.
@@ -192,7 +196,7 @@ class BuyItemView(APIView):
         item = Item.objects.get(id=data['custom_id'])
 
         user: CustomUser = request.user  # type: ignore
-        user.points -= item.price
+        user.points -= item.price # money check already done in serializer
         user.save()
         user.owned_items.add(item)
 
@@ -201,3 +205,26 @@ class BuyItemView(APIView):
             'item':    ItemSerializer(item, context={'request': request}).data,
             'points_remaining': user.points,
         }, status=status.HTTP_200_OK)
+
+
+class UserPiecesView(APIView):
+    """
+    Returns the list of pieces owned by the authenticated user.
+
+    GET /shop/user-pieces/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Responses:
+        200: List of owned pieces with id, itemType, price and owned flag (always true).
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user: CustomUser = request.user  # type: ignore
+        pieces = user.owned_items.filter(itemType='piece')
+        serializer = ItemSerializer(pieces, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -25,8 +25,8 @@ class AuthTestCase(TestCase):
         self.user.save()
 
         # create test items
-        self.ficha = Item.objects.create(custom_id=1, itemType='ficha',  price=100)
-        self.icono = Item.objects.create(custom_id=2, itemType='iconos', price=200)
+        self.piece = Item.objects.create(custom_id=1, itemType='piece',  price=100)
+        self.emoji = Item.objects.create(custom_id=2, itemType='emoji', price=200)
 
     def get_token(self, username='testuser', password='Segura123!'):
         """Helper to log in and return the access token."""
@@ -154,15 +154,15 @@ class ShopItemListViewTest(AuthTestCase):
         self.assertEqual(len(response.data), 2)
 
     def test_list_items_owned_flag(self):
-        self.user.owned_items.add(self.ficha)
+        self.user.owned_items.add(self.piece)
         client = self.auth_client()
         response: DRFResponse = client.get(reverse('shop_items'))  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data is not None
-        ficha = next(i for i in response.data if i['custom_id'] == 1)
-        icono = next(i for i in response.data if i['custom_id'] == 2)
-        self.assertTrue(ficha['owned'])
-        self.assertFalse(icono['owned'])
+        piece = next(i for i in response.data if i['custom_id'] == 1)
+        emoji = next(i for i in response.data if i['custom_id'] == 2)
+        self.assertTrue(piece['owned'])
+        self.assertFalse(emoji['owned'])
 
     def test_list_items_unauthenticated(self):
         response: DRFResponse = self.client.get(reverse('shop_items'))  # type: ignore
@@ -183,7 +183,7 @@ class BuyItemViewTest(AuthTestCase):
         self.assertTrue(self.user.owned_items.filter(custom_id=1).exists())
 
     def test_buy_already_owned(self):
-        self.user.owned_items.add(self.ficha)
+        self.user.owned_items.add(self.piece)
         client = self.auth_client()
         response: DRFResponse = client.post(reverse('shop_buy'), {'custom_id': 1}, format='json')  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -202,4 +202,33 @@ class BuyItemViewTest(AuthTestCase):
 
     def test_buy_unauthenticated(self):
         response: DRFResponse = self.client.post(reverse('shop_buy'), {'custom_id': 1}, format='json')  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class UserPiecesViewTest(AuthTestCase):
+
+    def test_list_user_pieces_authenticated_with_pieces(self):
+        # Add a piece to the user
+        self.user.owned_items.add(self.piece)
+        # Also add an emoji, but it should not appear
+        self.user.owned_items.add(self.emoji)
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('user_pieces'))  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertEqual(len(response.data), 1)  # Only the piece
+        piece = response.data[0]
+        self.assertEqual(piece['custom_id'], 1)
+        self.assertEqual(piece['itemType'], 'piece')
+        self.assertTrue(piece['owned'])
+
+    def test_list_user_pieces_authenticated_no_pieces(self):
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('user_pieces'))  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertEqual(len(response.data), 0)  # No pieces owned
+
+    def test_list_user_pieces_unauthenticated(self):
+        response: DRFResponse = self.client.get(reverse('user_pieces'))  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

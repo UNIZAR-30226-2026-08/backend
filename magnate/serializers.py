@@ -418,14 +418,20 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
 
+################################################################################
+########################### general info #######################################
+################################################################################
+
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model  = CustomUser
         fields = (
-            'id', 'username', 'email', 'role',
+            'username', 'email',
             'points', 'exp', 'elo',
-            'ready_to_play', 'is_bot',
             'date_joined',
+            'num_played_games',
+            'num_won_games',
+            'user_piece'
         )
         read_only_fields = fields
 

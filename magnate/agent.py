@@ -101,6 +101,8 @@ class Agent:
             return self._get_possible_actions_proposal_acceptance()
         elif phase == Game.GamePhase.auction:
             return self._get_possible_actions_auction()
+        elif phase == Game.GamePhase.end_game:
+            return []
     
         raise GameLogicError(f"Agent: unrecognised phase {phase}")
 

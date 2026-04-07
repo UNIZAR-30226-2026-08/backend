@@ -59,6 +59,9 @@ class AgentsTest(TestCase):
         
         turn = 0
         while turn < 500:
+            if self.game.phase == GameManager.END_GAME:
+                print(f"\n[!] El juego terminó prematuramente en el turno {turn} (Fase: END_GAME).")
+                break
             active_player = self.game.active_phase_player
             
             if active_player.pk == self.agent1.pk:

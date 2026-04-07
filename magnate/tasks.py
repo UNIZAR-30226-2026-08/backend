@@ -120,7 +120,7 @@ def bot_play_callback(game_pk: int, user_pk: int) -> None:
     game = Game.objects.get(pk=game_pk)
     active_player = game.active_phase_player
 
-    if not active_player or not isinstance(active_player, Bot) or game.phase == GameManager.END_GAME:
+    if not active_player or not Bot.objects.filter(pk=active_player.pk).exists() or game.phase == GameManager.END_GAME:
         return
 
     bot = Bot.objects.get(pk=active_player.pk)

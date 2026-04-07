@@ -179,6 +179,17 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         
         self.room_group_name = f"lobby_{self.room_code}"
 
+
+        was_created = await self.get_or_create_room_db(self.room_code, self.user)
+
+        await self.accept()
+
+        if was_created:
+            await self.send(text_data=json.dumps({
+                'action': 'room_created',
+                'room_code': self.room_code
+            }))
+
         can_join, message = await self.check_room(self.room_code)
 
         # Case of invalid code or full lobby -> reject connection
@@ -194,7 +205,6 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         
-        await self.accept()
 
         players = await self.join_room_group_db(self.room_code, self.user)
         if not players:
@@ -384,6 +394,17 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                 'target_players': event['target_players']
             }))
 
+    @database_sync_to_async
+    def get_or_create_room_db(self, room_code, user):
+        room = PrivateRoom.objects.filter(room_code=room_code).first()
+        if not room:
+            PrivateRoom.objects.create(
+                room_code=room_code,
+                owner=user
+            )
+            return True 
+        return False
+
     
     @database_sync_to_async
     def update_room_settings(self, room_code, bot_level, target_players):
@@ -450,9 +471,6 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         room.delete()
 
         GameManager._set_kick_out_timer(game, first_player)
-        if isinstance(first_player, Bot):
-            from .tasks import bot_play_callback
-            bot_play_callback.apply_async(args=[game.pk, first_player.pk], countdown=5) # wait 5 for front to charge -> check this time with the boys
         
         game.save()
 

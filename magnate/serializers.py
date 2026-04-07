@@ -428,3 +428,40 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'date_joined',
         )
         read_only_fields = fields
+
+##############################################################################
+################################### items ####################################
+##############################################################################
+class ItemSerializer(serializers.ModelSerializer):
+    owned = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = Item
+        fields = ('custom_id', 'itemType', 'price', 'owned')
+
+    def get_owned(self, obj) -> bool:
+        request: Request = self.context['request']  # type: ignore
+        user: CustomUser = request.user  # type: ignore
+        return obj.owners.filter(pk=user.pk).exists()
+
+
+class PurchaseSerializer(serializers.Serializer):
+    custom_id = serializers.IntegerField()  # recibe custom_id del frontend
+
+    def validate_custom_id(self, value):
+        try:
+            item = Item.objects.get(custom_id=value)
+        except Item.DoesNotExist:
+            raise serializers.ValidationError('Item not found.')
+
+        user: CustomUser = self.context['request'].user  # type: ignore
+
+        if user.owned_items.filter(custom_id=item.custom_id).exists():
+            raise serializers.ValidationError('You already own this item.')
+
+        if user.points < item.price:
+            raise serializers.ValidationError(
+                f'Not enough points. You have {user.points}, item costs {item.price}.'
+            )
+
+        return value

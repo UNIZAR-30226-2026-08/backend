@@ -12,4 +12,5 @@ for f in magnate; do
 done
 
 python manage.py migrate
+python manage.py loaddata items  # load items after migrations
 #python manage.py runserver

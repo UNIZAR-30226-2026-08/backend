@@ -232,3 +232,38 @@ class UserPiecesViewTest(AuthTestCase):
     def test_list_user_pieces_unauthenticated(self):
         response: DRFResponse = self.client.get(reverse('user_pieces'))  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class ChangeUserPieceViewTest(AuthTestCase):
+
+    def test_change_piece_success(self):
+        # Add a piece to the user
+        self.user.owned_items.add(self.piece)
+        client = self.auth_client()
+        response: DRFResponse = client.post(reverse('change_piece'), {'custom_id': 1}, format='json')  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertEqual(response.data['user_piece'], 1)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.user_piece, 1)
+
+    def test_change_piece_not_owned(self):
+        client = self.auth_client()
+        response: DRFResponse = client.post(reverse('change_piece'), {'custom_id': 1}, format='json')  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_piece_not_piece_type(self):
+        # Add an emoji to the user
+        self.user.owned_items.add(self.emoji)
+        client = self.auth_client()
+        response: DRFResponse = client.post(reverse('change_piece'), {'custom_id': 2}, format='json')  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_piece_nonexistent_item(self):
+        client = self.auth_client()
+        response: DRFResponse = client.post(reverse('change_piece'), {'custom_id': 999}, format='json')  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_change_piece_unauthenticated(self):
+        response: DRFResponse = self.client.post(reverse('change_piece'), {'custom_id': 1}, format='json')  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CustomUser
-from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer, ItemSerializer, PurchaseSerializer
+from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer, ItemSerializer, PurchaseSerializer, ChangePieceSerializer
 from .models import CustomUser, Item
 
 
@@ -228,3 +228,39 @@ class UserPiecesView(APIView):
         pieces = user.owned_items.filter(itemType='piece')
         serializer = ItemSerializer(pieces, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ChangeUserPieceView(APIView):
+    """
+    Changes the user's active piece to one they own.
+
+    POST /shop/change-piece/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Request body:
+        { "custom_id": 1 }
+
+    Responses:
+        200: Piece changed successfully. Returns the new user_piece value.
+        400: Validation error (item not found, not owned, not a piece).
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePieceSerializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data: dict = serializer.validated_data  # type: ignore
+        user: CustomUser = request.user  # type: ignore
+        user.user_piece = data['custom_id']
+        user.save()
+
+        return Response({
+            'message': 'Piece changed successfully.',
+            'user_piece': user.user_piece,
+        }, status=status.HTTP_200_OK)

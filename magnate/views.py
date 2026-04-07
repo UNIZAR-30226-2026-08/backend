@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -228,6 +229,27 @@ class UserPiecesView(APIView):
         pieces = user.owned_items.filter(itemType='piece')
         serializer = ItemSerializer(pieces, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserNamePieceView(APIView):
+    """
+    Returns the username and active piece of the requested user.
+
+    GET /auth/users/<pk>/username-piece/
+
+    Responses:
+        200: Returns username and piece.
+        404: User not found.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, pk):
+        user = get_object_or_404(CustomUser, pk=pk)
+        return Response({
+            'username': user.username,
+            'piece':    user.user_piece,
+        }, status=status.HTTP_200_OK)
 
 
 class ChangeUserPieceView(APIView):

@@ -233,6 +233,18 @@ class UserPiecesViewTest(AuthTestCase):
         response: DRFResponse = self.client.get(reverse('user_pieces'))  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+class UsernamePieceViewTest(AuthTestCase):
+
+    def test_get_username_piece_by_pk(self):
+        response: DRFResponse = self.client.get(reverse('usernamepieceview', kwargs={'pk': self.user.pk}))  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertEqual(response.data['username'], 'testuser')
+        self.assertEqual(response.data['piece'], self.user.user_piece)
+
+    def test_get_username_piece_not_found(self):
+        response: DRFResponse = self.client.get(reverse('usernamepieceview', kwargs={'pk': 999}))  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 class ChangeUserPieceViewTest(AuthTestCase):
 

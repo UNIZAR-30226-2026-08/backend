@@ -608,7 +608,13 @@ class GameManager:
                 or references an invalid proposal.
         """
         if isinstance(action, ActionTradeAnswer):
-            offer = action.proposal
+            offer = game.proposal
+
+            if offer is None:
+                raise GameLogicError("there should be an active trade proposal")
+
+            if user != offer.destination_user:
+                raise MaliciousUserInput(user, f"cannot accept proposal {offer}")
 
             offering = offer.player
 
@@ -617,15 +623,17 @@ class GameManager:
             offered_properties = offer.offered_properties
             asked_properties = offer.asked_properties
 
-            # TODO: Verify no player goes to negative (unless liquidation)
-
-            if user != offer.destination_user:
-                raise MaliciousUserInput(user, f"cannot accept proposal {offer}")
-
-            if offer != game.proposal:
-                raise MaliciousUserInput(user, f"tried to reference a non-existent proposal")
-            
             if action.choose:
+                # Money logic (ensure no player goes to negative)
+                money_diff = offered_money - asked_money
+                accepter_money = game.money[str(user.pk)] + money_diff
+                offering_money = game.money[str(offering.pk)] - money_diff
+
+                if accepter_money < 0:
+                    raise MaliciousUserInput(user, f"cannot go to negative in trade")
+                if offering_money < 0:
+                    raise MaliciousUserInput(offering, f"cannot go to negative in trade")
+
                 for relationship in offered_properties.all():
                     relationship.owner = user
                     relationship.houses = -1 # reset houses
@@ -636,27 +644,21 @@ class GameManager:
                     relationship.houses = -1
                     relationship.save()
 
-                final_money = offered_money - asked_money
-
-                game.money[str(offering.pk)] -= offered_money
-                game.money[str(offering.pk)] += asked_money
-
-                stats = PlayerGameStatistic.objects.get(user=offering,game=game)
-                if final_money > 0:
-                    stats.lost_money += abs(final_money)
+                game.money[str(offering.pk)] = offering_money
+                stats = PlayerGameStatistic.objects.get(user=offering, game=game)
+                if money_diff > 0:
+                    stats.lost_money += abs(money_diff)
                 else:
-                    stats.won_money += abs(final_money)
+                    stats.won_money += abs(money_diff)
                 stats.num_trades += 1
                 stats.save()
                 
-                game.money[str(user.pk)] -= asked_money
-                game.money[str(user.pk)] += offered_money
-
-                stats = PlayerGameStatistic.objects.get(user=user,game=game)
-                if final_money > 0:
-                    stats.won_money += abs(final_money)
+                game.money[str(user.pk)] = accepter_money
+                stats = PlayerGameStatistic.objects.get(user=user, game=game)
+                if money_diff > 0:
+                    stats.won_money += abs(money_diff)
                 else:
-                    stats.lost_money += abs(final_money)
+                    stats.lost_money += abs(money_diff)
                 stats.num_trades += 1
                 stats.save()
 
@@ -664,6 +666,7 @@ class GameManager:
 
             game.phase = GameManager.BUSINESS
             game.active_phase_player = offering
+            game.proposal = None
             game.save()
             GameManager._set_next_phase_timer(game, offering)
 

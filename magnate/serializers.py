@@ -215,7 +215,7 @@ class ActionTradeProposalSerializer(ActionSerializer):
 class ActionTradeAnswerSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
         model = ActionTradeAnswer
-        fields = ActionSerializer.Meta.fields + ['choose','proposal']
+        fields = ActionSerializer.Meta.fields + ['choose']
 
 class ActionMortgageSetSerializer(ActionSerializer):
     square = SquareCustomIdField()

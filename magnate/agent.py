@@ -244,9 +244,9 @@ class Agent:
         offering_money = self.game.money[str(proposal.player.pk)]
     
         if proposal.asked_money <= money and proposal.offered_money <= offering_money:
-            actions.append(ActionTradeAnswer(game=self.game, player=self.user, choose=True, proposal=proposal))
+            actions.append(ActionTradeAnswer(game=self.game, player=self.user, choose=True, ))
     
-        actions.append(ActionTradeAnswer(game=self.game, player=self.user, choose=False, proposal=proposal))
+        actions.append(ActionTradeAnswer(game=self.game, player=self.user, choose=False))
         return actions
     
     def _get_possible_actions_auction(self) -> list[Action]:
@@ -387,7 +387,7 @@ class Agent:
         elif isinstance(action, ActionSurrender):
             return -float('inf')
         elif isinstance(action, ActionTradeAnswer):
-            return self._ev_trade_answer(action.choose, action.proposal)
+            return self._ev_trade_answer(action.choose)
         elif isinstance(action, ActionTradeProposal):
             return self._ev_trade_proposal(action)
     
@@ -554,10 +554,12 @@ class Agent:
         
         return total_recovered_income - cost
 
-    def _ev_trade_answer(self, choose: bool, proposal) -> float:
+    def _ev_trade_answer(self, choose: bool) -> float:
         """EV of accepting a trade (Net benefit differential against the proposer)."""
         if not choose:
             return 0.0
+
+        proposal = self.game.proposal
             
         opponents = max(1, self.game.players.count() - 1)
         my_props_gained = [rel.square.get_real_instance() for rel in proposal.offered_properties.all()]

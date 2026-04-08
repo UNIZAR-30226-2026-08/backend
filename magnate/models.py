@@ -555,6 +555,7 @@ class ActionTradeProposal(Action):
 class ActionTradeAnswer(Action):
     """
     Action to accept or decline a trade proposal.
+    choose = True if trade was accepted
 
     Frontend Request Payload Example:
     ```json
@@ -563,12 +564,10 @@ class ActionTradeAnswer(Action):
       "game": 1,
       "player": 2,
       "choose": true,
-      "proposal": 8
     }
     ```
     """
     choose = models.BooleanField(default=False)
-    proposal = models.OneToOneField('ActionTradeProposal', on_delete=models.CASCADE, related_name='proposal')
 
 class ActionMortgageSet(Action):
     """

@@ -125,7 +125,7 @@ class ProfileView(APIView):
     """
     Endpoint for retrieving the authenticated user's profile.
 
-    GET /auth/profile/
+    GET /user/info/
 
     Headers:
         Authorization: Bearer <access_token>
@@ -235,7 +235,7 @@ class UserNamePieceView(APIView):
     """
     Returns the username and active piece of the requested user.
 
-    GET /auth/users/<pk>/username-piece/
+    GET /info/user-name-piece/<pk>/
 
     Responses:
         200: Returns username and piece.
@@ -256,7 +256,7 @@ class ChangeUserPieceView(APIView):
     """
     Changes the user's active piece to one they own.
 
-    POST /shop/change-piece/
+    POST /user/change-piece/
 
     Headers:
         Authorization: Bearer <access_token>

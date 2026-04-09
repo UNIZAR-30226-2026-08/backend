@@ -26,7 +26,7 @@ def _build_square(game: Game,
         PropertyRelationship: The updated ownership relationship.
 
     Raises:
-        MaliciousUserInput: If the user does not own the full group, violates 
+        MaliciousUserInput: If the user does not own the full group,  a square in the group is mortgaged, violates 
             uniform building rules, or tries to build beyond the max limit.
         GameLogicError: If negative house values are encountered.
     """
@@ -63,6 +63,8 @@ def _build_square(game: Game,
         raise MaliciousUserInput(user, "does not own the group")
 
     for rel in group_relationships:
+        if rel.mortgage: # none of the group should be mortgaged
+            raise MaliciousUserInput(user, "cannot build while any property in the group is mortgaged")
         if rel.houses < 0: 
             raise GameLogicError(f"negative house value")
         elif actual_houses + number_built - 1 > rel.houses:
@@ -371,7 +373,6 @@ def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -> i
 
 
 
-#TODO: si hay hipotecada no se cuenta grupo completo?
 def _set_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_mortgage: bool) -> PropertyRelationship:
     """
     Mortgages a property to receive immediate funds.
@@ -386,7 +387,7 @@ def _set_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_
         PropertyRelationship: The updated relationship.
 
     Raises:
-        MaliciousUserInput: If not owned, already mortgaged, or wrong type of square.
+        MaliciousUserInput: If not owned, already mortgaged, there's a square in the group with houses or wrong type of square.
         GameLogicError: If trying to mortgage a property that still has houses built on it.
     """
     target_square = target_square.get_real_instance()
@@ -409,8 +410,15 @@ def _set_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_
     
 
     if isinstance(target_square, PropertySquare):
-        if relationship.houses > 0:
-            raise GameLogicError("tried to mortgage a property with houses")
+        group_has_houses = PropertyRelationship.objects.filter(
+            game=game, 
+            owner=user, 
+            square__propertysquare__group=target_square.group,
+            houses__gt=0
+        ).exists()
+        
+        if group_has_houses:
+            raise GameLogicError("cannot mortgage a property while there are houses in the group")
     
     relationship.mortgage = True
     relationship.save()

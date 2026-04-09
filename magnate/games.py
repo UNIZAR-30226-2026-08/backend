@@ -563,6 +563,7 @@ class GameManager:
 
         elif isinstance(action, ActionTradeProposal):
             relationship = GameManager._propose_trade(game, user, action)
+            return Response()
 
         elif isinstance(action, ActionMortgageSet):
             relationship = _set_mortgage(game, user, action.square, False)
@@ -921,6 +922,11 @@ class GameManager:
         game.current_turn += 1
         game.save()
 
+        bot_next = Bot.objects.filter(pk=next_player.pk).first()
+        if bot_next:
+            bot_next.has_proposed_trade = False
+            bot_next.save()
+
         GameManager._cancel_all_timers(game)
 
         GameManager._set_kick_out_timer(game, next_player)
@@ -929,7 +935,7 @@ class GameManager:
  
     @classmethod
     def _propose_trade(cls, game: Game, user: CustomUser, action: ActionTradeProposal) -> None:
-        if action.player != user or action.offered_money < 0 or action.asked_money < 0:
+        if action.player.pk != user.pk or action.offered_money < 0 or action.asked_money < 0:
             raise MaliciousUserInput(user, "cannot do operation")
         if action.destination_user not in game.players.all():
             # FIXME: Change to internal order so that it handles player change to AI
@@ -966,6 +972,12 @@ class GameManager:
                 ).exists()
                 if group_has_houses:
                     raise MaliciousUserInput(user, "cannot trade properties from a group with constructions")
+
+        bot = Bot.objects.filter(pk=user.pk).first()
+        if bot:
+            bot.has_proposed_trade = True
+            bot.save()
+
 
         game.phase = GameManager.PROPOSAL_ACCEPTANCE
         game.active_phase_player = action.destination_user
@@ -1009,7 +1021,7 @@ class GameManager:
             game.save()   
             return #TODO: endgame logic
 
-        if game.active_turn_player == user and next_player:
+        if game.active_turn_player.pk == user.pk and next_player:
             game.active_turn_player = next_player
             game.active_phase_player = next_player
             game.phase = GameManager.ROLL_THE_DICES
@@ -1062,9 +1074,17 @@ class GameManager:
             response.save()
             game.bonus_response = response
             game.save()
+            from .models import Bot
+        
+            bots_in_game = Bot.objects.filter(id__in=game.players.values_list('id', flat=True))
+            bots_in_game.delete()
+
             return response
         else:
             raise GameLogicError('game was already ended')
+
+            
+
 
     @staticmethod
     def _set_next_phase_timer(game: Game, user: CustomUser):
@@ -1073,11 +1093,11 @@ class GameManager:
         
         GameManager._cancel_all_timers(game)
         
-        task = next_phase_callback.apply_async(args=[game.pk, user.pk], countdown=50)
+        task = next_phase_callback.apply_async(args=[game.pk, user.pk], countdown=20)
         game.next_phase_task_id = task.id
         game.save()
 
-        if user.is_bot:
+        if Bot.objects.filter(pk=user.pk).exists():
             bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
 
     @staticmethod
@@ -1088,26 +1108,34 @@ class GameManager:
         if game.kick_out_task_id:
             app.control.revoke(game.kick_out_task_id, terminate=True)
             
-        task = kick_out_callback.apply_async(args=[game.pk, user.pk], countdown=50)
+        task = kick_out_callback.apply_async(args=[game.pk, user.pk], countdown=20)
         game.kick_out_task_id = task.id
         game.save()
 
-        if user.is_bot:
+        if Bot.objects.filter(pk=user.pk).exists():
             bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
 
     @staticmethod
     def _cancel_all_timers(game: Game):
         from .celery import app
+        from celery import current_task
         
+        current_task_id = None
+        if current_task and hasattr(current_task, 'request'):
+            current_task_id = getattr(current_task.request, 'id', None)
+
         if game.next_phase_task_id:
-            app.control.revoke(game.next_phase_task_id, terminate=True)
+            if game.next_phase_task_id != current_task_id:
+                app.control.revoke(game.next_phase_task_id, terminate=True)
             game.next_phase_task_id = None
             
         if game.kick_out_task_id:
-            app.control.revoke(game.kick_out_task_id, terminate=True)
+            if game.kick_out_task_id != current_task_id:
+                app.control.revoke(game.kick_out_task_id, terminate=True)
             game.kick_out_task_id = None
             
         game.save()
+
 
     @staticmethod
     def _set_auction_timer(game: Game):
@@ -1117,7 +1145,7 @@ class GameManager:
         auction_callback.apply_async(args=[game.pk], countdown=10)
         
         for player in game.players.all():
-            if player.is_bot:
+            if Bot.objects.filter(pk=player.pk).exists():
                 bot_play_callback.apply_async(args=[game.pk, player.pk], countdown=random.randint(2, 6))
 
     ############################################################

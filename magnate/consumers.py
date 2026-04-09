@@ -7,8 +7,6 @@ from django.db import transaction
 from magnate.tasks import kick_out_callback
 from .models import  PublicQueuePosition, PrivateRoom, Game, CustomUser
 from .games import *
-import os
-import asyncio
 from magnate.serializers import GeneralResponseSerializer
 from typing import cast
 
@@ -51,7 +49,7 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
                     channel,
                     {
                         'type': 'match_found_event',
-                        'game_id': game_id
+                        'game_id': game_id, 
                     }
                 )
         

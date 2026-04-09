@@ -247,6 +247,7 @@ class GameClient:
                     sys.exit(0) # Simula cambiar de página
                     
                 if self.player_id and str(self.player_id) not in money_dict:
+                    print(money_dict)
                     print("\n💀 Has sido eliminado o te has rendido. (Simulando redirección a pantalla final...)")
                     await self.websocket.close()
                     sys.exit(0) # Simula cambiar de página

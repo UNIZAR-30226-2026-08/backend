@@ -45,7 +45,6 @@ def kick_out_callback(game_pk: int, user_pk: int) -> None:
     user = CustomUser.objects.get(pk=user_pk)
     
     GameManager._bankrupt_player(game, user)
-
     response = Response()
     broadcast_to_game(game, response)
 

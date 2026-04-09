@@ -563,6 +563,7 @@ class GameManager:
 
         elif isinstance(action, ActionTradeProposal):
             relationship = GameManager._propose_trade(game, user, action)
+            return Response()
 
         elif isinstance(action, ActionMortgageSet):
             relationship = _set_mortgage(game, user, action.square, False)
@@ -1092,7 +1093,7 @@ class GameManager:
         
         GameManager._cancel_all_timers(game)
         
-        task = next_phase_callback.apply_async(args=[game.pk, user.pk], countdown=50)
+        task = next_phase_callback.apply_async(args=[game.pk, user.pk], countdown=20)
         game.next_phase_task_id = task.id
         game.save()
 
@@ -1107,7 +1108,7 @@ class GameManager:
         if game.kick_out_task_id:
             app.control.revoke(game.kick_out_task_id, terminate=True)
             
-        task = kick_out_callback.apply_async(args=[game.pk, user.pk], countdown=50)
+        task = kick_out_callback.apply_async(args=[game.pk, user.pk], countdown=20)
         game.kick_out_task_id = task.id
         game.save()
 
@@ -1117,16 +1118,24 @@ class GameManager:
     @staticmethod
     def _cancel_all_timers(game: Game):
         from .celery import app
+        from celery import current_task
         
+        current_task_id = None
+        if current_task and hasattr(current_task, 'request'):
+            current_task_id = getattr(current_task.request, 'id', None)
+
         if game.next_phase_task_id:
-            app.control.revoke(game.next_phase_task_id, terminate=True)
+            if game.next_phase_task_id != current_task_id:
+                app.control.revoke(game.next_phase_task_id, terminate=True)
             game.next_phase_task_id = None
             
         if game.kick_out_task_id:
-            app.control.revoke(game.kick_out_task_id, terminate=True)
+            if game.kick_out_task_id != current_task_id:
+                app.control.revoke(game.kick_out_task_id, terminate=True)
             game.kick_out_task_id = None
             
         game.save()
+
 
     @staticmethod
     def _set_auction_timer(game: Game):

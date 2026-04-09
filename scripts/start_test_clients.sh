@@ -14,4 +14,5 @@ python manage.py get_test_sessions
 python manage.py runserver
 
 pkill -f "celery -A magnate"
+pkill celery
 pkill redis-server

@@ -507,7 +507,7 @@ class GamesTest(TestCase):
         
         # p2 accepts trade
         answer = ActionTradeAnswer.objects.create(
-            game=self.game, player=self.player2, proposal=proposal, choose=True
+            game=self.game, player=self.player2, choose=True
         )
         async_to_sync(GameManager.process_action)(self.game, self.player2, answer)
         
@@ -554,7 +554,7 @@ class GamesTest(TestCase):
         
         # p2 rejects trade
         answer = ActionTradeAnswer.objects.create(
-            game=self.game, player=self.player2, proposal=proposal, choose=False
+            game=self.game, player=self.player2, choose=False
         )
         async_to_sync(GameManager.process_action)(self.game, self.player2, answer)
         
@@ -997,7 +997,7 @@ class GamesTest(TestCase):
         self.game.refresh_from_db()
 
         answer = ActionTradeAnswer.objects.create(
-            game=self.game, player=self.player2, proposal=proposal, choose=True
+            game=self.game, player=self.player2, choose=True
         )
         async_to_sync(GameManager.process_action)(self.game, self.player2, answer)
 

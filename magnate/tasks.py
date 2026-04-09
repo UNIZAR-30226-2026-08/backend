@@ -45,7 +45,6 @@ def kick_out_callback(game_pk: int, user_pk: int) -> None:
     user = CustomUser.objects.get(pk=user_pk)
     
     GameManager._bankrupt_player(game, user)
-
     response = Response()
     broadcast_to_game(game, response)
 
@@ -120,8 +119,10 @@ def bot_play_callback(game_pk: int, user_pk: int) -> None:
     game = Game.objects.get(pk=game_pk)
     active_player = game.active_phase_player
 
-    if not active_player or not active_player.is_bot or game.phase == GameManager.END_GAME:
+    if not active_player or not Bot.objects.filter(pk=active_player.pk).exists() or game.phase == GameManager.END_GAME:
         return
+
+    bot = Bot.objects.get(pk=active_player.pk)
 
     from .celery import app
 
@@ -130,9 +131,10 @@ def bot_play_callback(game_pk: int, user_pk: int) -> None:
     if game.next_phase_task_id:
         app.control.revoke(game.next_phase_task_id, terminate=True)
     # decision
-    agent = Agent(game, active_player, active_player.bot_level)
+    agent = Agent(game, bot, bot.bot_level)
     action = agent.choose_action()
 
     if action:
         response = async_to_sync(GameManager.process_action)(game, active_player, action)
         broadcast_to_game(game, response)
+    

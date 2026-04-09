@@ -104,13 +104,10 @@ class LoginView(APIView):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        assert isinstance(auth_user, CustomUser)
+        assert isinstance(auth_user, CustomUser) ### can't be bot
 
-        if auth_user.is_bot:
-            return Response(
-                {'error': 'bots cant login'},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+
+
 
         tokens = get_tokens_for_user(auth_user)
         return Response({

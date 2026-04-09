@@ -33,11 +33,15 @@ class CustomUser(AbstractUser):
     points = models.PositiveIntegerField(default=0)
     exp = models.PositiveIntegerField(default=0)
     elo = models.PositiveIntegerField(default=0)
-    is_bot = models.BooleanField(default=False)
-    bot_level = models.CharField(max_length=20, null=True, blank=True) # "easy" /"expert" etc
     user_piece = models.PositiveIntegerField(default=1) #TODO: poner default cuando tengamos fichas definidas
     num_played_games = models.PositiveIntegerField(default=0) #TODO: ir aumentando este dato
     num_won_games = models.PositiveIntegerField(default=0) #TODO: ir aumentando este dato
+    
+
+class Bot(CustomUser):
+    bot_level = models.CharField(max_length=20, null=True, blank=True) # "easy" /"expert" etc
+    has_proposed_trade = models.BooleanField(default=False)
+
 
 class Item(models.Model):
     class ItemType(models.TextChoices):
@@ -558,6 +562,7 @@ class ActionTradeProposal(Action):
 class ActionTradeAnswer(Action):
     """
     Action to accept or decline a trade proposal.
+    choose = True if trade was accepted
 
     Frontend Request Payload Example:
     ```json
@@ -566,12 +571,10 @@ class ActionTradeAnswer(Action):
       "game": 1,
       "player": 2,
       "choose": true,
-      "proposal": 8
     }
     ```
     """
     choose = models.BooleanField(default=False)
-    proposal = models.OneToOneField('ActionTradeProposal', on_delete=models.CASCADE, related_name='proposal')
 
 class ActionMortgageSet(Action):
     """

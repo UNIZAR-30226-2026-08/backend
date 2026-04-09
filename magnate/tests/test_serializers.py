@@ -66,7 +66,7 @@ class SerializerTest(TestCase):
         cls.actionTradeProposal.asked_properties.set([cls.property_relationship2])
         
         cls.actionTradeAnswer = ActionTradeAnswer.objects.create(game=cls.game,player=cls.player,
-                                                                 choose=True,proposal=cls.actionTradeProposal)
+                                                                 choose=True)
         
         cls.actionMortgageSet = ActionMortgageSet.objects.create(game=cls.game,player=cls.player,
                                                                  square=BaseSquare.objects.get(custom_id=19))
@@ -341,21 +341,18 @@ class SerializerTest(TestCase):
         data = GeneralActionSerializer(self.actionTradeAnswer).data
         assert isinstance(data,dict)
         self.assertEqual(data["choose"],True)
-        self.assertEqual(data["proposal"],self.actionTradeProposal.pk)
 
         self.actionTradeAnswer.delete() #cant coexist 2 answers for the same proposal
 
         json_in = {"type": "ActionTradeAnswer",
                    "game":self.game.pk,
                    "player":self.player.pk,
-                   "choose":True,
-                   "proposal":self.actionTradeProposal.pk}
+                   "choose":True}
         instance = action_from_json(json_in)
         assert isinstance(instance,ActionTradeAnswer)
         self.assertEqual(instance.player,self.player)
         self.assertEqual(instance.game,self.game)
         self.assertEqual(instance.choose,True)
-        self.assertEqual(instance.proposal,self.actionTradeProposal)
 
 
     def test_mortgage_set(self):

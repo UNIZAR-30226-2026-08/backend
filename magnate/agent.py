@@ -40,7 +40,7 @@ class Agent:
     ############################### CORE LOGIC #####################################
     ################################################################################
 
-    def __init__(self, game: Game, user: CustomUser, level: str):
+    def __init__(self, game: Game, user: Bot, level: str):
         if level not in EPSILON:
             raise InvalidBotLevel(game, level)
         self.epsilon = EPSILON[level]
@@ -101,6 +101,8 @@ class Agent:
             return self._get_possible_actions_proposal_acceptance()
         elif phase == Game.GamePhase.auction:
             return self._get_possible_actions_auction()
+        elif phase == Game.GamePhase.end_game:
+            return []
     
         raise GameLogicError(f"Agent: unrecognised phase {phase}")
 
@@ -155,11 +157,11 @@ class Agent:
         money = self.game.money[str(self.user.pk)]
     
         if isinstance(current_square, TramSquare):
-            actions.append(ActionTakeTram(game=self.game, player=self.user, square=current_square))
+            actions.append(ActionNextPhase(game=self.game, player=self.user))
             other_trams = TramSquare.objects.exclude(custom_id=current_square.custom_id)
-            for tram in other_trams:
-                if money >= tram.buy_price:
-                    actions.append(ActionTakeTram(game=self.game, player=self.user, square=tram))
+            if money >= current_square.buy_price:
+                for tram in other_trams:
+                        actions.append(ActionTakeTram(game=self.game, player=self.user, square=tram))
             return actions
     
         is_buyable = isinstance(current_square, (PropertySquare, ServerSquare, BridgeSquare))
@@ -185,11 +187,25 @@ class Agent:
     
             if (isinstance(square, PropertySquare) and 0 <= rel.houses < 5 
                 and not rel.mortgage and square.build_price and money >= square.build_price):
-                group_min = (PropertyRelationship.objects
-                    .filter(game=self.game, owner=self.user, square__propertysquare__group=square.group)
-                    .exclude(square=rel.square).order_by('houses').values_list('houses', flat=True).first())
-                if group_min is None or rel.houses <= group_min:
-                    actions.append(ActionBuild(game=self.game, player=self.user, square=rel.square, houses=1))
+
+                user_group_rels = PropertyRelationship.objects.filter(
+                    game=self.game, 
+                    owner=self.user, 
+                    square__propertysquare__group=square.group
+                )
+
+                group_squares_count = PropertySquare.objects.filter(
+                    board=square.board, 
+                    group=square.group
+                ).count()
+
+                if user_group_rels.count() == group_squares_count and not user_group_rels.filter(mortgage=True).exists(): # check user has full group and none of em are mortgaged
+
+                    group_min = (PropertyRelationship.objects
+                        .filter(game=self.game, owner=self.user, square__propertysquare__group=square.group)
+                        .exclude(square=rel.square).order_by('houses').values_list('houses', flat=True).first())
+                    if group_min is None or rel.houses <= group_min:
+                        actions.append(ActionBuild(game=self.game, player=self.user, square=rel.square, houses=1))
     
             if isinstance(square, PropertySquare) and rel.houses > 0 and not rel.mortgage:
                 group_max = (PropertyRelationship.objects
@@ -198,16 +214,32 @@ class Agent:
                 if group_max is None or rel.houses >= group_max:
                     actions.append(ActionDemolish(game=self.game, player=self.user, square=rel.square, houses=1))
     
-            if (not rel.mortgage and isinstance(square, (PropertySquare, BridgeSquare, ServerSquare))
-                and (not isinstance(square, PropertySquare) or rel.houses <= 0)):
-                actions.append(ActionMortgageSet(game=self.game, player=self.user, square=rel.square))
+            if not rel.mortgage and isinstance(square, (PropertySquare, BridgeSquare, ServerSquare)):
+                can_mortgage = True
+                
+                if isinstance(square, PropertySquare):
+                    group_has_houses = PropertyRelationship.objects.filter(
+                        game=self.game, 
+                        owner=self.user, 
+                        square__propertysquare__group=square.group,
+                        houses__gt=0
+                    ).exists()  # check if some of the group has houses built
+                    
+                    if group_has_houses:
+                        can_mortgage = False
+                
+                if can_mortgage:
+                    actions.append(ActionMortgageSet(game=self.game, player=self.user, square=rel.square))
     
             if rel.mortgage and square.buy_price and money >= square.buy_price // 2:
                 actions.append(ActionMortgageUnset(game=self.game, player=self.user, square=rel.square))
     
-        trade = self._get_random_trade_proposal(money)
-        if trade is not None:
-             actions.append(trade)
+
+        bot_db = Bot.objects.get(pk=self.user.pk)
+        if not bot_db.has_proposed_trade:
+            trade = self._get_random_trade_proposal(money)
+            if trade is not None:
+                actions.append(trade)
     
         actions.append(ActionNextPhase(game=self.game, player=self.user))
         return actions
@@ -244,9 +276,9 @@ class Agent:
         offering_money = self.game.money[str(proposal.player.pk)]
     
         if proposal.asked_money <= money and proposal.offered_money <= offering_money:
-            actions.append(ActionTradeAnswer(game=self.game, player=self.user, choose=True, proposal=proposal))
+            actions.append(ActionTradeAnswer(game=self.game, player=self.user, choose=True, ))
     
-        actions.append(ActionTradeAnswer(game=self.game, player=self.user, choose=False, proposal=proposal))
+        actions.append(ActionTradeAnswer(game=self.game, player=self.user, choose=False))
         return actions
     
     def _get_possible_actions_auction(self) -> list[Action]:
@@ -279,19 +311,28 @@ class Agent:
 
     def _get_random_trade_proposal(self, money: int) -> Action | None:
         """Helper to generate and evaluate up to 5 random trade proposals."""
+        def is_tradable(rel):
+            sq = rel.square.get_real_instance()
+            if not isinstance(sq, PropertySquare):
+                return True
+            return not PropertyRelationship.objects.filter(
+                game=self.game, 
+                square__propertysquare__group=sq.group, 
+                houses__gt=0
+            ).exists()
+        
         opponents = self.game.players.exclude(pk=self.user.pk)
         if not opponents.exists():
             return None
 
-        my_properties = list(PropertyRelationship.objects.filter(game=self.game, owner=self.user).select_related('square'))
-        
+        my_properties = [rel for rel in PropertyRelationship.objects.filter(game=self.game, owner=self.user).select_related('square') if is_tradable(rel)]        
         best_trade_params = None
         
         best_ev = float('-inf')
-
+        max_offer = 0
         for _ in range(5):
             target = random.choice(opponents)
-            their_properties = list(PropertyRelationship.objects.filter(game=self.game, owner=target).select_related('square'))
+            their_properties = [rel for rel in PropertyRelationship.objects.filter(game=self.game, owner=target).select_related('square') if is_tradable(rel)]
             if not their_properties:
                 continue
 
@@ -307,8 +348,10 @@ class Agent:
                 offered_sqs.append(offer_rel.square.get_real_instance())
             else:
                 max_offer = int(self._ev_buying(wanted_sq) * 0.8)
-                if max_offer > 0:
+                if max_offer > 0 and money > 0:
                     offered_money = random.randint(min(max_offer, money)//2, min(max_offer, money))
+                else:
+                    offered_money = 0
 
             if not offered_sqs and offered_money == 0:
                 continue
@@ -387,7 +430,7 @@ class Agent:
         elif isinstance(action, ActionSurrender):
             return -float('inf')
         elif isinstance(action, ActionTradeAnswer):
-            return self._ev_trade_answer(action.choose, action.proposal)
+            return self._ev_trade_answer(action.choose)
         elif isinstance(action, ActionTradeProposal):
             return self._ev_trade_proposal(action)
     
@@ -554,10 +597,12 @@ class Agent:
         
         return total_recovered_income - cost
 
-    def _ev_trade_answer(self, choose: bool, proposal) -> float:
+    def _ev_trade_answer(self, choose: bool) -> float:
         """EV of accepting a trade (Net benefit differential against the proposer)."""
         if not choose:
             return 0.0
+
+        proposal = self.game.proposal
             
         opponents = max(1, self.game.players.count() - 1)
         my_props_gained = [rel.square.get_real_instance() for rel in proposal.offered_properties.all()]

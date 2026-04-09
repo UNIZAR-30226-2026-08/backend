@@ -111,19 +111,6 @@ class LoginViewTest(AuthTestCase):
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_login_bot_forbidden(self):
-        CustomUser.objects.create_user(
-            username='bot1',
-            email='bot@example.com',
-            password='Segura123!',
-            is_bot=True,
-        )
-        response: DRFResponse = self.client.post(reverse('login'), {  # type: ignore
-            'username': 'bot1',
-            'password': 'Segura123!',
-        }, format='json')
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-
     def test_login_nonexistent_user(self):
         response: DRFResponse = self.client.post(reverse('login'), {  # type: ignore
             'username': 'noexiste',

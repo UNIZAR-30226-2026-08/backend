@@ -37,6 +37,8 @@ class CustomUser(AbstractUser):
 
 class Bot(CustomUser):
     bot_level = models.CharField(max_length=20, null=True, blank=True) # "easy" /"expert" etc
+    has_proposed_trade = models.BooleanField(default=False)
+
 
 class Item(models.Model):
     class ItemType(models.TextChoices):

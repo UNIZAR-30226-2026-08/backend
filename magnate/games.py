@@ -921,6 +921,11 @@ class GameManager:
         game.current_turn += 1
         game.save()
 
+        bot_next = Bot.objects.filter(pk=next_player.pk).first()
+        if bot_next:
+            bot_next.has_proposed_trade = False
+            bot_next.save()
+
         GameManager._cancel_all_timers(game)
 
         GameManager._set_kick_out_timer(game, next_player)
@@ -966,6 +971,12 @@ class GameManager:
                 ).exists()
                 if group_has_houses:
                     raise MaliciousUserInput(user, "cannot trade properties from a group with constructions")
+
+        bot = Bot.objects.filter(pk=user.pk).first()
+        if bot:
+            bot.has_proposed_trade = True
+            bot.save()
+
 
         game.phase = GameManager.PROPOSAL_ACCEPTANCE
         game.active_phase_player = action.destination_user

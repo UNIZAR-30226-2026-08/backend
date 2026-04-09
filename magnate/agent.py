@@ -207,9 +207,12 @@ class Agent:
             if rel.mortgage and square.buy_price and money >= square.buy_price // 2:
                 actions.append(ActionMortgageUnset(game=self.game, player=self.user, square=rel.square))
     
-        trade = self._get_random_trade_proposal(money)
-        if trade is not None:
-             actions.append(trade)
+
+        bot_db = Bot.objects.get(pk=self.user.pk)
+        if not bot_db.has_proposed_trade:
+            trade = self._get_random_trade_proposal(money)
+            if trade is not None:
+                actions.append(trade)
     
         actions.append(ActionNextPhase(game=self.game, player=self.user))
         return actions

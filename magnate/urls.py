@@ -19,13 +19,23 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import *
 
+#Be careful if changing some url. We have to change
+#the docs too. The same for the name, we have to change the tests
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/register/', RegisterView.as_view(), name='register'),
     path('auth/login/',    LoginView.as_view(),    name='login'),
     path('auth/refresh/',  TokenRefreshView.as_view(), name='token_refresh'),
-    path('auth/profile/',  ProfileView.as_view(),  name='profile'),
+    
+    path('user/info/',  ProfileView.as_view(),  name='profile'),
+    path('user/change-piece/', ChangeUserPieceView.as_view(), name='change_piece'),
+
+    path('info/user-name-piece/<int:pk>/', UserNamePieceView.as_view(), name='usernamepieceview'),
 
     path('shop/items/',    ShopItemListView.as_view(), name='shop_items'),
     path('shop/buy/',      BuyItemView.as_view(),      name='shop_buy'),
+    path('shop/user-pieces/', UserPiecesView.as_view(), name='user_pieces'),
+    path('shop/user-emojis/', UserEmojisView.as_view(), name='user_emojis'),
+
+    path('lobby/get-private-code', GetPrivateCodeView.as_view(), name='get private code')
 ]

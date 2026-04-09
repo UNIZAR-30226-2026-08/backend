@@ -36,17 +36,16 @@ def main():
     parser.add_argument("--player_id1", help="Player ID for Player 1", required=True)
     parser.add_argument("--session2", help="Session ID cookie for Player 2", required=True)
     parser.add_argument("--player_id2", help="Player ID for Player 2", required=True)
+    parser.add_argument("--mode", choices=["public", "private"], default="public", help="Matchmaking mode")
     args = parser.parse_args()
 
-    # Build the commands to run client.py
-    cmd1 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session1, "--player_id", args.player_id1]
-    cmd2 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session2, "--player_id", args.player_id2]
-
-    print("Launching Player 1 client...")
-    launch_terminal(cmd1)
-
-    print("Launching Player 2 client...")
-    launch_terminal(cmd2)
+    # Build the commands to run client.py deppending on the mode
+    if args.mode == "public":
+        cmd1 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session1, "--player_id", args.player_id1, "--mode", "public"]
+        cmd2 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session2, "--player_id", args.player_id2, "--mode", "public"]
+    elif args.mode == "private":
+        cmd1 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session1, "--player_id", args.player_id1, "--mode", "create"]
+        cmd2 = [sys.executable, "scripts/client.py", "--url", args.url, "--session", args.session2, "--player_id", args.player_id2, "--mode", "join"]
 
     print("\nTwo terminal windows should have opened.")
     print("If they didn't, open two new terminal tabs and run the following commands manually:")

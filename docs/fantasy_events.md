@@ -5,8 +5,8 @@
       members:
         - FantasyEvent
 
-::: magnate.fantasy
+::: magnate.fantasy.FantasyEventFactory
     options:
       members:
-        - FantasyEventFactory.generate
-        - FantasyEventFactory.apply_fantasy_event
+        - generate
+        - apply_fantasy_event

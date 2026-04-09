@@ -138,3 +138,4 @@ def bot_play_callback(game_pk: int, user_pk: int) -> None:
     if action:
         response = async_to_sync(GameManager.process_action)(game, active_player, action)
         broadcast_to_game(game, response)
+    

@@ -79,7 +79,6 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             'action': 'match_found',
             'game_id': event['game_id']
         }))
-        await self.close(code=4001)
 
     async def send_error(self, message):
         await self.send(text_data=json.dumps({
@@ -493,7 +492,6 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             'action': 'game_start',
             'game_id': event['game_id']
         }))
-        await self.close(code=4001)
 
 
 

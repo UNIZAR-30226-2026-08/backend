@@ -110,6 +110,7 @@ class GameClient:
 
                 # Si listen_task terminó, es porque llegó game_start
                 if self.game_started:
+                    await ws.close()
                     return self.game_id
 
         except Exception as e:
@@ -174,6 +175,7 @@ class GameClient:
                     data = json.loads(message)
                     if data.get("action") == "match_found":
                         print(f"Match found! Game ID: {data['game_id']}")
+                        await ws.close()
                         return data["game_id"]
                     elif data.get("action") == "error":
                         print(f"Queue Error: {data.get('message')}")

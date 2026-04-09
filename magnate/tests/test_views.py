@@ -3,8 +3,10 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 from rest_framework.response import Response as DRFResponse
+import string
+import re
 
-from magnate.models import CustomUser, Item
+from magnate.models import CustomUser, Item, PrivateRoom
 
 
 class AuthTestCase(TestCase):
@@ -308,3 +310,81 @@ class UserEmojisViewTest(AuthTestCase):
     def test_list_user_emojis_unauthenticated(self):
         response: DRFResponse = self.client.get(reverse('user_emojis'))  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class GetPrivateCodeViewTest(AuthTestCase):
+
+    def test_get_private_code_authenticated(self):
+        """Test that authenticated users can get a private room code."""
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('get private code'))  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertIn('code', response.data)
+        self.assertIn('message', response.data)
+        self.assertEqual(response.data['message'], 'Private room code generated successfully.')
+
+    def test_get_private_code_unauthenticated(self):
+        """Test that unauthenticated users cannot get a private room code."""
+        response: DRFResponse = self.client.get(reverse('get private code'))  # type: ignore
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_private_code_format(self):
+        """Test that the generated code has the correct format (6 alphanumeric uppercase chars)."""
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('get private code'))  # type: ignore
+        assert response.data is not None
+        code = response.data['code']
+        
+        # Check length
+        self.assertEqual(len(code), 6)
+        
+        # Check it's alphanumeric and uppercase
+        self.assertTrue(re.match(r'^[A-Z0-9]{6}$', code))
+        
+        # Check all characters are uppercase letters or digits
+        valid_chars = set(string.ascii_uppercase + string.digits)
+        for char in code:
+            self.assertIn(char, valid_chars)
+
+    def test_private_code_uniqueness(self):
+        """Test that different calls generate different codes."""
+        client = self.auth_client()
+        
+        codes = set()
+        for _ in range(5):
+            response: DRFResponse = client.get(reverse('get private code'))  # type: ignore
+            assert response.data is not None
+            code = response.data['code']
+            codes.add(code)
+        
+        # All codes should be unique
+        self.assertEqual(len(codes), 5)
+
+    def test_private_code_not_in_existing_rooms(self):
+        """Test that generated code doesn't match any existing PrivateRoom code."""
+        # Create a PrivateRoom with a specific code
+        existing_code = 'ABC123'
+        PrivateRoom.objects.create(
+            owner=self.user,
+            room_code=existing_code,
+        )
+        
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('get private code'))  # type: ignore
+        assert response.data is not None
+        code = response.data['code']
+        
+        # The generated code should not match the existing one
+        self.assertNotEqual(code, existing_code)
+
+    def test_private_code_response_structure(self):
+        """Test that the response has the correct structure."""
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('get private code'))  # type: ignore
+        
+        assert response.data is not None
+        self.assertIsInstance(response.data, dict)
+        self.assertEqual(set(response.data.keys()), {'code', 'message'})
+        self.assertIsInstance(response.data['code'], str)
+        self.assertIsInstance(response.data['message'], str)

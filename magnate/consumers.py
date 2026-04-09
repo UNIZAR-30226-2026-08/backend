@@ -22,6 +22,92 @@ MAX_PRIVATE_GAME_PLAYERS = CONFIG["MAX_PRIVATE_GAME_PLAYERS"]
 NUM_PUBLIC_GAME_PLAYERS = CONFIG["NUM_PUBLIC_GAME_PLAYERS"]
 
 class PublicQueueConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket consumer for the public matchmaking queue.
+ 
+    Handles automatic matchmaking: players connect, wait until enough players
+    are in the queue, and are then redirected to a newly created game.
+ 
+    ---
+    ## How to Connect
+ 
+    **Endpoint:** ``ws://<host>/ws/queue/``
+ 
+    **Authentication required:** Yes — the user must be authenticated via session
+    or token before connecting. Unauthenticated connections are closed with code ``4002``.
+ 
+    ---
+    ## Connection Lifecycle
+ 
+    1. Client opens the WebSocket.
+    2. Server adds the user to the matchmaking queue.
+    3. If enough players are queued (``NUM_PUBLIC_GAME_PLAYERS``), the server
+       automatically creates a game and sends a ``match_found`` event to every
+       matched player.
+    4. Each matched client receives the ``game_id`` and should navigate to the
+       game screen, then connect to ``GameConsumer``.
+ 
+    ---
+    ## Messages: Client → Server
+ 
+    ### Cancel Queue
+    Voluntarily leave the matchmaking queue.
+ 
+    ```json
+    { "action": "cancel" }
+    ```
+ 
+    ---
+    ## Messages: Server → Client
+ 
+    ### Match Found
+    Sent when matchmaking succeeds. The connection is closed with code ``4001``
+    immediately after this message.
+ 
+    ```json
+    {
+        "action": "match_found",
+        "game_id": 42
+    }
+    ```
+ 
+    ### Error
+    Sent when an invalid message is received.
+ 
+    ```json
+    {
+        "action": "error",
+        "message": "Datos invalidos."
+    }
+    ```
+ 
+    ---
+    ## Close Codes
+ 
+    | Code | Meaning |
+    |------|---------|
+    | 4001 | Match found — user was moved to a game. Connect to ``GameConsumer``. |
+    | 4002 | Unauthorized — user was not authenticated. |
+    | 4000 | User cancelled the queue. |
+ 
+    ---
+    ## Example Flow (JavaScript)
+ 
+    ```js
+    const socket = new WebSocket("ws://localhost:8000/ws/queue/");
+ 
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.action === "match_found") {
+            // Navigate to game with data.game_id
+            connectToGame(data.game_id);
+        }
+    };
+ 
+    // To leave the queue manually:
+    socket.send(JSON.stringify({ action: "cancel" }));
+    ```
+    """
     
     QUEUE_GROUP = "public_queue"
 
@@ -158,6 +244,209 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             return (game.pk, player_channels)
 
 class PrivateRoomConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket consumer for private game room lobbies.
+ 
+    Manages the pre-game lobby where a host invites friends, players set their
+    ready status, and the host starts the game when all players are ready. Supports
+    bot-filling up to the configured target player count.
+ 
+    ---
+    ## How to Connect
+ 
+    **Endpoint:** ``ws://<host>/ws/room/<room_code>/``
+ 
+    **Authentication required:** Yes. Unauthenticated users are rejected with code ``4002``.
+ 
+    The ``room_code`` must correspond to an existing ``PrivateRoom``. Attempting to
+    join a non-existent or full room will result in an error message followed by
+    close code ``4003``.
+ 
+    ---
+    ## Connection Lifecycle
+ 
+    1. Client opens the WebSocket with a valid ``room_code``.
+    2. Server validates room existence, capacity, and that the user is not already in
+       the room.
+    3. On success, the server broadcasts a ``joined`` lobby update to all members.
+    4. Players toggle ready status. The host can change settings (bot level, target
+       player count).
+    5. When all players are ready, the host sends ``start_game``.
+    6. Server creates the game (filling remaining slots with bots if needed) and
+       broadcasts a ``game_start`` event to everyone.
+    7. Each client receives the ``game_id`` and connects to ``GameConsumer``.
+ 
+    ---
+    ## Messages: Client → Server
+ 
+    All messages are JSON objects with a ``command`` field.
+ 
+    ### Toggle Ready Status
+    ```json
+    { "command": "ready_status", "is_ready": true }
+    ```
+ 
+    ### Start Game *(host only)*
+    Requires all players to be ready and at least ``MIN_PRIVATE_GAME_PLAYERS`` in
+    the room. Bots are added to reach ``target_players`` if needed.
+    ```json
+    { "command": "start_game" }
+    ```
+ 
+    ### Send Chat Message
+    ```json
+    { "command": "chat_message", "message": "Hello!" }
+    ```
+ 
+    ### Update Room Settings *(host only)*
+    Change the target number of players and/or the bot difficulty level.
+    ```json
+    {
+        "command": "update_settings",
+        "bot_level": "easy",
+        "target_players": 4
+    }
+    ```
+ 
+    ---
+    ## Messages: Server → Client
+ 
+    ### Player Joined
+    Broadcast to all members when someone connects.
+    ```json
+    {
+        "action": "joined",
+        "user": "alice",
+        "owner": "alice",
+        "is_owner": true,
+        "players": [
+            { "username": "alice", "ready_to_play": false }
+        ]
+    }
+    ```
+ 
+    ### Player Left
+    Broadcast to remaining members when someone disconnects. ``owner`` may change
+    if the previous owner left (host migration).
+    ```json
+    {
+        "action": "player_left",
+        "user_left": "bob",
+        "owner": "alice",
+        "is_owner": true,
+        "players": [
+            { "username": "alice", "ready_to_play": false }
+        ]
+    }
+    ```
+ 
+    ### Ready Status Update
+    Broadcast to all members when any player changes their ready status.
+    ```json
+    {
+        "action": "ready_status",
+        "user": "bob",
+        "is_ready": true,
+        "owner": "alice",
+        "is_owner": false
+    }
+    ```
+ 
+    ### Settings Changed
+    Broadcast to all members when the host updates room settings.
+    ```json
+    {
+        "action": "settings_changed",
+        "bot_level": "hard",
+        "target_players": 4
+    }
+    ```
+ 
+    ### Game Start
+    Broadcast to all members when the game has been created. The connection is
+    closed with code ``4001`` immediately after.
+    ```json
+    {
+        "action": "game_start",
+        "game_id": 42
+    }
+    ```
+ 
+    ### Chat Message
+    Broadcast to all members.
+    ```json
+    {
+        "action": "chat_message",
+        "user": "alice",
+        "message": "Good luck!"
+    }
+    ```
+ 
+    ### Error
+    Sent only to the client that triggered the error.
+    ```json
+    {
+        "action": "error",
+        "message": "Solo el host puede iniciar una partida."
+    }
+    ```
+ 
+    ---
+    ## Close Codes
+ 
+    | Code | Meaning |
+    |------|---------|
+    | 4001 | Game started — connect to ``GameConsumer`` with the received ``game_id``. |
+    | 4002 | Unauthorized. |
+    | 4003 | Room not found, full, or user already in room. |
+ 
+    ---
+    ## Notes
+ 
+    - ``is_owner`` in lobby events is computed per-recipient: ``true`` only for the
+      current room host.
+    - If the host disconnects, ownership is automatically transferred to the next
+      oldest player.
+    - If the last player leaves, the room is deleted.
+    - Bots are created at game start to fill slots up to ``target_players``; they
+      are not visible in the lobby.
+ 
+    ---
+    ## Example Flow (JavaScript)
+ 
+    ```js
+    const socket = new WebSocket("ws://localhost:8000/ws/room/ABC123/");
+ 
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+ 
+        switch (data.action) {
+            case "joined":
+            case "player_left":
+                updatePlayerList(data.players, data.owner);
+                break;
+            case "ready_status":
+                updateReadyIndicator(data.user, data.is_ready);
+                break;
+            case "settings_changed":
+                updateSettings(data.bot_level, data.target_players);
+                break;
+            case "game_start":
+                connectToGame(data.game_id);
+                break;
+            case "error":
+                showError(data.message);
+                break;
+        }
+    };
+ 
+    // Mark yourself as ready:
+    socket.send(JSON.stringify({ command: "ready_status", is_ready: true }));
+ 
+    // Host starts the game:
+    socket.send(JSON.stringify({ command: "start_game" }));
+    ```
+    """
     async def connect(self):
         # Triggered when user opens a new private room or joins an existing one.
         scope_user = self.scope.get('user')
@@ -631,6 +920,174 @@ def validate_and_save_action(data):
     return action_instance, None
 
 class GameConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket consumer for an active game session.
+ 
+    This is the main gameplay socket. Once connected, the client receives the
+    current game state, can send player actions, and receives broadcasts of
+    all actions and their resolved outcomes in real time.
+ 
+    ---
+    ## How to Connect
+ 
+    **Endpoint:** ``ws://<host>/ws/game/<game_id>/``
+ 
+    **Authentication required:** Yes. Unauthenticated connections are closed with code ``4002``.
+ 
+    The ``game_id`` must match an existing ``Game`` that the authenticated user
+    belongs to. If the user is not a participant, the connection is rejected with
+    code ``4003``.
+ 
+    ---
+    ## Connection Lifecycle
+ 
+    1. Client opens the WebSocket with the ``game_id`` received from ``PublicQueueConsumer``
+       or ``PrivateRoomConsumer``.
+    2. Server validates that the user is a participant.
+    3. On success, the server immediately sends a ``game_state`` event to the
+       connecting client with the full current game state.
+    4. The client sends ``Action`` messages as the game progresses.
+    5. Each valid action is broadcast as a ``game_action`` event, followed by a
+       ``game_response`` event with the resolved outcome.
+    6. All players in the game receive both broadcasts.
+ 
+    ---
+    ## Messages: Client → Server
+ 
+    ### Game Action
+    Sends a player action for the current game phase. The ``type`` field must
+    correspond to a valid ``Action`` type for the active phase. All other fields
+    are action-specific.
+ 
+    ```json
+    {
+        "type": "SomeActionType",
+        "...": "action-specific fields"
+    }
+    ```
+ 
+    The ``game`` and ``player`` fields are injected server-side — do **not** include
+    them manually.
+ 
+    ### Chat Message
+    ```json
+    {
+        "type": "ChatMessage",
+        "msg": "Hello everyone!"
+    }
+    ```
+ 
+    ---
+    ## Messages: Server → Client
+ 
+    ### Game State
+    Sent immediately on connection. Contains the full serialized game state.
+ 
+    ```json
+    {
+        "event_type": "game_state",
+        "game_state": { "...": "full GameStatusSerializer output" }
+    }
+    ```
+ 
+    ### Game Action
+    Broadcast to all players when a valid action is received. Contains the raw
+    action data as sent by the acting player.
+ 
+    ```json
+    {
+        "event_type": "game_action",
+        "data": { "type": "SomeActionType", "game": 42, "player": 7, "...": "..." }
+    }
+    ```
+ 
+    ### Game Response
+    Broadcast to all players immediately after ``game_action``. Contains the
+    resolved outcome of the action as serialized by ``GeneralResponseSerializer``.
+ 
+    ```json
+    {
+        "event_type": "game_response",
+        "data": { "...": "GeneralResponseSerializer output" }
+    }
+    ```
+ 
+    ### Chat Message
+    Broadcast to all players in the game.
+ 
+    ```json
+    {
+        "event_type": "chat_message",
+        "game": 42,
+        "user": "alice",
+        "msg": "Hello everyone!"
+    }
+    ```
+ 
+    ### Error
+    Sent only to the client that triggered the error (invalid action, wrong phase,
+    etc.).
+ 
+    ```json
+    {
+        "event_type": "error",
+        "message": "Acción no válida en la fase actual."
+    }
+    ```
+ 
+    ---
+    ## Close Codes
+ 
+    | Code | Meaning |
+    |------|---------|
+    | 4002 | Unauthorized or missing route kwargs. |
+    | 4003 | User is not a participant in this game. |
+ 
+    ---
+    ## Important Notes
+ 
+    - Every valid action triggers **two** consecutive broadcasts: ``game_action``
+      (what was sent) and ``game_response`` (the outcome). Always handle both.
+    - Invalid actions (wrong phase, serialization errors, game logic errors) produce
+      an ``error`` event and are **not** broadcast to other players.
+    - The game state snapshot sent on connect may be slightly stale by the time
+      the first ``game_action`` arrives; prefer the response stream for live updates.
+ 
+    ---
+    ## Example Flow (JavaScript)
+ 
+    ```js
+    const socket = new WebSocket(`ws://localhost:8000/ws/game/${gameId}/`);
+ 
+    socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+ 
+        switch (data.event_type) {
+            case "game_state":
+                initializeBoard(data.game_state);
+                break;
+            case "game_action":
+                highlightAction(data.data);
+                break;
+            case "game_response":
+                applyOutcome(data.data);
+                break;
+            case "chat_message":
+                appendChat(data.user, data.msg);
+                break;
+            case "error":
+                showError(data.message);
+                break;
+        }
+    };
+ 
+    // Send an action:
+    socket.send(JSON.stringify({ type: "RollDice" }));
+ 
+    // Send a chat message:
+    socket.send(JSON.stringify({ type: "ChatMessage", msg: "Good luck!" }));
+    ```
+    """
     async def connect(self):
         # Triggered when user joins a specific match ID (game really begins) -> add to Redis room group.
         scope_user = self.scope.get('user')
@@ -762,25 +1219,25 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def game_state(self, event):
         await self.send(text_data=json.dumps({
-            'action': 'game_state',
+            'event_type': 'game_state',
             'game_state': event['game_state']
         }))
 
     async def game_action_event(self, event):
         await self.send(text_data=json.dumps({
-            'action': 'game_action',
+            'event_type': 'game_action',
             'data': event['data']
         }))
 
     async def game_response_event(self, event):
         await self.send(text_data=json.dumps({
-            'action': 'game_response',
+            'event_type': 'game_response',
             'data': event['data']
         }))
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps({
-            'action': 'chat_message',
+            'event_type': 'chat_message',
             'game': event['game'],
             'user': event['user'],
             'msg': event['msg']
@@ -788,7 +1245,7 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     async def send_error(self, message):
         await self.send(text_data=json.dumps({
-            'action': 'error',
+            'event_type': 'error',
             'message': message
         }))
 

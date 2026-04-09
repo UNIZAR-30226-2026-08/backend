@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import *
+from django.contrib.auth.password_validation import validate_password
+from .models import CustomUser
 
 # handling baseSquare by custom_id
 class SquareCustomIdField(serializers.SlugRelatedField):
@@ -11,6 +13,33 @@ class SquareCustomIdField(serializers.SlugRelatedField):
 ###############################################################################
 
 class GameStatusSerializer(serializers.ModelSerializer):
+    """
+    Example:
+        A standard serialized response during the 'roll_the_dices' phase:
+        ```json
+        {
+            "id": 1,
+            "datetime": "2026-04-06T18:30:00Z",
+            "positions": {"42": 0, "85": 12},
+            "money": {"42": 1500, "85": 1350},
+            "active_phase_player": 42,
+            "active_turn_player": 42,
+            "phase": "roll_the_dices",
+            "players": [42, 85],
+            "ordered_players": [42, 85],
+            "streak": 0,
+            "possible_destinations": {},
+            "parking_money": 200,
+            "jail_remaining_turns": {},
+            "proposal": null,
+            "fantasy_event": null,
+            "current_auction": null,
+            "finished": false,
+            "bonus_response": null,
+            "current_turn": 5
+        }
+        ```
+    """
     class Meta:
         model = Game
         exclude = ['kick_out_task_id', 'next_phase_task_id']
@@ -354,3 +383,111 @@ class GeneralResponseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Response
+
+
+###############################################################################
+############      Tokens     ####################################
+###############################################################################
+
+class RegisterSerializer(serializers.ModelSerializer):
+    password  = serializers.CharField(write_only=True, validators=[validate_password])
+    password2 = serializers.CharField(write_only=True, label='Confirmar contraseña')
+
+    class Meta:
+        model  = CustomUser
+        fields = ('username', 'email', 'password', 'password2')
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password2']:
+            raise serializers.ValidationError({'password': 'Las contraseñas no coinciden.'})
+        if CustomUser.objects.filter(email=attrs['email']).exists():
+            raise serializers.ValidationError({'email': 'Este email ya está registrado.'})
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop('password2')
+        return CustomUser.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+        )
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+
+################################################################################
+########################### general info #######################################
+################################################################################
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = CustomUser
+        fields = (
+            'username', 'email',
+            'points', 'exp', 'elo',
+            'date_joined',
+            'num_played_games',
+            'num_won_games',
+            'user_piece'
+        )
+        read_only_fields = fields
+
+##############################################################################
+################################### items ####################################
+##############################################################################
+class ItemSerializer(serializers.ModelSerializer):
+    owned = serializers.SerializerMethodField()
+
+    class Meta:
+        model  = Item
+        fields = ('custom_id', 'itemType', 'price', 'owned')
+
+    def get_owned(self, obj) -> bool:
+        request: Request = self.context['request']  # type: ignore
+        user: CustomUser = request.user  # type: ignore
+        return obj.owners.filter(pk=user.pk).exists()
+
+
+class PurchaseSerializer(serializers.Serializer):
+    custom_id = serializers.IntegerField()  # recibe custom_id del frontend
+
+    def validate_custom_id(self, value):
+        try:
+            item = Item.objects.get(custom_id=value)
+        except Item.DoesNotExist:
+            raise serializers.ValidationError('Item not found.')
+
+        user: CustomUser = self.context['request'].user  # type: ignore
+
+        if user.owned_items.filter(custom_id=item.custom_id).exists():
+            raise serializers.ValidationError('You already own this item.')
+
+        if user.points < item.price:
+            raise serializers.ValidationError(
+                f'Not enough points. You have {user.points}, item costs {item.price}.'
+            )
+
+        return value
+
+
+class ChangePieceSerializer(serializers.Serializer):
+    custom_id = serializers.IntegerField()
+
+    def validate_custom_id(self, value):
+        try:
+            item = Item.objects.get(custom_id=value)
+        except Item.DoesNotExist:
+            raise serializers.ValidationError('Item not found.')
+
+        if item.itemType != 'piece':
+            raise serializers.ValidationError('Item is not a piece.')
+
+        user: CustomUser = self.context['request'].user  # type: ignore
+
+        if not user.owned_items.filter(custom_id=item.custom_id).exists():
+            raise serializers.ValidationError('You do not own this piece.')
+
+        return value

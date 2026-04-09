@@ -418,14 +418,20 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
 
+################################################################################
+########################### general info #######################################
+################################################################################
+
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model  = CustomUser
         fields = (
-            'id', 'username', 'email', 'role',
+            'username', 'email',
             'points', 'exp', 'elo',
-            'ready_to_play', 'is_bot',
             'date_joined',
+            'num_played_games',
+            'num_won_games',
+            'user_piece'
         )
         read_only_fields = fields
 
@@ -463,5 +469,25 @@ class PurchaseSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 f'Not enough points. You have {user.points}, item costs {item.price}.'
             )
+
+        return value
+
+
+class ChangePieceSerializer(serializers.Serializer):
+    custom_id = serializers.IntegerField()
+
+    def validate_custom_id(self, value):
+        try:
+            item = Item.objects.get(custom_id=value)
+        except Item.DoesNotExist:
+            raise serializers.ValidationError('Item not found.')
+
+        if item.itemType != 'piece':
+            raise serializers.ValidationError('Item is not a piece.')
+
+        user: CustomUser = self.context['request'].user  # type: ignore
+
+        if not user.owned_items.filter(custom_id=item.custom_id).exists():
+            raise serializers.ValidationError('You do not own this piece.')
 
         return value

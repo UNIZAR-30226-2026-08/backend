@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -6,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CustomUser
-from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer, ItemSerializer, PurchaseSerializer
+from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer, ItemSerializer, PurchaseSerializer, ChangePieceSerializer
 from .models import CustomUser, Item
 
 
@@ -116,11 +117,15 @@ class LoginView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+###################################################################
+#################### general info #################################
+###################################################################
+
 class ProfileView(APIView):
     """
     Endpoint for retrieving the authenticated user's profile.
 
-    GET /auth/profile/
+    GET /user/info/
 
     Headers:
         Authorization: Bearer <access_token>
@@ -137,7 +142,7 @@ class ProfileView(APIView):
     
 
 ############################################################################
-########################### shop ###########################################
+########################### shop and items ###########################################
 ############################################################################
 class ShopItemListView(APIView):
     """
@@ -192,7 +197,7 @@ class BuyItemView(APIView):
         item = Item.objects.get(id=data['custom_id'])
 
         user: CustomUser = request.user  # type: ignore
-        user.points -= item.price
+        user.points -= item.price # money check already done in serializer
         user.save()
         user.owned_items.add(item)
 
@@ -201,3 +206,106 @@ class BuyItemView(APIView):
             'item':    ItemSerializer(item, context={'request': request}).data,
             'points_remaining': user.points,
         }, status=status.HTTP_200_OK)
+
+
+class UserPiecesView(APIView):
+    """
+    Returns the list of pieces owned by the authenticated user.
+
+    GET /shop/user-pieces/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Responses:
+        200: List of owned pieces with id, itemType, price and owned flag (always true).
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user: CustomUser = request.user  # type: ignore
+        pieces = user.owned_items.filter(itemType='piece')
+        serializer = ItemSerializer(pieces, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class UserNamePieceView(APIView):
+    """
+    Returns the username and active piece of the requested user.
+
+    GET /info/user-name-piece/<pk>/
+
+    Responses:
+        200: Returns username and piece.
+        404: User not found.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, pk):
+        user = get_object_or_404(CustomUser, pk=pk)
+        return Response({
+            'username': user.username,
+            'piece':    user.user_piece,
+        }, status=status.HTTP_200_OK)
+
+
+class ChangeUserPieceView(APIView):
+    """
+    Changes the user's active piece to one they own.
+
+    POST /user/change-piece/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Request body:
+        { "custom_id": 1 }
+
+    Responses:
+        200: Piece changed successfully. Returns the new user_piece value.
+        400: Validation error (item not found, not owned, not a piece).
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePieceSerializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data: dict = serializer.validated_data  # type: ignore
+        user: CustomUser = request.user  # type: ignore
+        user.user_piece = data['custom_id']
+        user.save()
+
+        return Response({
+            'message': 'Piece changed successfully.',
+            'user_piece': user.user_piece,
+        }, status=status.HTTP_200_OK)
+
+
+class UserEmojisView(APIView):
+    """
+    Returns the list of emojis owned by the authenticated user.
+
+    GET /shop/user-emojis/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Responses:
+        200: List of owned emojis with id, itemType, price and owned flag (always true).
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user: CustomUser = request.user  # type: ignore
+        emojis = user.owned_items.filter(itemType='emoji')
+        serializer = ItemSerializer(emojis, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)

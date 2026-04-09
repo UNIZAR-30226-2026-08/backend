@@ -187,11 +187,25 @@ class Agent:
     
             if (isinstance(square, PropertySquare) and 0 <= rel.houses < 5 
                 and not rel.mortgage and square.build_price and money >= square.build_price):
-                group_min = (PropertyRelationship.objects
-                    .filter(game=self.game, owner=self.user, square__propertysquare__group=square.group)
-                    .exclude(square=rel.square).order_by('houses').values_list('houses', flat=True).first())
-                if group_min is None or rel.houses <= group_min:
-                    actions.append(ActionBuild(game=self.game, player=self.user, square=rel.square, houses=1))
+
+                user_group_rels = PropertyRelationship.objects.filter(
+                    game=self.game, 
+                    owner=self.user, 
+                    square__propertysquare__group=square.group
+                )
+
+                group_squares_count = PropertySquare.objects.filter(
+                    board=square.board, 
+                    group=square.group
+                ).count()
+
+                if user_group_rels.count() == group_squares_count and not user_group_rels.filter(mortgage=True).exists(): # check user has full group and none of em are mortgaged
+
+                    group_min = (PropertyRelationship.objects
+                        .filter(game=self.game, owner=self.user, square__propertysquare__group=square.group)
+                        .exclude(square=rel.square).order_by('houses').values_list('houses', flat=True).first())
+                    if group_min is None or rel.houses <= group_min:
+                        actions.append(ActionBuild(game=self.game, player=self.user, square=rel.square, houses=1))
     
             if isinstance(square, PropertySquare) and rel.houses > 0 and not rel.mortgage:
                 group_max = (PropertyRelationship.objects
@@ -200,9 +214,22 @@ class Agent:
                 if group_max is None or rel.houses >= group_max:
                     actions.append(ActionDemolish(game=self.game, player=self.user, square=rel.square, houses=1))
     
-            if (not rel.mortgage and isinstance(square, (PropertySquare, BridgeSquare, ServerSquare))
-                and (not isinstance(square, PropertySquare) or rel.houses <= 0)):
-                actions.append(ActionMortgageSet(game=self.game, player=self.user, square=rel.square))
+            if not rel.mortgage and isinstance(square, (PropertySquare, BridgeSquare, ServerSquare)):
+                can_mortgage = True
+                
+                if isinstance(square, PropertySquare):
+                    group_has_houses = PropertyRelationship.objects.filter(
+                        game=self.game, 
+                        owner=self.user, 
+                        square__propertysquare__group=square.group,
+                        houses__gt=0
+                    ).exists()  # check if some of the group has houses built
+                    
+                    if group_has_houses:
+                        can_mortgage = False
+                
+                if can_mortgage:
+                    actions.append(ActionMortgageSet(game=self.game, player=self.user, square=rel.square))
     
             if rel.mortgage and square.buy_price and money >= square.buy_price // 2:
                 actions.append(ActionMortgageUnset(game=self.game, player=self.user, square=rel.square))

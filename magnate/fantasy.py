@@ -3,76 +3,112 @@ from channels.db import database_sync_to_async
 from collections import defaultdict
 import random
 
+from magnate.exceptions import GameLogicError
+
 from magnate.game_utils import _build_square, _demolish_square, _get_jail_square, _unset_mortgage
 
 class FantasyEventFactory:
     @staticmethod
     def generate() -> FantasyEvent:
         """
-        Generates a random FantasyEvent with an associated card cost and potential value.
+        Generate a random FantasyEvent with a rolled type, card cost, and optional value.
+
+        The fantasy type is chosen uniformly at random from all values defined in
+        ``FantasyEvent.FantasyType``. Depending on the type, a ``card_cost`` (what the
+        player pays to buy the card) and an optional ``value`` (monetary amount or
+        multiplier used when the event is applied) are assigned.
+
+        Cost / value summary by type:
+
+        +-------------------------------+----------+---------------------------+
+        | Type                          | Cost     | Value options             |
+        +===============================+==========+===========================+
+        | winPlainMoney                 | 130      | 20, 60, 120, 150, 200     |
+        | winRatioMoney                 | 500      | 1, 2, 5, 10 (%)           |
+        | losePlainMoney                | 80       | 40, 80, 120, 150, 200     |
+        | loseRatioMoney                | 30       | 1, 2, 5, 10 (%)           |
+        | shareMoneyAll                 | 5        | 20, 30, 50                |
+        | everybodySendsYouMoney        | 120      | 20, 30, 50                |
+        | doubleOrNothing               | 50       | —                         |
+        | getParkingMoney               | 500      | —                         |
+        | goToJail                      | 25       | —                         |
+        | sendToJail                    | 80       | —                         |
+        | everybodyToJail               | 50       | —                         |
+        | shufflePositions              | 50       | —                         |
+        | moveAnywhereRandom            | 50       | —                         |
+        | moveOpponentAnywhereRandom    | 60       | —                         |
+        | magnetism                     | 100      | —                         |
+        | goToStart                     | 90       | —                         |
+        | breakOpponentHouse            | 150      | —                         |
+        | breakOwnHouse                 | 30       | —                         |
+        | freeHouse                     | 80       | —                         |
+        | reviveProperty                | 100      | —                         |
+        | earthquake                    | 200      | —                         |
+        +-------------------------------+----------+---------------------------+
 
         Returns:
-            FantasyEvent: An instance of FantasyEvent configured with the rolled type, values, and cost.
+            FantasyEvent: A new, unsaved ``FantasyEvent`` instance with ``fantasy_type``,
+                ``card_cost``, and ``value`` (``None`` when not applicable) populated.
         """
         fantasy_type = random.choice(FantasyEvent.FantasyType.values)
 
-        values = None
+        value = None
         card_cost = None
 
         if fantasy_type == 'winPlainMoney':
             card_cost = 130
             rand = random.randrange(5)
             if(rand == 0):
-                values = {'money': 20}
+                value = 20
             elif(rand == 1):
-                values = {'money': 60}
+                value = 60
             elif(rand == 2):
-                values = {'money': 120}
+                value = 120
             elif(rand == 3):
-                values = {'money': 150}
+                value = 150
             elif(rand == 4):
-                values = {'money': 200}
+                value = 200
                 
             
         elif fantasy_type == 'winRatioMoney':
-            card_cost = 500 #TODO: carisimo, no?
+            card_cost = 500
             rand = random.randrange(4)
             if(rand == 0):
-                values = {'money': 1}
+                value = 1
             elif(rand == 1):
-                values = {'money': 2}
+                value = 2
             elif(rand == 2):
-                values = {'money': 5}
+                value = 5
             elif(rand == 3):
-                values = {'money': 10}
+                value = 10
 
 
         elif fantasy_type == 'losePlainMoney':
             card_cost = 80
             rand = random.randrange(5)
             if(rand == 0):
-                values = {'money': 40}
+                value = 40
             elif(rand == 1):
-                values = {'money': 80}
+                value = 80
             elif(rand == 2):
-                values = {'money': 120}
+                value = 120
             elif(rand == 3):
-                values = {'money': 150}
+                value = 150
             elif(rand == 4):
-                values = {'money': 200}
+                value = 200
 
 
         elif fantasy_type == 'loseRatioMoney':
             card_cost = 30
             rand = random.randrange(4)
             if(rand == 0):
-                values = {'money': 1}
+                value = 1
             elif(rand == 1):
-                values = {'money': 2}
+                value = 2
             elif(rand == 2):
-                values = {'money': 5}
+                value = 5
             elif(rand == 3):
-                values = {'money': 10}
+                value = 10
 
         elif fantasy_type == 'breakOpponentHouse':
             card_cost = 150
@@ -93,11 +129,11 @@ class FantasyEventFactory:
             card_cost = 5
             rand = random.randrange(3)
             if(rand == 0):
-                values = {'money': 20}
+                value = 20
             elif(rand == 1):
-                values = {'money': 30}
+                value = 30
             elif(rand == 2):
-                values = {'money': 50}
+                value = 50
 
         elif fantasy_type == 'freeHouse':
             card_cost = 80
@@ -127,11 +163,11 @@ class FantasyEventFactory:
             card_cost = 120
             rand = random.randrange(3)
             if(rand == 0):
-                values = {'money': 20}
+                value = 20
             elif(rand == 1):
-                values = {'money': 30}
+                value = 30
             elif(rand == 2):
-                values = {'money': 50}
+                value = 50
 
         elif fantasy_type == 'magnetism':
             card_cost = 100
@@ -141,45 +177,79 @@ class FantasyEventFactory:
 
         return FantasyEvent(
                 fantasy_type = fantasy_type,
-                values = values,
+                value = value,
                 card_cost = card_cost
                 )
 
 #@database_sync_to_async
 def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent) -> FantasyResult:
     """
-    Applies the effects of a given FantasyEvent to the game state and updates player statistics.
+    Apply a FantasyEvent to the current game state and return the outcome.
 
-    This function handles the logic for all variations of fantasy events as defined in the rules:
-    - Monetary transactions (win_plain_money, win_ratio_money, lose_plain_money, lose_ratio_money, 
-      share_money_all, everybody_sends_you_money, double_or_nothing, get_parking_money).
-    - Positional events (shuffle_positions, move_anywhere_random, move_opponent_anywhere_random, 
-      go_to_start, magnetism - pulling everyone to you).
-    - Jail events (go_to_jail, send_to_jail, everybody_to_jail).
-    - Property interactions (break_opponent_house, break_own_house, free_house, 
-      reviveProperty - unmortgages for free, earthquake - removes a house from all streets).
+    Executes the side-effects of ``fantasy_event`` on ``game`` — mutating money,
+    positions, jail state, and/or property house counts — then saves all affected
+    model instances and increments the triggering player's ``num_fantasy_events``
+    statistic.
+
+    The ``result`` field of the returned ``FantasyResult`` varies by event type:
+
+    **Always** ``None``:
+        ``winPlainMoney``, ``winRatioMoney``, ``losePlainMoney``, ``loseRatioMoney``,
+        ``shareMoneyAll``, ``everybodySendsYouMoney``, ``getParkingMoney``,
+        ``goToJail``, ``everybodyToJail``, ``shufflePositions``,
+        ``moveAnywhereRandom``, ``magnetism``, ``goToStart``
+
+        Also ``None`` for property events when no valid target exists at the time of
+        the call (no houses, no mortgaged properties, etc.).
+
+    **Single targeted square** — ``{"square": custom_id}``:
+        ``breakOpponentHouse``, ``breakOwnHouse``, ``freeHouse``, ``reviveProperty``
+
+    **Multiple targeted squares** — ``{"squares": [custom_id, ...]}``:
+        ``earthquake`` — one entry per property that had a house removed.
+
+    **Targeted player** — ``{"target_player": pk}``:
+        ``moveOpponentAnywhereRandom``, ``sendToJail``
+
+    **Outcome flag** — ``{"doubled": bool}``:
+        ``doubleOrNothing`` — ``True`` if the player's money was doubled,
+        ``False`` if it was zeroed.
+
+    House-targeting logic for break/build events follows Monopoly-standard
+    even-build rules: only properties in the group with the current maximum
+    (for demolition) or minimum (for construction) house count are eligible,
+    ensuring the house count within a colour group remains as even as possible.
 
     Args:
-        game (Game): The current game instance.
-        user (CustomUser): The player who triggered the event.
-        fantasy_event (FantasyEvent): The event details (type and specific values).
+        game (Game): The active game instance. ``game.money``, ``game.positions``,
+            ``game.jail_remaining_turns``, and ``game.parking_money`` may be
+            mutated and saved.
+        user (CustomUser): The player who triggered the event. Used as the default
+            actor for all money and property operations; some events target a
+            randomly selected opponent instead.
+        fantasy_event (FantasyEvent): The event to apply. Must have a valid
+            ``fantasy_type``; ``value`` must not be ``None`` for event types that
+            require it (plain/ratio money, share events).
 
     Returns:
-        FantasyResult: A result object containing the event type and any updated square/player data 
-                       needed by the frontend.
+        FantasyResult: An unsaved result object linking the original ``fantasy_event``
+            to a ``result`` dict (or ``None``) as described above.
 
     Raises:
-        Exception: If an event requiring values has None, or if internal targeting logic fails.
+        GameLogicError: If ``fantasy_event.fantasy_type`` is not a recognised value.
+        Exception: If a money-based event is called with ``fantasy_event.value is None``.
+        Exception: If internal targeting invariants are violated (e.g. no valid
+            candidate found after filtering — indicates a logic bug, not a user error).
     """
     stats = PlayerGameStatistic.objects.get(user=user,game=game)
     stats.num_fantasy_events += 1
     stats.save()
 
     if fantasy_event.fantasy_type == 'winPlainMoney':
-        if fantasy_event.values is None:
-            raise Exception('FantasyEvent values is None')
+        if fantasy_event.value is None:
+            raise Exception('FantasyEvent value is None')
         
-        money_to_add = fantasy_event.values['money']
+        money_to_add = fantasy_event.value
         game.money[str(user.pk)] += money_to_add
         game.save()
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
@@ -187,15 +257,15 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         stats.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # vacio porque frontend ya sabe todo
+            fantasy_event = fantasy_event,
+            result = None
         )
     
     elif fantasy_event.fantasy_type == 'winRatioMoney':
-        if fantasy_event.values is None:
-            raise Exception('FantasyEvent values is None')
+        if fantasy_event.value is None:
+            raise Exception('FantasyEvent value is None')
 
-        ratio_to_add = fantasy_event.values['money']
+        ratio_to_add = fantasy_event.value
         previous_money = game.money[str(user.pk)]
         game.money[str(user.pk)] = int(game.money[str(user.pk)] * (1 + ratio_to_add/100))
         game.save()
@@ -204,15 +274,15 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         stats.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # vacio porque frontend ya sabe todo
+            fantasy_event = fantasy_event,
+            result = None
         )
     
     elif fantasy_event.fantasy_type == 'losePlainMoney':
-        if fantasy_event.values is None:
-            raise Exception('FantasyEvent values is None')
+        if fantasy_event.value is None:
+            raise Exception('FantasyEvent value is None')
         
-        money_to_sub = fantasy_event.values['money']
+        money_to_sub = fantasy_event.value
         game.money[str(user.pk)] -= money_to_sub
         game.save()
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
@@ -220,15 +290,15 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         stats.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # vacio porque frontend ya sabe todo
+            fantasy_event = fantasy_event,
+            result = None
         )
     
     elif fantasy_event.fantasy_type == 'loseRatioMoney':
-        if fantasy_event.values is None:
-            raise Exception('FantasyEvent values is None')
+        if fantasy_event.value is None:
+            raise Exception('FantasyEvent value is None')
 
-        ratio_to_sub = fantasy_event.values['money']
+        ratio_to_sub = fantasy_event.value
         previous_money = game.money[str(user.pk)]
         game.money[str(user.pk)] = int(game.money[str(user.pk)] * (1 - ratio_to_sub/100))
         game.save()
@@ -237,8 +307,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         stats.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # vacio porque frontend ya sabe todo
+            fantasy_event = fantasy_event,
+            result = None
         )
     
     elif fantasy_event.fantasy_type == 'breakOpponentHouse': 
@@ -254,8 +324,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         if not properties.exists():
             return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # empty, no house broken
+                fantasy_event = fantasy_event,
+                result = None
             )
         
         groups = defaultdict(list)
@@ -280,8 +350,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
                          number_demolished=1, free_demolish=True)
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = {'square': result_property.square.custom_id}
+            fantasy_event = fantasy_event,
+            result = {'square': result_property.square.custom_id}
             )
     
     elif fantasy_event.fantasy_type == 'breakOwnHouse':
@@ -295,8 +365,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         if not properties.exists():
             return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # empty, no house broken
+                fantasy_event = fantasy_event,
+                result = None # empty, no house broken
             )
         
         groups = defaultdict(list)
@@ -315,14 +385,15 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         if valid_candidates:
             target_prop : PropertyRelationship = random.choice(valid_candidates)
         else:
+            # FIXME
             raise Exception("esto no deberia pasar")
         
         result_property = _demolish_square(game=game, user=target_prop.owner, demolition_square=target_prop.square,
                          number_demolished=1, free_demolish=True)
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = {'square': result_property.square.custom_id}
+            fantasy_event = fantasy_event,
+            result = {'square': result_property.square.custom_id}
             )
 
     elif fantasy_event.fantasy_type == 'shufflePositions':
@@ -338,8 +409,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         game.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # que mire otra vez el estado y ya
+            fantasy_event = fantasy_event,
+            result = None
             )
     
     elif fantasy_event.fantasy_type == 'moveAnywhereRandom':
@@ -352,8 +423,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             game.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # que mire otra vez el estado y ya
+            fantasy_event = fantasy_event,
+            result = None
             )
 
     elif fantasy_event.fantasy_type == 'moveOpponentAnywhereRandom':
@@ -371,15 +442,15 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             game.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = {'target_player_pk':target_player.pk}
+            fantasy_event = fantasy_event,
+            result = {'target_player':target_player.pk}
             )
     
     elif fantasy_event.fantasy_type == 'shareMoneyAll':
-        if fantasy_event.values is None:
-            raise Exception('FantasyEvent values is None')
+        if fantasy_event.value is None:
+            raise Exception('FantasyEvent value is None')
         
-        money_to_share = fantasy_event.values['money']
+        money_to_share = fantasy_event.value
 
         opponents = game.players.exclude(pk=user.pk)
         opponents_list = list(opponents)
@@ -400,8 +471,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         game.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # que mire otra vez el estado y ya
+            fantasy_event = fantasy_event,
+            result = None
             )
     
     elif fantasy_event.fantasy_type == 'freeHouse':
@@ -414,8 +485,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         if not properties.exists():
             return FantasyResult(
-                fantasy_type=fantasy_event.fantasy_type,
-                values=None # No hay hueco para construir más casas
+                fantasy_event = fantasy_event,
+                result = None
             )
         
         groups = defaultdict(list)
@@ -439,8 +510,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
                          number_built=1, free_build=True)
 
         return FantasyResult(
-            fantasy_type=fantasy_event.fantasy_type,
-            values={'square': result_property.square.custom_id}
+            fantasy_event = fantasy_event,
+            result = {'square': result_property.square.custom_id}
         )
     
     elif fantasy_event.fantasy_type == 'goToJail':
@@ -454,24 +525,24 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         stats.save()
 
         return FantasyResult(
-            fantasy_type=fantasy_event.fantasy_type,
-            values=None
+            fantasy_event = fantasy_event,
+            result = None
         )
     
     elif fantasy_event.fantasy_type == 'sendToJail':
-        target_user = random.choice(game.players.exclude(pk=user.pk))
+        target_player = random.choice(game.players.exclude(pk=user.pk))
         jail_id = _get_jail_square().custom_id
-        game.positions[str(target_user.pk)] = jail_id
-        game.jail_remaining_turns[str(target_user.pk)] = 3
+        game.positions[str(target_player.pk)] = jail_id
+        game.jail_remaining_turns[str(target_player.pk)] = 3
         game.save()
 
-        stats = PlayerGameStatistic.objects.get(user=target_user,game=game)
+        stats = PlayerGameStatistic.objects.get(user=target_player,game=game)
         stats.times_in_jail += 1
         stats.save()
 
         return FantasyResult(
-            fantasy_type=fantasy_event.fantasy_type,
-            values={'target_user':target_user.pk}
+            fantasy_event = fantasy_event,
+            result = {'target_player':target_player.pk}
         )
     
     elif fantasy_event.fantasy_type == 'everybodyToJail':
@@ -486,8 +557,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         game.save()
 
         return FantasyResult(
-            fantasy_type=fantasy_event.fantasy_type,
-            values=None
+            fantasy_event = fantasy_event,
+            result = None
         )
     
     elif fantasy_event.fantasy_type == 'doubleOrNothing':
@@ -505,8 +576,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         game.save()
 
         return FantasyResult(
-            fantasy_type=fantasy_event.fantasy_type,
-            values={'doubled': r}
+            fantasy_event = fantasy_event,
+            result = {'doubled': r}
         )
         
     
@@ -519,8 +590,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         game.save()
 
         return FantasyResult(
-            fantasy_type=fantasy_event.fantasy_type,
-            values=None
+            fantasy_event = fantasy_event,
+            result = None
         )
     
     elif fantasy_event.fantasy_type == 'reviveProperty':
@@ -530,8 +601,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         if not properties.exists():
             return FantasyResult(
-            fantasy_type=fantasy_event.fantasy_type,
-            values=None
+                fantasy_event = fantasy_event,
+                result = None
             )
 
         target = random.choice(properties)
@@ -539,8 +610,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         result = _unset_mortgage(user=user,game=game,target_square=target.square,free_unset_mortgage=True)
 
         return FantasyResult(
-            fantasy_type=fantasy_event.fantasy_type,
-            values={'square': result.square.custom_id}
+                fantasy_event = fantasy_event,
+                result = {'square': result.square.custom_id}
             )
 
     
@@ -552,9 +623,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         if not properties.exists():
             return FantasyResult(
-            fantasy_type=fantasy_event.fantasy_type,
-            values=None
-        )
+                fantasy_event = fantasy_event,
+                result = None
+                )
 
         demolished_houses = []
 
@@ -564,15 +635,15 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             demolished_houses.append(result_property.square.custom_id)
 
         return FantasyResult(
-            fantasy_type=fantasy_event.fantasy_type,
-            values={'squares': demolished_houses}
+            fantasy_event = fantasy_event,
+            result = {'squares': demolished_houses}
         )
     
     elif fantasy_event.fantasy_type == 'everybodySendsYouMoney':
-        if fantasy_event.values is None:
-            raise Exception('FantasyEvent values is None')
+        if fantasy_event.value is None:
+            raise Exception('FantasyEvent value is None')
         
-        money_to_share = fantasy_event.values['money']
+        money_to_share = fantasy_event.value
 
         opponents = game.players.exclude(pk=user.pk)
         opponents_list = list(opponents)
@@ -592,8 +663,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         game.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # que mire otra vez el estado el frontend
+            fantasy_event = fantasy_event,
+            result = None
             )
     
     elif fantasy_event.fantasy_type == 'magnetism':
@@ -606,8 +677,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         game.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # que mire otra vez el estado y ya
+            fantasy_event = fantasy_event,
+            result = None
             )
 
     elif fantasy_event.fantasy_type == 'goToStart':
@@ -625,12 +696,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             game.save()
 
         return FantasyResult(
-            fantasy_type = fantasy_event.fantasy_type,
-            values = None # que mire otra vez el estado y ya
+            fantasy_event = fantasy_event,
+            result = None
             )
-    else: # caso imposible presuntamente
-        return FantasyResult(
-            fantasy_type = None,
-            values = None
-            )
+    else: 
+        raise GameLogicError(f"undefined fantasy event: {fantasy_event.fantasy_type}")
 

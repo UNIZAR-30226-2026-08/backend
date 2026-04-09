@@ -399,16 +399,18 @@ class GameManager:
         new_fantasy = None
 
         if not generate:
-            apply_fantasy_event(game, user, fantasy_event)
-            response.fantasy_event = fantasy_event
+            fantasy_result = apply_fantasy_event(game, user, fantasy_event)
+            fantasy_result.save()
+            response.fantasy_result = fantasy_result
             game.fantasy_event = None
             
         else:
             new_fantasy = FantasyEventFactory.generate()
-            apply_fantasy_event(game, user, new_fantasy)
-            response.fantasy_event = new_fantasy
+            new_fantasy.save()
+            fantasy_result = apply_fantasy_event(game, user, new_fantasy)
+            fantasy_result.save()
+            response.fantasy_result = fantasy_result
             game.fantasy_event = None
-            
         
         if game.streak == 0:
             game.phase = GameManager.BUSINESS

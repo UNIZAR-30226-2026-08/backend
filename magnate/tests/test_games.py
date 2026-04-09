@@ -780,7 +780,7 @@ class GamesTest(TestCase):
         # Setup initial event
         initial_event = FantasyEvent.objects.create(
             fantasy_type='winPlainMoney', 
-            values={'money': 100}, 
+            value=100, 
             card_cost=50
         )
         
@@ -805,14 +805,14 @@ class GamesTest(TestCase):
         # Setup initial event (this one should NOT be applied)
         initial_event = FantasyEvent.objects.create(
             fantasy_type='losePlainMoney', 
-            values={'money': 100}, 
+            value=100,
             card_cost=50
         )
         
         # Mock the "other" event that will be generated
         other_event = FantasyEvent(
             fantasy_type='winPlainMoney', 
-            values={'money': 200}, 
+            value=200, 
             card_cost=50
         )
         mock_generate.return_value = other_event
@@ -1031,7 +1031,7 @@ class GamesTest(TestCase):
         """P1 triggers a fantasy event: num_fantasy_events increments"""
         event = FantasyEvent.objects.create(
             fantasy_type='winPlainMoney',
-            values={'money': 100},
+            value=100,
             card_cost=50
         )
         self.game.phase = GameManager.CHOOSE_FANTASY

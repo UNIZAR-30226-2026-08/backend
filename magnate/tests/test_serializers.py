@@ -402,19 +402,19 @@ class SerializerTest(TestCase):
 ##############################################################################fantsy serializers
     def test_fantasy_event(self):
         fantasyEvent1 = FantasyEvent(fantasy_type='winPlainMoney',
-                                         values={'money':1}, card_cost=2)
+                                         value=1, card_cost=2)
         fantasyEvent2 = FantasyEventFactory.generate()
 
         data = FantasyEventSerializer(fantasyEvent1).data
         assert isinstance(data,dict)
 
         self.assertEqual(data['fantasy_type'],'winPlainMoney')
-        self.assertEqual(data['values']['money'],1)
+        self.assertEqual(data['value'],1)
         self.assertEqual(data['card_cost'],2)
 
         data2 = FantasyEventSerializer(fantasyEvent2).data
         assert isinstance(data2,dict)
 
         self.assertEqual(data2['fantasy_type'],fantasyEvent2.fantasy_type)
-        self.assertEqual(data2['values'],fantasyEvent2.values)
+        self.assertEqual(data2['value'],fantasyEvent2.value)
         self.assertEqual(data2['card_cost'],fantasyEvent2.card_cost)

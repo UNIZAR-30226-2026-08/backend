@@ -327,12 +327,13 @@ class GeneralActionSerializer(serializers.ModelSerializer):
 class FantasyEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = FantasyEvent
-        fields = ['fantasy_type','values','card_cost']
+        fields = ['fantasy_type', 'value', 'card_cost']
 
 class FantasyResultSerializer(serializers.ModelSerializer):
+    fantasy_event = FantasyEventSerializer(read_only=True)
     class Meta:
         model = FantasyResult
-        fields = ['fantasy_type','values']
+        fields = ['fantasy_event', 'result']
 
 ###############################################################################
 ############      Response serializers     ####################################
@@ -362,7 +363,7 @@ class ResponseChooseSquareSerializer(serializers.ModelSerializer):
         model = ResponseChooseSquare
 
 class ResponseChooseFantasySerializer(serializers.ModelSerializer):
-    fantasy_event = FantasyEventSerializer(read_only=True)
+    fantasy_result = FantasyResultSerializer(read_only=True)
     class Meta(ResponseSerializer.Meta):
         model = ResponseChooseFantasy
 

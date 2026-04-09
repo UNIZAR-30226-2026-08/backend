@@ -20,31 +20,29 @@ class FantasyEventFactory:
 
         Cost / value summary by type:
 
-        +-------------------------------+----------+---------------------------+
-        | Type                          | Cost     | Value options             |
-        +===============================+==========+===========================+
-        | winPlainMoney                 | 130      | 20, 60, 120, 150, 200     |
-        | winRatioMoney                 | 500      | 1, 2, 5, 10 (%)           |
-        | losePlainMoney                | 80       | 40, 80, 120, 150, 200     |
-        | loseRatioMoney                | 30       | 1, 2, 5, 10 (%)           |
-        | shareMoneyAll                 | 5        | 20, 30, 50                |
-        | everybodySendsYouMoney        | 120      | 20, 30, 50                |
-        | doubleOrNothing               | 50       | —                         |
-        | getParkingMoney               | 500      | —                         |
-        | goToJail                      | 25       | —                         |
-        | sendToJail                    | 80       | —                         |
-        | everybodyToJail               | 50       | —                         |
-        | shufflePositions              | 50       | —                         |
-        | moveAnywhereRandom            | 50       | —                         |
-        | moveOpponentAnywhereRandom    | 60       | —                         |
-        | magnetism                     | 100      | —                         |
-        | goToStart                     | 90       | —                         |
-        | breakOpponentHouse            | 150      | —                         |
-        | breakOwnHouse                 | 30       | —                         |
-        | freeHouse                     | 80       | —                         |
-        | reviveProperty                | 100      | —                         |
-        | earthquake                    | 200      | —                         |
-        +-------------------------------+----------+---------------------------+
+        | Type                          | Cost | Value options             |
+        | ----------------------------- | ---- | ------------------------- |
+        | winPlainMoney                 | 130  | 20, 60, 120, 150, 200     |
+        | winRatioMoney                 | 500  | 1, 2, 5, 10 (%)           |
+        | losePlainMoney                | 80   | 40, 80, 120, 150, 200     |
+        | loseRatioMoney                | 30   | 1, 2, 5, 10 (%)           |
+        | shareMoneyAll                 | 5    | 20, 30, 50                |
+        | everybodySendsYouMoney        | 120  | 20, 30, 50                |
+        | doubleOrNothing               | 50   | —                         |
+        | getParkingMoney               | 500  | —                         |
+        | goToJail                      | 25   | —                         |
+        | sendToJail                    | 80   | —                         |
+        | everybodyToJail               | 50   | —                         |
+        | shufflePositions              | 50   | —                         |
+        | moveAnywhereRandom            | 50   | —                         |
+        | moveOpponentAnywhereRandom    | 60   | —                         |
+        | magnetism                     | 100  | —                         |
+        | goToStart                     | 90   | —                         |
+        | breakOpponentHouse            | 150  | —                         |
+        | breakOwnHouse                 | 30   | —                         |
+        | freeHouse                     | 80   | —                         |
+        | reviveProperty                | 100  | —                         |
+        | earthquake                    | 200  | —                         |
 
         Returns:
             FantasyEvent: A new, unsaved ``FantasyEvent`` instance with ``fantasy_type``,

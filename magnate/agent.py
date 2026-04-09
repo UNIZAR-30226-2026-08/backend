@@ -157,11 +157,11 @@ class Agent:
         money = self.game.money[str(self.user.pk)]
     
         if isinstance(current_square, TramSquare):
-            actions.append(ActionTakeTram(game=self.game, player=self.user, square=current_square))
+            actions.append(ActionNextPhase(game=self.game, player=self.user))
             other_trams = TramSquare.objects.exclude(custom_id=current_square.custom_id)
-            for tram in other_trams:
-                if money >= tram.buy_price:
-                    actions.append(ActionTakeTram(game=self.game, player=self.user, square=tram))
+            if money >= current_square.buy_price:
+                for tram in other_trams:
+                        actions.append(ActionTakeTram(game=self.game, player=self.user, square=tram))
             return actions
     
         is_buyable = isinstance(current_square, (PropertySquare, ServerSquare, BridgeSquare))

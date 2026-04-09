@@ -676,7 +676,7 @@ class Response(models.Model):
     active_phase_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_phase_to_play')
     active_turn_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_turns_to_play')
     phase = models.CharField(choices=Game.GamePhase, max_length=20)
-    positions = models.JSONField(default=dict, blank=True)
+    positions = models.JSONField(default=dict, blank=True) # user -> cumtom_id (int)
 
 class ResponseSkipPhase(Response):
     """

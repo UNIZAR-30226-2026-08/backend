@@ -34,6 +34,7 @@ class Agent:
     """
     AI Agent that calculates the Expected Value (EV) of possible actions 
     and chooses the optimal move based on its assigned difficulty level (epsilon).
+    Bot level options are "very_easy", "easy", "medium", "hard", "very_hard", and "expert".
     """
 
     ################################################################################

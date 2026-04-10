@@ -303,7 +303,7 @@ class Auction(models.Model):
     is_tie = models.BooleanField(default=False)
 
 class PropertyRelationship(models.Model):
-    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='PropertyRelationship_in_game')
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='property_relationships')
     owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by') # type: ignore
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='owned_square')
 

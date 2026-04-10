@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.core.management import call_command
 from magnate.models import BaseSquare
-from magnate.serializers import GeneralSquareSerializer, GeneralActionSerializer, FantasyEventSerializer
+from magnate.serializers import *
 from magnate.models import *
 from django.utils import timezone
 from magnate.fantasy import FantasyEventFactory
@@ -418,3 +418,4 @@ class SerializerTest(TestCase):
         self.assertEqual(data2['fantasy_type'],fantasyEvent2.fantasy_type)
         self.assertEqual(data2['value'],fantasyEvent2.value)
         self.assertEqual(data2['card_cost'],fantasyEvent2.card_cost)
+

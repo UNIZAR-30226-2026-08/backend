@@ -9,6 +9,27 @@ class SquareCustomIdField(serializers.SlugRelatedField):
         super().__init__(slug_field='custom_id', queryset=BaseSquare.objects.all(), **kwargs)
 
 ###############################################################################
+#############      Property relationship serializers     ######################
+###############################################################################
+class PropertyRelationshipSerializer(serializers.ModelSerializer):
+    """
+    Example:
+        ```json
+        {
+            "owner": 1, 
+            "square": 3, 
+            "houses": 2, 
+            "mortgage": False
+        }
+        ```
+    """
+    class Meta:
+        model = PropertyRelationship
+        # Does not serialize game
+        fields = ['owner', 'square', 'houses', 'mortgage']
+
+
+###############################################################################
 #############      Game serializers     #######################################
 ###############################################################################
 
@@ -36,10 +57,15 @@ class GameStatusSerializer(serializers.ModelSerializer):
             "current_auction": null,
             "finished": false,
             "bonus_response": null,
-            "current_turn": 5
+            "current_turn": 5,
+            "property_relationships": [
+                {"owner": 1, "square": 3, "houses": 2, "mortgage": False},
+                {"owner": 2, "square": 4, "houses": 3, "mortgage": False}
+                ],
         }
         ```
     """
+    property_relationships = PropertyRelationshipSerializer(many=True, read_only=True)
     class Meta:
         model = Game
         exclude = ['kick_out_task_id', 'next_phase_task_id']

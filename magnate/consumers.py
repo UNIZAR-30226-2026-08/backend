@@ -1192,14 +1192,16 @@ class GameConsumer(AsyncWebsocketConsumer):
                 await self.send_error("Acción no válida en la fase actual.")
                 return
 
-            # Broadcast action
-            await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    'type': 'game_action_event',
-                    'data': data
-                }
-            )
+            # Broadcast action if not an ActionBid
+            # TODO: Expand to a list if necessary
+            if not isinstance(action, ActionBid):
+                await self.channel_layer.group_send(
+                    self.game_group_name,
+                    {
+                        'type': 'game_action_event',
+                        'data': data
+                    }
+                )
             
             response_data = await database_sync_to_async(lambda: GeneralResponseSerializer(response).data)()
             

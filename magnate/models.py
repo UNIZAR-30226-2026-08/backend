@@ -754,7 +754,8 @@ class ResponseAuction(Response):
       "auction": 12,
       "winner": 1,
       "final_amount": 350,
-      "is_tie": false
+      "is_tie": false,
+      "bids": {1: 100, 2: 200}
     }
     ```
     """
@@ -771,6 +772,10 @@ class ResponseAuction(Response):
     @property
     def is_tie(self):
         return self.auction.is_tie
+
+    @property
+    def bids(self):
+        return self.auction.bids
     
 class ResponseBonus(Response):
     """

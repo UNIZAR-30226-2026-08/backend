@@ -198,7 +198,7 @@ class Game(models.Model):
             representing the strict turn order of the game.
         streak (IntegerField): Tracks consecutive identical dice rolls (e.g., rolling doubles). 
             Usually triggers jail time if it hits 3.
-        possible_destinations (JSONField): Maps a target `square_id` (str) to the `dice_combination` (int) 
+        possible_destinations (JSONField list): Maps a target `square_id` (str) to the `dice_combination` (int) 
             required to get there. Used when a player has multiple routing options (e.g., taking a tram).
         parking_money (PositiveIntegerField): The accumulated jackpot for landing on the "Free Parking" equivalent.
         jail_remaining_turns (JSONField): Maps a player's user ID (str/int) to the number of turns (int) 
@@ -275,7 +275,7 @@ class Game(models.Model):
     ordered_players = models.JSONField(default=list)
     streak = models.IntegerField(default=0)
     #dict[string,int], key=square_id, value=dice_combination to get there
-    possible_destinations = models.JSONField(default=dict, blank=True)
+    possible_destinations = models.JSONField(default=list, blank=True)
     parking_money = models.PositiveIntegerField(default=0)
     # Maps user_id -> uint
     jail_remaining_turns = models.JSONField(default=dict, blank=True)
@@ -407,22 +407,6 @@ class ActionBuySquare(Action):
     ```
     """
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bought')
-
-class ActionSellSquare(Action):
-    """
-    Action to sell a property.
-
-    Frontend Request Payload Example:
-    ```json
-    {
-      "type": "ActionSellSquare",
-      "game": 1,
-      "player": 2,
-      "square": 15
-    }
-    ```
-    """
-    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='sold')
 
 class ActionBuild(Action):
     """
@@ -751,7 +735,6 @@ class ResponseAuction(Response):
       "active_phase_player": 1,
       "active_turn_player": 2,
       "phase": "management",
-      "auction": 12,
       "winner": 1,
       "final_amount": 350,
       "is_tie": false,

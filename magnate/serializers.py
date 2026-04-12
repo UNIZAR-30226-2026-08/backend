@@ -35,6 +35,8 @@ class PropertyRelationshipSerializer(serializers.ModelSerializer):
 
 class GameStatusSerializer(serializers.ModelSerializer):
     """
+    Serializes the game status allowing reconnection. It excludes certain
+    fields from Game model and also includes active `property_relationships`.
     Example:
         A standard serialized response during the 'roll_the_dices' phase:
         ```json
@@ -49,12 +51,9 @@ class GameStatusSerializer(serializers.ModelSerializer):
             "players": [42, 85],
             "ordered_players": [42, 85],
             "streak": 0,
-            "possible_destinations": {},
+            "possible_destinations": [],
             "parking_money": 200,
-            "jail_remaining_turns": {},
-            "proposal": null,
-            "fantasy_event": null,
-            "current_auction": null,
+            "jail_remaining_turns": {'2': 3},
             "finished": false,
             "bonus_response": null,
             "current_turn": 5,
@@ -68,7 +67,9 @@ class GameStatusSerializer(serializers.ModelSerializer):
     property_relationships = PropertyRelationshipSerializer(many=True, read_only=True)
     class Meta:
         model = Game
-        exclude = ['kick_out_task_id', 'next_phase_task_id']
+        exclude = ['proposal', 'fantasy_event', 'current_auction',
+                   'bonus_response',
+                   'kick_out_task_id', 'next_phase_task_id']
 
 ###############################################################################
 #############      Square serializers     #####################################
@@ -186,12 +187,6 @@ class ActionBuySquareSerializer(ActionSerializer):
         model = ActionBuySquare
         fields = ActionSerializer.Meta.fields + ['square']
 
-class ActionSellSquareSerializer(ActionSerializer):
-    square = SquareCustomIdField()
-    class Meta(ActionSerializer.Meta):
-        model = ActionSellSquare
-        fields = ActionSerializer.Meta.fields + ['square']
-
 class ActionBuildSerializer(ActionSerializer):
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
@@ -293,7 +288,6 @@ class GeneralActionSerializer(serializers.ModelSerializer):
         'ActionMoveTo': ActionMoveToSerializer,
         'ActionTakeTram': ActionTakeTramSerializer,
         'ActionBuySquare': ActionBuySquareSerializer,
-        'ActionSellSquare': ActionSellSquareSerializer,
         'ActionBuild': ActionBuildSerializer,
         'ActionDemolish': ActionDemolishSerializer,
         'ActionChooseCard': ActionChooseCardSerializer,
@@ -373,6 +367,7 @@ class ResponseAuctionSerializer(ResponseSerializer):
     auction = AuctionSerializer()
     class Meta(ResponseSerializer.Meta):
         model = ResponseAuction
+        exclude = ['auction']
 
 class ResponseMovementSerializer(serializers.ModelSerializer):
     class Meta(ResponseSerializer.Meta):

@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+
+<html data-bs-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Actions - Magnate Backend API Documentation</title>
+<link href="../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../css/fontawesome.min.css" rel="stylesheet"/>
+<link href="../css/brands.min.css" rel="stylesheet"/>
+<link href="../css/solid.min.css" rel="stylesheet"/>
+<link href="../css/v4-font-face.min.css" rel="stylesheet"/>
+<link href="../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" id="hljs-light" rel="stylesheet"/>
+<link disabled="" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" id="hljs-dark" rel="stylesheet"/>
+<link href="../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<link href="../docs/doc_api.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="..">Magnate Backend API Documentation</a>
+<!-- Expander button -->
+<button aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbar-collapse" data-bs-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="nav-item">
+<a class="nav-link" href="..">Home</a>
+</li>
+<li class="nav-item dropdown">
+<a aria-current="page" aria-expanded="false" class="nav-link dropdown-toggle active" data-bs-toggle="dropdown" href="#" role="button">Integration</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../websockets/">WebSockets (Real-time)</a>
+</li>
+<li>
+<a class="dropdown-item" href="../game/">Game</a>
+</li>
+<li>
+<a aria-current="page" class="dropdown-item active" href="./">Actions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../responses/">Responses</a>
+</li>
+<li>
+<a class="dropdown-item" href="../fantasy_events/">Fantasy events</a>
+</li>
+</ul>
+</li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">Technical reference</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../games/">Game logic</a>
+</li>
+<li>
+<a class="dropdown-item" href="../exceptions/">Exceptions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../agent_heuristics/">Agent heuristics</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ms-md-auto">
+<li class="nav-item">
+<a class="nav-link" data-bs-target="#mkdocs_search_modal" data-bs-toggle="modal" href="#">
+<i class="fa fa-search"></i> Search
+                            </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../game/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../responses/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-bs-target="#toc-collapse" data-bs-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-body-tertiary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="1"><a class="nav-link" href="#actions">Actions</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models">models</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.Action">Action</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionThrowDices">ActionThrowDices</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionMoveTo">ActionMoveTo</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionTakeTram">ActionTakeTram</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionDropPurchase">ActionDropPurchase</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionBuySquare">ActionBuySquare</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionBuild">ActionBuild</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionDemolish">ActionDemolish</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionChooseCard">ActionChooseCard</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionSurrender">ActionSurrender</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionTradeProposal">ActionTradeProposal</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionTradeAnswer">ActionTradeAnswer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionMortgageSet">ActionMortgageSet</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionMortgageUnset">ActionMortgageUnset</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionPayBail">ActionPayBail</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionNextPhase">ActionNextPhase</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionBid">ActionBid</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="actions">Actions</h1>
+<div class="doc doc-object doc-module">
+<a id="magnate.models"></a>
+<div class="doc doc-contents first">
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.Action">
+<code>Action</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="django.db.models.Model">Model</span></code></p>
+<p>Represents generic action, so every action shares these fields</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "Action",
+  "game": 1,
+  "player": 2,
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class Action(models.Model):
+    """
+    Represents generic action, so every action shares these fields
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "Action",
+      "game": 1,
+      "player": 2,
+    }
+    ```
+    """
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='in_game')
+    player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='made_by')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionThrowDices">
+<code>ActionThrowDices</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to throw the dices. It is basically empty.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionThrowDices",
+  "game": 1,
+  "player": 2,
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionThrowDices(Action):
+    """
+    Action to throw the dices. It is basically empty.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionThrowDices",
+      "game": 1,
+      "player": 2,
+    }
+    ```
+    """
+    pass</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionMoveTo">
+<code>ActionMoveTo</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to move to a square. </p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionThrowDices",
+  "game": 1,
+  "player": 2,
+  "square": 101,
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionMoveTo(Action):
+    """
+    Action to move to a square. 
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionThrowDices",
+      "game": 1,
+      "player": 2,
+      "square": 101,
+    }
+    ```
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='move_to')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionTakeTram">
+<code>ActionTakeTram</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to take the tram when possible</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionTakeTram",
+  "game": 1,
+  "player": 2,
+  "square": 200,
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionTakeTram(Action):
+    """
+    Action to take the tram when possible
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionTakeTram",
+      "game": 1,
+      "player": 2,
+      "square": 200,
+    }
+    ```
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='tram_move_to')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionDropPurchase">
+<code>ActionDropPurchase</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to decline purchasing a property.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionDropPurchase",
+  "game": 1,
+  "player": 2,
+  "square": 15
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionDropPurchase(Action):
+    """
+    Action to decline purchasing a property.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionDropPurchase",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='dropped')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionBuySquare">
+<code>ActionBuySquare</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to buy an unowned property.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionBuySquare",
+  "game": 1,
+  "player": 2,
+  "square": 15
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionBuySquare(Action):
+    """
+    Action to buy an unowned property.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionBuySquare",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bought')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionBuild">
+<code>ActionBuild</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to build houses/hotels on a property.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionBuild",
+  "game": 1,
+  "player": 2,
+  "houses": 1,
+  "square": 12
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionBuild(Action):
+    """
+    Action to build houses/hotels on a property.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionBuild",
+      "game": 1,
+      "player": 2,
+      "houses": 1,
+      "square": 12
+    }
+    ```
+    """
+    houses = models.IntegerField(default=1)
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='build_square')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionDemolish">
+<code>ActionDemolish</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to demolish houses/hotels on a property.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionDemolish",
+  "game": 1,
+  "player": 2,
+  "houses": 1,
+  "square": 12
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionDemolish(Action):
+    """
+    Action to demolish houses/hotels on a property.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionDemolish",
+      "game": 1,
+      "player": 2,
+      "houses": 1,
+      "square": 12
+    }
+    ```
+    """
+    houses = models.IntegerField(default=0)
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='demolish_square')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionChooseCard">
+<code>ActionChooseCard</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to interact with or draw a fantasy card.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionChooseCard",
+  "game": 1,
+  "player": 2,
+  "chosen_revealed_card": true
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionChooseCard(Action):
+    """
+    Action to interact with or draw a fantasy card.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionChooseCard",
+      "game": 1,
+      "player": 2,
+      "chosen_revealed_card": true
+    }
+    ```
+    """
+    chosen_revealed_card = models.BooleanField(default=False)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionSurrender">
+<code>ActionSurrender</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to quit/surrender the game. It is empty.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionSurrender",
+  "game": 1,
+  "player": 2
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionSurrender(Action):
+    """
+    Action to quit/surrender the game. It is empty.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionSurrender",
+      "game": 1,
+      "player": 2
+    }
+    ```
+    """
+    pass</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionTradeProposal">
+<code>ActionTradeProposal</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to propose a trade to another player.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionTradeProposal",
+  "game": 1,
+  "player": 2,
+  "destination_user": 3,
+  "offered_money": 200,
+  "asked_money": 0,
+  "offered_properties": [5, 6],
+  "asked_properties": [12]
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionTradeProposal(Action):
+    """
+    Action to propose a trade to another player.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionTradeProposal",
+      "game": 1,
+      "player": 2,
+      "destination_user": 3,
+      "offered_money": 200,
+      "asked_money": 0,
+      "offered_properties": [5, 6],
+      "asked_properties": [12]
+    }
+    ```
+    """
+    destination_user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='destination_user')
+    offered_money = models.PositiveIntegerField(default=0)
+    asked_money = models.PositiveIntegerField(default=0)
+    offered_properties = models.ManyToManyField('PropertyRelationship', related_name='offered_properties')
+    asked_properties = models.ManyToManyField('PropertyRelationship', related_name='asked_properties')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionTradeAnswer">
+<code>ActionTradeAnswer</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to accept or decline a trade proposal.
+choose = True if trade was accepted</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionTradeAnswer",
+  "game": 1,
+  "player": 2,
+  "choose": true,
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionTradeAnswer(Action):
+    """
+    Action to accept or decline a trade proposal.
+    choose = True if trade was accepted
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionTradeAnswer",
+      "game": 1,
+      "player": 2,
+      "choose": true,
+    }
+    ```
+    """
+    choose = models.BooleanField(default=False)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionMortgageSet">
+<code>ActionMortgageSet</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to mortgage a property.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionMortgageSet",
+  "game": 1,
+  "player": 2,
+  "square": 15
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionMortgageSet(Action):
+    """
+    Action to mortgage a property.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionMortgageSet",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='mortgage_set_square')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionMortgageUnset">
+<code>ActionMortgageUnset</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to lift a mortgage from a property.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionMortgageUnset",
+  "game": 1,
+  "player": 2,
+  "square": 15
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionMortgageUnset(Action):
+    """
+    Action to lift a mortgage from a property.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionMortgageUnset",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='mortgage_unset_square')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionPayBail">
+<code>ActionPayBail</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to pay the bail fee to get out of jail. It is empty.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionPayBail",
+  "game": 1,
+  "player": 2
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionPayBail(Action):
+    """
+    Action to pay the bail fee to get out of jail. It is empty.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionPayBail",
+      "game": 1,
+      "player": 2
+    }
+    ```
+    """
+    pass</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionNextPhase">
+<code>ActionNextPhase</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to transition to the next game phase or end turn. It is empty.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionNextPhase",
+  "game": 1,
+  "player": 2
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionNextPhase(Action):
+    """
+    Action to transition to the next game phase or end turn. It is empty.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionNextPhase",
+      "game": 1,
+      "player": 2
+    }
+    ```
+    """
+    pass</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.ActionBid">
+<code>ActionBid</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="Action (magnate.models.Action)">Action</a></code></p>
+<p>Action to place a bid on a property auction.</p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionBid",
+  "game": 1,
+  "player": 2,
+  "auction": 4,
+  "amount": 150
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionBid(Action):
+    """
+    Action to place a bid on a property auction.
+
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionBid",
+      "game": 1,
+      "player": 2,
+      "auction": 4,
+      "amount": 150
+    }
+    ```
+    """
+    amount = models.PositiveIntegerField(default=0)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script src="../js/base.js"></script>
+<script src="../search/main.js"></script>
+<div aria-hidden="true" aria-labelledby="searchModalLabel" class="modal" id="mkdocs_search_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="searchModalLabel">Search</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p>From here you can search these documents. Enter your search terms below.</p>
+<form>
+<div class="form-group">
+<input class="form-control" id="mkdocs-search-query" placeholder="Search..." title="Type search term here" type="search"/>
+</div>
+</form>
+<div data-no-results-text="No results found" id="mkdocs-search-results"></div>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div><div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

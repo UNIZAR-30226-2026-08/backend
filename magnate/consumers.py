@@ -112,6 +112,17 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
     QUEUE_GROUP = "public_queue"
 
     async def connect(self):
+        """
+        Handles initial WebSocket connection.
+        Validates authentication, accepts the connection, adds the user to the 
+        public queue group, and triggers matchmaking logic.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         scope_user = self.scope.get('user')
         if scope_user is None or getattr(scope_user, 'is_anonymous', True):
             await self.close(code=4002)
@@ -140,6 +151,17 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
                 )
         
     async def disconnect(self, close_code):
+        """
+        Handles WebSocket disconnection.
+        Removes the user from the public queue group and the database queue 
+        unless they were disconnected because a match was found.
+
+        Args:
+            close_code (int): The WebSocket close code.
+
+        Returns:
+            None
+        """
         await self.channel_layer.group_discard(self.QUEUE_GROUP, self.channel_name)
         
         if close_code == 4001:
@@ -151,6 +173,16 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             await self.remove_user_from_queue(self.user)
 
     async def receive(self, text_data):
+        """
+        Processes incoming messages from the client.
+        Currently only supports the 'cancel' action to leave the queue.
+
+        Args:
+            text_data (str): The raw JSON string received.
+
+        Returns:
+            None
+        """
         try:
             data = json.loads(text_data)
             if data.get('action') == 'cancel':
@@ -159,12 +191,31 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             await self.send_error("Datos invalidos.")
 
     async def match_found_event(self, event):
+        """
+        Handler for the 'match_found_event' broadcast.
+        Sends the game ID to the client.
+
+        Args:
+            event (dict): The event payload containing 'game_id'.
+
+        Returns:
+            None
+        """
         await self.send(text_data=json.dumps({
             'action': 'match_found',
             'game_id': event['game_id']
         }))
 
     async def send_error(self, message):
+        """
+        Utility method to send an error message to the client.
+
+        Args:
+            message (str): The error message to be sent.
+
+        Returns:
+            None
+        """
         await self.send(text_data=json.dumps({
             'action': 'error',
             'message': message
@@ -174,6 +225,16 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
 # ---------------- DB access methods --------------#
     @database_sync_to_async
     def add_user_to_queue(self, user, channel_name):
+        """
+        Adds a user to the PublicQueuePosition table if they are not already present.
+
+        Args:
+            user (CustomUser): The user to add.
+            channel_name (str): The specific channel name for this connection.
+
+        Returns:
+            None
+        """
         existing_position = PublicQueuePosition.objects.filter(user=user).first()
         if existing_position:
             # User already in queue, don't add again
@@ -190,6 +251,15 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def remove_user_from_queue(self, user):
+        """
+        Removes a user's entry from the PublicQueuePosition table.
+
+        Args:
+            user (CustomUser): The user to remove.
+
+        Returns:
+            None
+        """
         existing_position =  PublicQueuePosition.objects.filter(user=user).first()
         if existing_position:
             existing_position.delete()
@@ -461,6 +531,17 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
     ```
     """
     async def connect(self):
+        """
+        Handles initial WebSocket connection to a private room lobby.
+        Validates authentication and room code, accepts the connection, and 
+        notifies the group of the new player.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         # Triggered when user opens a new private room or joins an existing one.
         scope_user = self.scope.get('user')
         if scope_user is None or getattr(scope_user, 'is_anonymous', True):
@@ -523,6 +604,16 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         )
 
     async def disconnect(self, close_code):
+        """
+        Handles WebSocket disconnection from the private lobby.
+        Removes the user from the group and handles host migration or room deletion.
+
+        Args:
+            close_code (int): The WebSocket close code.
+
+        Returns:
+            None
+        """
         # Triggered when user leaves the private room lobby.
         # If owner leaves -> change host to the second older player. Else -> just update lobby.
         if close_code == 4002:
@@ -558,6 +649,15 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     
     async def receive(self, text_data):
+        """
+        Processes incoming messages from lobby clients (chat, ready status, start game, settings).
+
+        Args:
+            text_data (str): The raw JSON string received.
+
+        Returns:
+            None
+        """
         # Chat messages or 'start_game' command /'ready' status updates.
         if self.user is None:
             return
@@ -658,6 +758,16 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
 # -------------------- Handlers  -------------------- #
     async def lobby_update(self, event):
+        """
+        Handler for lobby status broadcasts (joined, left, ready, settings).
+        Forwards the update to the connected WebSocket client.
+
+        Args:
+            event (dict): The event dictionary containing the action and relevant data.
+
+        Returns:
+            None
+        """
         if self.user is None:
             return
         
@@ -695,6 +805,16 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_or_create_room_db(self, room_code, user):
+        """
+        Retrieves an existing room or creates a new one with the given code and owner.
+
+        Args:
+            room_code (str): The unique room identifier.
+            user (CustomUser): The user creating or retrieving the room.
+
+        Returns:
+            bool: True if a new room was created, False if it already existed.
+        """
         room = PrivateRoom.objects.filter(room_code=room_code).first()
         if not room:
             PrivateRoom.objects.create(
@@ -707,6 +827,17 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
     
     @database_sync_to_async
     def update_room_settings(self, room_code, bot_level, target_players):
+        """
+        Updates the target player count and bot difficulty level for a room.
+
+        Args:
+            room_code (str): The room identifier.
+            bot_level (str): The difficulty level for bots.
+            target_players (int): The desired total number of players.
+
+        Returns:
+            None
+        """
         room = PrivateRoom.objects.get(room_code=room_code)
         if bot_level: 
             room.bot_level = bot_level
@@ -790,6 +921,15 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
 
     async def chat_event(self, event):
+        """
+        Handler for chat messages. Sends the message content to the client.
+
+        Args:
+            event (dict): The event dictionary containing 'user' and 'message'.
+
+        Returns:
+            None
+        """
         # Send chat messages to frontend
         await self.send(text_data=json.dumps({
             'action': 'chat_message',
@@ -798,6 +938,15 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         }))
 
     async def game_start(self, event):
+        """
+        Handler for the 'game_start' event. Notifies the client that the game has begun.
+
+        Args:
+            event (dict): The event dictionary containing 'game_id'.
+
+        Returns:
+            None
+        """
         await self.send(text_data=json.dumps({
             'action': 'game_start',
             'game_id': event['game_id']
@@ -808,6 +957,16 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 # ------------------- DB access methos -------------------- #
     @database_sync_to_async
     def check_room(self, room_code):
+        """
+        Validates if a user can join a specific room.
+        Checks room existence, capacity, and if the user is already a member.
+
+        Args:
+            room_code (str): The room identifier.
+
+        Returns:
+            tuple[bool, str | None]: A tuple (can_join, error_message).
+        """
         if self.user is None:
             return False, None
         
@@ -837,6 +996,16 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def join_room_group_db(self, room_code, user):
+        """
+        Updates the database to reflect a user joining a private room.
+
+        Args:
+            room_code (str): The room identifier.
+            user (CustomUser): The user joining.
+
+        Returns:
+            list[dict]: A list of dictionary objects representing members of the room.
+        """
         current_user = CustomUser.objects.get(username=user.username)
         room = PrivateRoom.objects.get(room_code=room_code)
         
@@ -848,6 +1017,17 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def leave_room_and_update_host(self, room_code, user):
+        """
+        Updates the database when a user leaves a room.
+        Handles host migration to the next available player or room deletion if empty.
+
+        Args:
+            room_code (str): The room identifier.
+            user (CustomUser): The user leaving.
+
+        Returns:
+            dict | None: A dictionary with the new owner and player list, or None if the room was deleted.
+        """
         room = PrivateRoom.objects.filter(room_code=room_code).first()
         if not room:
             return None
@@ -873,6 +1053,17 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def update_player_ready_status(self, room_code, user, is_ready):
+        """
+        Updates the ready status of a user within a room.
+
+        Args:
+            room_code (str): The room identifier.
+            user (CustomUser): The user updating their status.
+            is_ready (bool): The new ready status.
+
+        Returns:
+            bool | None: True if updated, False if code mismatch, None if not in a room.
+        """
         user_from_db = CustomUser.objects.get(username=user.username)
 
         if user_from_db.current_private_room is None:
@@ -886,6 +1077,15 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_num_players(self, room_code):
+        """
+        Retrieves the current number of players in a private room.
+
+        Args:
+            room_code (str): The room identifier.
+
+        Returns:
+            int: The player count.
+        """
         # Return the current number of players in the room
         room = PrivateRoom.objects.get(room_code=room_code)
         if not room:
@@ -894,6 +1094,15 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def check_all_ready(self, room_code):
+        """
+        Checks if all players in a private room have set their status to ready.
+
+        Args:
+            room_code (str): The room identifier.
+
+        Returns:
+            bool: True if everyone is ready, False otherwise.
+        """
         # Check if all players in the room are ready
         room = PrivateRoom.objects.get(room_code=room_code)
         if not room:
@@ -907,6 +1116,16 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def is_owner(self, user, room_code):
+        """
+        Verifies if a specific user is the host (owner) of a private room.
+
+        Args:
+            user (CustomUser): The user to check.
+            room_code (str): The room identifier.
+
+        Returns:
+            bool: True if the user is the owner, False otherwise.
+        """
         # Check if the user is the host of the room
         room = PrivateRoom.objects.get(room_code=room_code)
         if not room:
@@ -916,6 +1135,15 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_room_owner(self, room_code):
+        """
+        Retrieves the username of the room's current owner.
+
+        Args:
+            room_code (str): The room identifier.
+
+        Returns:
+            str | None: The username of the owner, or None if not found.
+        """
         # Return the username of the room's owner
         room = PrivateRoom.objects.get(room_code=room_code)
         if not room:
@@ -927,6 +1155,15 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         return room.owner.username
 
     async def send_error(self, message):
+        """
+        Sends an error message to the client.
+
+        Args:
+            message (str): The error description.
+
+        Returns:
+            None
+        """
         await self.send(text_data=json.dumps({
             'action': 'error',
             'message': message
@@ -934,6 +1171,15 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
 @database_sync_to_async
 def validate_and_save_action(data):
+    """
+    Validates the incoming action data using GeneralActionSerializer and saves the instance.
+
+    Args:
+        data (dict): The raw action data.
+
+    Returns:
+        tuple[Action | None, dict | None]: A tuple (action_instance, error_dict).
+    """
     serializer = GeneralActionSerializer(data=data)
     
     if not serializer.is_valid():
@@ -1112,6 +1358,17 @@ class GameConsumer(AsyncWebsocketConsumer):
     ```
     """
     async def connect(self):
+        """
+        Handles initial WebSocket connection to an active game.
+        Validates participant status, accepts connection, and sends the initial 
+        full game state.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         # Triggered when user joins a specific match ID (game really begins) -> add to Redis room group.
         scope_user = self.scope.get('user')
         if scope_user is None or getattr(scope_user, 'is_anonymous', True):
@@ -1161,6 +1418,15 @@ class GameConsumer(AsyncWebsocketConsumer):
         )
 
     async def disconnect(self, close_code):
+        """
+        Handles WebSocket disconnection from the game session.
+
+        Args:
+            close_code (int): The WebSocket close code.
+
+        Returns:
+            None
+        """
         # Triggered when user leaves game -> notify opponent.
         await self.channel_layer.group_discard(
             self.game_group_name,
@@ -1256,24 +1522,60 @@ class GameConsumer(AsyncWebsocketConsumer):
 # --------------------- Handlers ---------------------- #
 
     async def game_state(self, event):
+        """
+        Handler for sending the game state to the client.
+
+        Args:
+            event (dict): The event dictionary containing 'game_state'.
+
+        Returns:
+            None
+        """
         await self.send(text_data=json.dumps({
             'event_type': 'game_state',
             'game_state': event['game_state']
         }))
 
     async def game_action_event(self, event):
+        """
+        Handler for broadcasting a game action to the client.
+
+        Args:
+            event (dict): The event dictionary containing 'data' (raw action).
+
+        Returns:
+            None
+        """
         await self.send(text_data=json.dumps({
             'event_type': 'game_action',
             'data': event['data']
         }))
 
     async def game_response_event(self, event):
+        """
+        Handler for broadcasting a game response (outcome) to the client.
+
+        Args:
+            event (dict): The event dictionary containing 'data' (serialized outcome).
+
+        Returns:
+            None
+        """
         await self.send(text_data=json.dumps({
             'event_type': 'game_response',
             'data': event['data']
         }))
 
     async def chat_message(self, event):
+        """
+        Handler for game chat messages.
+
+        Args:
+            event (dict): The event dictionary containing 'game', 'user', and 'msg'.
+
+        Returns:
+            None
+        """
         await self.send(text_data=json.dumps({
             'event_type': 'chat_message',
             'game': event['game'],
@@ -1282,6 +1584,15 @@ class GameConsumer(AsyncWebsocketConsumer):
         }))
 
     async def send_error(self, message):
+        """
+        Sends an error message to the client.
+
+        Args:
+            message (str): The error description.
+
+        Returns:
+            None
+        """
         await self.send(text_data=json.dumps({
             'event_type': 'error',
             'message': message
@@ -1291,6 +1602,16 @@ class GameConsumer(AsyncWebsocketConsumer):
 #----------------------- DB access --------------------#
     @database_sync_to_async
     def is_player_in_game(self, user, game_id):
+        """
+        Verifies if a specific user is a participant in a given game.
+
+        Args:
+            user (CustomUser): The user to check.
+            game_id (int): The primary key of the game.
+
+        Returns:
+            bool: True if the user is a participant, False otherwise.
+        """
         try:
             game = Game.objects.get(pk=game_id)
             return game.players.filter(pk=user.pk).exists()
@@ -1299,10 +1620,16 @@ class GameConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def get_game(self):
+        """
+        Retrieves the current game instance from the database.
+
+        Args:
+            None
+
+        Returns:
+            Game | None: The Game instance or None if not found.
+        """
         try:
             return Game.objects.get(pk=self.game_id)
         except Game.DoesNotExist:
             return None
-        
-
-

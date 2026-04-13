@@ -13,7 +13,20 @@ DEFAULT_WS_URL = "ws://localhost:8000"
 
 
 class GameClient:
+    """
+    CLI client for interacting with the Magnate game server via WebSockets.
+    """
     def __init__(self, base_url, token=None):
+        """
+        Initializes the GameClient.
+
+        Args:
+            base_url (str): The base WebSocket URL of the server.
+            token (str, optional): JWT access token for authentication.
+
+        Returns:
+            None
+        """
         self.base_url = base_url
         self.token = token
         self.websocket = None
@@ -25,12 +38,30 @@ class GameClient:
         self.input_queue = asyncio.Queue()
 
     async def input_worker(self):
+        """
+        Background worker that reads lines from stdin and puts them into an async queue.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         loop = asyncio.get_event_loop()
         while True:
             line = await loop.run_in_executor(None, sys.stdin.readline)
             await self.input_queue.put(line.strip())
 
     async def get_input(self, prompt):
+        """
+        Displays a prompt and waits for user input from the queue.
+
+        Args:
+            prompt (str): The message to display to the user.
+
+        Returns:
+            str: The user's input string.
+        """
         print(prompt, end='', flush=True)
         return await self.input_queue.get()
 
@@ -38,6 +69,15 @@ class GameClient:
 
     ## Gemini para hacer estas funciones
     async def listen_lobby(self, ws):
+        """
+        Continuously listens for and processes messages from the private room lobby WebSocket.
+
+        Args:
+            ws (WebSocketClientProtocol): The active WebSocket connection.
+
+        Returns:
+            None
+        """
         try:
             async for message in ws:
                 data = json.loads(message)
@@ -72,6 +112,16 @@ class GameClient:
             print(f"Error escuchando lobby: {e}")
 
     async def connect_to_private_lobby(self, mode, room_code = None):
+        """
+        Connects to a private room lobby in either 'create' or 'join' mode.
+
+        Args:
+            mode (str): Either 'create' or 'join'.
+            room_code (str, optional): The code of the room to join. If None and mode is 'create', a code is generated.
+
+        Returns:
+            int | None: The game ID if the game starts, otherwise None.
+        """
         if mode == "create" and not room_code:
             room_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
@@ -114,6 +164,15 @@ class GameClient:
         return None
     
     async def lobby_input(self, ws):
+        """
+        Processes user commands while in the private room lobby.
+
+        Args:
+            ws (WebSocketClientProtocol): The active WebSocket connection.
+
+        Returns:
+            None
+        """
         while True:
             cmd = await self.get_input("Lobby> ")
             cmd = cmd.strip()
@@ -161,6 +220,15 @@ class GameClient:
                 print("Comandos disponibles: 'chat <msg>', 'ready', 'notready', 'botlevel <nivel>', 'maxplayers <num>', 'start' (solo host), 'disconnect'")
 
     async def connect_to_queue(self):
+        """
+        Connects to the public matchmaking queue and waits for a match.
+
+        Args:
+            None
+
+        Returns:
+            int | None: The game ID if a match is found, otherwise None.
+        """
         url = f"{self.base_url}/ws/queue/public/?token={self.token}"
         print(f"Connecting to queue: {url}")
         try:
@@ -180,6 +248,16 @@ class GameClient:
             return None
 
     async def play_game(self, game_id: int, player_id: int):
+        """
+        Main gameplay loop. Connects to the specific game room and starts listener/sender tasks.
+
+        Args:
+            game_id (int): The ID of the game to join.
+            player_id (int): The ID of the player.
+
+        Returns:
+            None
+        """
         self.game_id = game_id
         self.player_id = player_id
         url = f"{self.base_url}/ws/game/{game_id}/?token={self.token}"
@@ -204,6 +282,15 @@ class GameClient:
             print(f"Game Connection Error: {e}")
             
     async def listen(self):
+        """
+        Continuously listens for and processes game state updates and broadcasts from the server.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         if not self.websocket:
             return
         
@@ -233,6 +320,7 @@ class GameClient:
                 print(f"\n{turn_status}")
 
                 # --- NUEVO: COMPROBACIÓN DE FIN DE PARTIDA O BANCARROTA ---
+                # FIXME: handle better
                 phase = self.game_state.get("phase")
                 money_dict = self.game_state.get("money", {})
 
@@ -288,6 +376,15 @@ class GameClient:
                 print(f"\nMessage from server: {message}")
 
     async def sender(self):
+        """
+        Continuously prompts the user for commands and sends corresponding actions to the server.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         if not self.websocket:
             return
         if not self.game_id:
@@ -311,6 +408,15 @@ class GameClient:
                 print(f"Error parsing command: {e}")
 
     async def parse_command(self, cmd):
+        """
+        Parses a CLI command string into a structured action dictionary.
+
+        Args:
+            cmd (str): The lower-cased command string from the user.
+
+        Returns:
+            dict | None: The action dictionary to send over the WebSocket, or None if unrecognized.
+        """
         if not self.player_id:
             self.player_id = await self.get_input("Enter your Player ID (integer): ")
         
@@ -388,6 +494,16 @@ class GameClient:
     
 
 async def main():
+    """
+    Main entry point for the game client script.
+    Parses arguments, initializes the client, and connects to a game or queue.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     parser = argparse.ArgumentParser(description="Magnate Game CLI Client")
     parser.add_argument("--url", default=DEFAULT_WS_URL, help="Base WebSocket URL (e.g. ws://localhost:8000)")
     parser.add_argument("--token", help="JWT Access token for authentication")

@@ -3,6 +3,9 @@ from django.contrib.auth.models import AbstractUser
 from polymorphic.models import PolymorphicModel
 
 class CustomUser(AbstractUser):
+    """
+    Extends the default Django user model with game-specific attributes like points, exp, elo, and piece preferences.
+    """
     username = models.CharField(max_length=40, unique=True)
     current_private_room: "PrivateRoom | None" = models.ForeignKey( 'PrivateRoom', on_delete=models.SET_NULL,  null=True,  blank=True,related_name='players') # type: ignore
     ready_to_play = models.BooleanField(default=False) # depending of the current private room could be interpreted as  ready or looking for a public game
@@ -38,11 +41,17 @@ class CustomUser(AbstractUser):
     
 
 class Bot(CustomUser):
+    """
+    Represents an AI controlled player.
+    """
     bot_level = models.CharField(max_length=20, null=True, blank=True) # "easy" /"expert" etc
     has_proposed_trade = models.BooleanField(default=False)
 
 
 class Item(models.Model):
+    """
+    Represents a purchasable cosmetic item in the shop (pieces or emojis).
+    """
     class ItemType(models.TextChoices):
         piece = 'piece'
         emoji = 'emoji'
@@ -54,11 +63,17 @@ class Item(models.Model):
 ###############################################################################
 
 class Board(models.Model):
+    """
+    Represents a game board configuration.
+    """
     # active_fantasy_cards = ...
     custom_id = models.PositiveIntegerField(default=0)
     pass
 
 class BaseSquare(PolymorphicModel):
+    """
+    Base polymorphic class for all board squares.
+    """
     custom_id = models.PositiveIntegerField(default=0)
     board = models.ForeignKey('Board',
                               on_delete=models.SET_NULL,
@@ -72,6 +87,9 @@ class BaseSquare(PolymorphicModel):
                               related_name='in_predecessors')
 
 class PropertySquare(BaseSquare):
+    """
+    Represents a buyable property square where houses can be built.
+    """
     # Change
     group = models.PositiveIntegerField(default=0)
     buy_price = models.PositiveIntegerField(default=0)
@@ -80,9 +98,15 @@ class PropertySquare(BaseSquare):
     rent_prices = models.JSONField(null=True)
 
 class FantasySquare(BaseSquare):
+    """
+    Represents a square that triggers a random fantasy event.
+    """
     pass
 
 class BridgeSquare(BaseSquare):
+    """
+    Represents a special movement square with branching successors.
+    """
     buy_price = models.PositiveIntegerField(default=0)
     rent_prices = models.JSONField(null=True)
     out_successor = models.ForeignKey('BaseSquare',
@@ -92,38 +116,65 @@ class BridgeSquare(BaseSquare):
                               related_name='out_predecessors')
 
 class TramSquare(BaseSquare):
+    """
+    Represents a tram/station square allowing fast travel to other tram squares.
+    """
     buy_price = models.PositiveIntegerField(default=0)
 
-class ParkingSquare(BaseSquare): #hendrix renting
+class ParkingSquare(BaseSquare): 
+    """
+    Represents the free parking square where accumulated taxes can be claimed.
+    """
     money = models.PositiveIntegerField(default=0)
 
 class ServerSquare(BaseSquare):
+    """
+    Represents a buyable utility square (Server).
+    """
     buy_price = models.PositiveIntegerField(default=0)
     # An int[2] array
     rent_prices = models.JSONField(null=True)
 
 class ExitSquare(BaseSquare):
+    """
+    Represents the starting square (Go) where players collect initial money.
+    """
     init_money = models.PositiveIntegerField(default=0)
 
 class GoToJailSquare(BaseSquare):
+    """
+    Represents a square that sends the player directly to jail.
+    """
     pass
 
 class JailSquare(BaseSquare):
+    """
+    Represents the jail square where players are held.
+    """
     bail_price = models.PositiveIntegerField(default=0)
 
 class JailVisitSquare(BaseSquare):
+    """
+    Represents the jail square for players who are just visiting.
+    """
     pass
 
 ###############################################################################
 
 #------ Models for Public Matchmaking Queue ------#
 class PublicQueuePosition(models.Model):
+    """
+    Represents a player's position in the public matchmaking queue.
+    """
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
     channel = models.CharField(max_length=300) 
     date_time = models.DateTimeField()
 
 #------ Models for Private Management ------#
 class PrivateRoom(models.Model):
+    """
+    Represents a private lobby room for friends to play together.
+    """
     #The one who starts the room and later the game
     owner:"CustomUser | None" = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='hosted_rooms')# type: ignore
     # Players will be linked from CustomUser.current_private_room
@@ -175,6 +226,9 @@ class FantasyEvent(models.Model):
     card_cost = models.IntegerField(default=0)
 
 class FantasyResult(models.Model):
+    """
+    Stores the result of an applied fantasy event.
+    """
     fantasy_event = models.ForeignKey(FantasyEvent, on_delete=models.SET_NULL, related_name='fantasy_event_resulted', null=True)
     result = models.JSONField(null=True)
 
@@ -294,6 +348,9 @@ class Game(models.Model):
     current_turn = models.PositiveIntegerField(default=1)
 
 class Auction(models.Model):
+    """
+    Represents an active property auction in a game.
+    """
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='auctions')
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='auctioned_in')
     bids = models.JSONField(default=dict, blank=True) #  user_id -> amount
@@ -303,6 +360,9 @@ class Auction(models.Model):
     is_tie = models.BooleanField(default=False)
 
 class PropertyRelationship(models.Model):
+    """
+    Defines the ownership link between a player and a square within a specific game.
+    """
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='property_relationships')
     owner = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='owned_by') # type: ignore
     square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='owned_square')
@@ -746,18 +806,42 @@ class ResponseAuction(Response):
 
     @property
     def winner(self):
+        """
+        Retrieves the winner of the auction.
+
+        Returns:
+            CustomUser | None: The winning user.
+        """
         return self.auction.winner
     
     @property
     def final_amount(self):
+        """
+        Retrieves the final bid amount of the auction.
+
+        Returns:
+            int: The winning bid amount.
+        """
         return self.auction.final_amount
     
     @property
     def is_tie(self):
+        """
+        Indicates if the auction ended in a tie.
+
+        Returns:
+            bool: True if tied, False otherwise.
+        """
         return self.auction.is_tie
 
     @property
     def bids(self):
+        """
+        Retrieves all bids placed during the auction.
+
+        Returns:
+            dict: Mapping of user IDs to bid amounts.
+        """
         return self.auction.bids
     
 class ResponseBonus(Response):
@@ -788,6 +872,9 @@ class ResponseBonus(Response):
 # la relacion jugador-partida ahora es esto (django pilota)
 # y puedo añadir info adicional además de la relación, las stats
 class PlayerGameStatistic(models.Model):
+    """
+    Stores various statistics for a player in a specific game session.
+    """
     user = models.ForeignKey('CustomUser', on_delete=models.CASCADE)
     game = models.ForeignKey('Game', on_delete=models.CASCADE)
     
@@ -808,6 +895,9 @@ class PlayerGameStatistic(models.Model):
         unique_together = ('user', 'game')
 
 class GameSummary(models.Model):
+    """
+    Stores a summary of a completed game, including start and end times and final wealth of participants.
+    """
     game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='summary')
     
     start_date = models.DateTimeField()
@@ -817,6 +907,9 @@ class GameSummary(models.Model):
     
 
 class BonusCategory(models.Model):
+    """
+    Defines categories for end-of-game bonuses based on player statistics.
+    """
     class StatField(models.TextChoices):
         walked_squares    = 'walked_squares'
         won_money         = 'won_money'

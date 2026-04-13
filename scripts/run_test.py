@@ -5,6 +5,16 @@ import platform
 import os
 
 def launch_terminal(command_args):
+    """
+    Attempts to launch a new terminal window running the specified command.
+    Tries common terminal emulators like kitty, foot, and xterm.
+
+    Args:
+        command_args (list[str]): The command and its arguments to run in the new terminal.
+
+    Returns:
+        None
+    """
     command_str = " ".join(command_args)
     full_command = f"{command_str}; printf '\\n--- Process Finished ---\\n'; read -p 'Press Enter to exit...'"
     print(command_str)
@@ -26,6 +36,16 @@ def launch_terminal(command_args):
     print(f"Could not launch a terminal. Run manually: {command_str}")
 
 def main():
+    """
+    Main entry point for the test runner script.
+    Parses arguments for two players and launches two client terminals in either public or private mode.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     parser = argparse.ArgumentParser(description="Run two CLI clients for testing")
     parser.add_argument("--url", default="ws://localhost:8000", help="WebSocket URL")
     parser.add_argument("--token1", help="JWT Access token for Player 1", required=True)

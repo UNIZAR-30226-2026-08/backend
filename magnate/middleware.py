@@ -7,6 +7,15 @@ from magnate.models import CustomUser
 
 @database_sync_to_async
 def get_user_from_jwt(token_string):
+    """
+    Retrieves a CustomUser instance from a provided JWT token string.
+
+    Args:
+        token_string (str): The JWT access token.
+
+    Returns:
+        CustomUser | AnonymousUser: The user instance if the token is valid, otherwise AnonymousUser.
+    """
     try:
         access_token = AccessToken(token_string)
         return CustomUser.objects.get(id=access_token['user_id'])
@@ -14,7 +23,21 @@ def get_user_from_jwt(token_string):
         return AnonymousUser()
 
 class JWTAuthMiddleware(BaseMiddleware):
+    """
+    Middleware for authenticating WebSocket connections using JWT tokens passed in the query string.
+    """
     async def __call__(self, scope, receive, send):
+        """
+        Intercepts the connection scope to extract and verify the JWT token.
+
+        Args:
+            scope (dict): The connection scope.
+            receive (callable): The receive channel.
+            send (callable): The send channel.
+
+        Returns:
+            awaitable: The result of the parent middleware call.
+        """
         query_string = parse_qs(scope["query_string"].decode())
         token = query_string.get("token")
         

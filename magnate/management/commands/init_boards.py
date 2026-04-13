@@ -4,7 +4,21 @@ from django.db import transaction
 from magnate.models import * 
 
 class Command(BaseCommand):
+    """
+    Management command to initialize the game board from a JSON file.
+    """
     def handle(self, *args, **kwargs):
+        """
+        Loads board data from 'boards/board1.json', creates the Board and Square instances, 
+        and links successors to build the board graph.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            None
+        """
         try:
             with open('boards/board1.json', 'r', encoding='utf-8') as f:
                 data = json.load(f)
@@ -145,4 +159,3 @@ class Command(BaseCommand):
                 instance.save()
 
             self.stdout.write(f"Pass 2 Complete: Linked squares.")
-

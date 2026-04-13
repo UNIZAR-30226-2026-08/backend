@@ -422,6 +422,16 @@ class Agent:
             Action | None: An ActionTradeProposal instance if a favorable trade is found, otherwise None.
         """
         def is_tradable(rel):
+            """
+            Checks if a property relationship is eligible for trading.
+            A property is tradable if it's not a PropertySquare or if no houses are built in its group.
+
+            Args:
+                rel (PropertyRelationship): The relationship to check.
+
+            Returns:
+                bool: True if tradable, False otherwise.
+            """
             sq = rel.square.get_real_instance()
             if not isinstance(sq, PropertySquare):
                 return True
@@ -556,7 +566,16 @@ class Agent:
     ################################################################################
 
     def _ev_square(self, square: BaseSquare) -> float:
-        """Expected value of landing on a given square. Positive is good, negative is bad."""
+        """
+        Calculates the expected value of landing on a given square. 
+        Positive values represent desirable squares, while negative values represent risks or costs.
+
+        Args:
+            square (BaseSquare): The square instance to evaluate.
+
+        Returns:
+            float: The calculated expected value.
+        """
         if isinstance(square, (PropertySquare, ServerSquare, BridgeSquare)):
             return self._ev_landing_on_buyable(square)
         elif isinstance(square, TramSquare):
@@ -573,7 +592,16 @@ class Agent:
             return 0.0
     
     def _ev_landing_on_buyable(self, square: BaseSquare) -> float:
-        """EV of landing on a buyable square (Opportunity to buy vs paying rent)."""
+        """
+        Calculates the EV of landing on a buyable square.
+        Considers the opportunity to purchase if unowned, or the cost of paying rent if owned by an opponent.
+
+        Args:
+            square (BaseSquare): The buyable square instance.
+
+        Returns:
+            float: The calculated expected value.
+        """
         rel = _get_relationship(self.game, square)
         if rel is None:
             return self._ev_buying(square)
@@ -633,7 +661,16 @@ class Agent:
         return (ev_propiedad + ev_bloqueo) - float(square.buy_price) + float(square.buy_price)//2 #residual value
 
     def _ev_bid(self, amount: int) -> float:
-        """EV of placing a bid in an auction (Square worth minus bid amount)."""
+        """
+        Calculates the expected value of placing a bid in an auction.
+        Represents the square's intrinsic worth minus the proposed bid amount.
+
+        Args:
+            amount (int): The bid amount being evaluated.
+
+        Returns:
+            float: The calculated expected value.
+        """
         if amount == 0:
             return 0.0
     
@@ -673,7 +710,16 @@ class Agent:
         return (rent_delta * self._expected_visits()) - square.build_price
     
     def _ev_demolish(self, square: BaseSquare) -> float:
-        """EV of demolishing a house (Refund cash minus projected lost rent)."""
+        """
+        Calculates the expected value of demolishing a house.
+        Compares the immediate cash refund against the long-term loss of projected rent income.
+
+        Args:
+            square (BaseSquare): The property square instance.
+
+        Returns:
+            float: The calculated expected value.
+        """
         if not isinstance(square, PropertySquare):
             return 0.0
     
@@ -694,7 +740,18 @@ class Agent:
         return float(square.build_price // 2) - total_lost_income
 
     def _ev_mortgage_set(self, square: BaseSquare) -> float:
-        """EV of mortgaging a square (Immediate cash minus lost rent stream)."""
+        """
+        Expected value of mortgaging a square. Compares immediate cash injection against the lost rent stream.
+
+        Args:
+            square (BaseSquare): The buyable square instance.
+
+        Returns:
+            float: The EV of mortgaging the square.
+
+        Raises:
+            ValueError: If the target square is not buyable or lacks a buy price.
+        """
         if not isinstance(square, (PropertySquare, BridgeSquare, ServerSquare)):
             raise ValueError("EV mortgage only applies to buyable squares")
         
@@ -712,7 +769,18 @@ class Agent:
         return payout - total_lost_income
     
     def _ev_mortgage_unset(self, square: BaseSquare) -> float:
-        """EV of lifting a mortgage (Restored rent stream minus payout cost)."""
+        """
+        Expected value of lifting a mortgage. Compares the restored rent stream against the payout cost.
+
+        Args:
+            square (BaseSquare): The buyable square instance.
+
+        Returns:
+            float: The EV of unmortgaging the square.
+
+        Raises:
+            ValueError: If the target square is not buyable or lacks a buy price.
+        """
         if not isinstance(square, (PropertySquare, BridgeSquare, ServerSquare)):
             raise ValueError("EV mortgage only applies to buyable squares")
         
@@ -815,11 +883,29 @@ class Agent:
         return ev_unowned - ev_rent
     
     def _ev_stay_in_jail(self) -> float:
-        """EV of staying in jail (Inverse of exiting jail)."""
+        """
+        Calculates the expected value of remaining in jail.
+        Defined as the negative value of exiting jail.
+
+        Args:
+            None
+
+        Returns:
+            float: The calculated expected value.
+        """
         return -self._ev_exit_jail()
 
     def _ev_next_12_squares(self, start_square: BaseSquare) -> float:
-        """Calculates the uniform EV of the next 12 squares in linear path (Tram heuristic)."""
+        """
+        Calculates the uniform average expected value of the next 12 squares in a linear path.
+        Used as a heuristic for tram movement decisions.
+
+        Args:
+            start_square (BaseSquare): The square instance to start the calculation from.
+
+        Returns:
+            float: The average expected value of the next 12 squares.
+        """
         ev_sum = 0.0
         curr = start_square
         for _ in range(12):
@@ -872,13 +958,32 @@ class Agent:
     ################################################################################
 
     def _expected_visits(self) -> float:
-        """Expected visits calculation based on heuristic: Probability * Opponents * Turns."""
+        """
+        Calculates the expected number of times a square will be visited.
+        Based on the heuristic: Probability of landing * Number of opponents * Projected turns remaining.
+
+        Args:
+            None
+
+        Returns:
+            float: The projected number of visits.
+        """
         opponents = max(1, self.game.players.count() - 1)
         turns_left = max(1, TOTAL_TURNS - self.game.current_turn)
         return PROB_CAER * opponents * turns_left
 
     def _get_current_rent(self, square: BaseSquare, rel: PropertyRelationship) -> int:
-        """Returns the specific rent amount currently owed to the owner of this square."""
+        """
+        Determines the specific rent amount currently owed to the owner of a given square.
+        Handles different logic for PropertySquares (based on houses), ServerSquares, and BridgeSquares.
+
+        Args:
+            square (BaseSquare): The square instance.
+            rel (PropertyRelationship): The ownership relationship instance.
+
+        Returns:
+            int: The calculated rent amount.
+        """
         if isinstance(square, PropertySquare):
             houses = rel.houses
             if houses < 0 or rel.mortgage:
@@ -902,7 +1007,15 @@ class Agent:
         return 0
     
     def _get_base_rent(self, square: BaseSquare) -> int:
-        """Returns the base rent (0 houses, 1 server/bridge) for a square."""
+        """
+        Returns the base rent (0 houses, 1 server/bridge) for a given square.
+
+        Args:
+            square (BaseSquare): The square instance.
+
+        Returns:
+            int: The base rent amount.
+        """
         if isinstance(square, PropertySquare):
             rent_prices = square.rent_prices or []
             return rent_prices[0] if rent_prices else 0
@@ -954,7 +1067,19 @@ class Agent:
         return 0.0
 
     def _calculate_dynamic_reserve(self) -> int:
-        """Calculates the maximum possible rent currently owed on the board to establish a safety reserve."""
+        """
+        Calculates the maximum possible rent currently owed on the board by opponents.
+        Used to establish a safety reserve for the bot.
+
+        Args:
+            None
+
+        Returns:
+            int: The maximum rent value found on the board.
+
+        Raises:
+            GameLogicError: If an owned square is processed but lacks a property relationship.
+        """
         owned_by_others = self._get_buyables_owned_by_others()
         if not owned_by_others:
             return 0
@@ -971,7 +1096,16 @@ class Agent:
         return max_rent
 
     def _minimum_safety_cash(self) -> float:
-        """Minimum liquid cash to retain, scaled by the number of players and maximum board rent."""
+        """
+        Calculates the minimum liquid cash the bot should retain.
+        Scaled by the number of players and the maximum potential board rent.
+
+        Args:
+            None
+
+        Returns:
+            float: The calculated safety cash amount.
+        """
         n_players = self.game.players.count()
         return float(self._calculate_dynamic_reserve() * n_players)
 
@@ -1002,7 +1136,15 @@ class Agent:
         return min(budget, puja_maxima)
 
     def _get_all_unowned_buyables(self) -> list[BaseSquare]:
-        """Fetches all Property, Server, and Bridge squares currently unowned in the game."""
+        """
+        Fetches all Property, Server, and Bridge squares currently unowned in the game.
+
+        Args:
+            None
+
+        Returns:
+            list[BaseSquare]: A list of unowned buyable square instances.
+        """
         owned_ids = PropertyRelationship.objects.filter(game=self.game).values_list('square_id', flat=True)
         unowned_ids = []
         for model in (PropertySquare, ServerSquare, BridgeSquare):
@@ -1011,6 +1153,14 @@ class Agent:
         return list(BaseSquare.objects.filter(id__in=unowned_ids))
 
     def _get_buyables_owned_by_others(self) -> list[BaseSquare]:
-        """Fetches all Property, Server, and Bridge squares owned by opponent players."""
+        """
+        Fetches all Property, Server, and Bridge squares owned by opponent players.
+
+        Args:
+            None
+
+        Returns:
+            list[BaseSquare]: A list of opponent-owned buyable square instances.
+        """
         rels = PropertyRelationship.objects.filter(game=self.game).exclude(owner=self.user).select_related('square')
         return [rel.square.get_real_instance() for rel in rels]

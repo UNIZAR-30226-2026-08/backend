@@ -3,9 +3,23 @@ from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 
 class Command(BaseCommand):
+    """
+    Management command to generate JWT access tokens for test users.
+    """
     help = 'Generates valid JWT access tokens for two test users'
 
     def handle(self, *args, **kwargs):
+        """
+        Executes the command logic: creates users 'user1' and 'user2', sets their passwords, 
+        and prints their access tokens and a sample run command for testing.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            None
+        """
         User = get_user_model()
         
         user1, _ = User.objects.get_or_create(username='user1', email='u1@test.com')

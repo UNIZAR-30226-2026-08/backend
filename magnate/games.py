@@ -2,21 +2,19 @@
 Core Game Logic Module.
 
 This module handles the rules, state transitions, and actions of the game.
-It provides helper functions to calculate net worth, rent, building/demolishing
-rules, and a GameManager class that acts as a state machine for the different phases
-of a player's turn.
+It utilizes helper functions from game_utils to calculate net worth, rent, 
+building/demolishing rules, and provides a GameManager class that acts as 
+a state machine for the different phases of a player's turn.
 """
 
-from asyncio import Server
 import random 
-from tokenize import group
 from django.db import transaction
 from django.db.models import Max
 from .serializers import *
 from .models import *
 from .fantasy import *
 from .game_utils import (
-    _calculate_passed_go, _apply_square_arrival, _compute_dice_combinations, 
+    _apply_square_arrival, _compute_dice_combinations, 
     _move_player_logic, _build_square, _demolish_square, _get_jail_square,_set_mortgage,  
     _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, 
     _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id,
@@ -84,7 +82,7 @@ class GameManager:
             response = Response()
             return _add_basic_response_data(game, response)
 
-        if user != game.active_phase_player and not isinstance(action, ActionBid): # if aucction there are no turns
+        if user != game.active_phase_player and not isinstance(action, ActionBid): # if auction there are no turns
             raise MaliciousUserInput(user, "is not the active player")
 
 
@@ -125,7 +123,7 @@ class GameManager:
             # response = cls._end_game_logic(game,user,action)
             return cls._end_game_logic(game,user,action)
         else: 
-            raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
+            raise GameLogicError(f"Unrecognized or unhandled phase: {game.phase}")
 
         return _add_basic_response_data(game, response)
 
@@ -180,9 +178,12 @@ class GameManager:
     @staticmethod
     def _roll_dices_logic(game: Game, user: CustomUser, action: ActionThrowDices) -> Response: 
         """
-        Handles dice rolling, doubles/triples, and jail mechanics.
-        Calculates destination squares, updates statistics for squares walked and times 
-        in jail, and manages turn timers.
+        Handles the dice rolling process, including double/triple streaks and jail mechanics.
+        
+        This method calculates the result of rolling three dice (including the bus die),
+        updates the player's movement streak, and determines possible destination squares.
+        It also handles logic for players attempting to leave jail via doubles or 
+        forced payment.
 
         Args:
             game (Game): The current game instance.
@@ -190,12 +191,11 @@ class GameManager:
             action (ActionThrowDices): The dice throw action payload.
 
         Returns:
-            Response: A ResponseThrowDices object containing dice values, streaks, 
-                      destinations, and the traversed path.
+            ResponseThrowDices: Contains dice values, streak status, possible destinations, 
+                               and the path to be traversed if only one destination exists.
             
         Raises:
-            GameLogicError: If the player has a jailed status but is not on a jail square,
-                            or if a necessary game design element is missing.
+            GameLogicError: If the player has a jailed status but is not on a jail square.
         """
 
         GameManager._cancel_all_timers(game)
@@ -223,14 +223,14 @@ class GameManager:
         if is_jailed:
             jail_sq = current_pos_square
             if isinstance(jail_sq, JailSquare):
-                if remaining_jail_turns == 1: #obligado a salir
+                if remaining_jail_turns == 1: # Forced to leave jail (last turn)
                     game.money[str(user.pk)] -= jail_sq.bail_price
                     game.jail_remaining_turns[str(user.pk)] = 0
                     stats = PlayerGameStatistic.objects.get(user=user,game=game)
                     stats.turns_in_jail += 1
                     stats.lost_money += jail_sq.bail_price
                     stats.save()
-                elif doubles: #sale gratis
+                elif doubles: # Leaves jail for free due to doubles
                     game.jail_remaining_turns[str(user.pk)] = 0
                     game.streak = 0
                 else:

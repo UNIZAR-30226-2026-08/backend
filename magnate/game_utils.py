@@ -127,7 +127,7 @@ def _demolish_square(game: Game,
 
     if relationship is None:
         raise MaliciousUserInput(user, "no user owns this square")
-    
+
     if relationship.owner != user:
         raise MaliciousUserInput(user, "tried to demolish an unowned property")
 
@@ -241,16 +241,17 @@ def _unset_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, fre
 
 def _get_relationship(game: Game, square: BaseSquare) -> Optional[PropertyRelationship]:
     """
-    Retrieves a BaseSquare instance by its designated custom_id.
+    Retrieves the ownership relationship for a specific square in a game.
 
     Args:
-        custom_id (int): The custom identifier of the square.
+        game (Game): The current game instance.
+        square (BaseSquare): The square instance.
 
     Returns:
-        BaseSquare: The corresponding square instance.
+        PropertyRelationship | None: The relationship instance if owned, otherwise None.
 
     Raises:
-        GameLogicError: If no square with the given custom_id exists in the database.
+        GameLogicError: If more than one owner is found for the same square.
     """
     try:
         return PropertyRelationship.objects.get(game=game, square=square)
@@ -263,17 +264,16 @@ def _get_relationship(game: Game, square: BaseSquare) -> Optional[PropertyRelati
 
 def _get_square_by_custom_id(custom_id: int) -> BaseSquare:
     """
-    Retrieves the square where a specific user is currently located based on the game state.
+    Retrieves a BaseSquare instance by its designated custom_id.
 
     Args:
-        game (Game): The current game instance.
-        user (CustomUser): The user whose position is being queried.
+        custom_id (int): The custom identifier of the square.
 
     Returns:
-        BaseSquare: The square instance where the user is currently standing.
+        BaseSquare: The corresponding square instance.
 
     Raises:
-        GameLogicError: If the user's ID is not found in the game's positions dictionary.
+        GameLogicError: If no square with the given custom_id exists in the database.
     """
     square = BaseSquare.objects.filter(custom_id=custom_id).first()
     if square is None:
@@ -678,7 +678,7 @@ def _apply_square_arrival(
 
     return response
 
-@staticmethod
+
 def _compute_dice_combinations(d1: int, d2: int, d3: int) -> list[int]:
     """
     Returns the possible move amounts given three dice values.
@@ -740,4 +740,3 @@ def _add_basic_response_data(game: Game, response: Response) -> Response:
     response.positions = game.positions
 
     return response
-

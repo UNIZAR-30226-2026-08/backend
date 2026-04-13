@@ -5,7 +5,19 @@ from .models import CustomUser
 
 # handling baseSquare by custom_id
 class SquareCustomIdField(serializers.SlugRelatedField):
+    """
+    Custom field to represent a square using its custom_id instead of the database primary key.
+    """
     def __init__(self, **kwargs):
+        """
+        Initializes the field with the correct slug_field and queryset.
+
+        Args:
+            **kwargs: Additional field arguments.
+
+        Returns:
+            None
+        """
         super().__init__(slug_field='custom_id', queryset=BaseSquare.objects.all(), **kwargs)
 
 ###############################################################################
@@ -13,6 +25,7 @@ class SquareCustomIdField(serializers.SlugRelatedField):
 ###############################################################################
 class PropertyRelationshipSerializer(serializers.ModelSerializer):
     """
+    Serializes PropertyRelationship model.
     Example:
         ```json
         {
@@ -75,64 +88,109 @@ class GameStatusSerializer(serializers.ModelSerializer):
 #############      Square serializers     #####################################
 ###############################################################################
 class BaseSquareSerializer(serializers.ModelSerializer):
+    """
+    Base serializer for squares, including the class name as 'type'.
+    """
     type = serializers.SerializerMethodField()
     class Meta:
         model = BaseSquare
         fields = ['type','custom_id', 'board']
-    def get_type(self, obj):
+    def get_type(self, obj) -> str:
+        """
+        Retrieves the class name of the square instance.
+
+        Args:
+            obj (BaseSquare): The square instance.
+
+        Returns:
+            str: The name of the class.
+        """
         return obj.__class__.__name__
 
 class PropertySquareSerializer(BaseSquareSerializer):
+    """
+    Serializer for PropertySquare model.
+    """
     class Meta(BaseSquareSerializer.Meta):
         model = PropertySquare
         fields = BaseSquareSerializer.Meta.fields + ['group', 'buy_price', 'build_price', 'rent_prices']
 
 class FantasySquareSerializer(BaseSquareSerializer):
+    """
+    Serializer for FantasySquare model.
+    """
     class Meta(BaseSquareSerializer.Meta):
         model = FantasySquare
         fields = BaseSquareSerializer.Meta.fields
 
 class BridgeSquareSerializer(BaseSquareSerializer):
+    """
+    Serializer for BridgeSquare model.
+    """
     class Meta(BaseSquareSerializer.Meta):
         model = BridgeSquare
         fields = BaseSquareSerializer.Meta.fields + ['buy_price','rent_prices']
 
 class TramSquareSerializer(BaseSquareSerializer):
+    """
+    Serializer for TramSquare model.
+    """
     class Meta(BaseSquareSerializer.Meta):
         model = TramSquare
         fields = BaseSquareSerializer.Meta.fields + ['buy_price']
 
 class ParkingSquareSerializer(BaseSquareSerializer):
+    """
+    Serializer for ParkingSquare model.
+    """
     class Meta(BaseSquareSerializer.Meta):
         model = ParkingSquare
         fields = BaseSquareSerializer.Meta.fields + ['money']
 
 class ServerSquareSerializer(BaseSquareSerializer):
+    """
+    Serializer for ServerSquare model.
+    """
     class Meta(BaseSquareSerializer.Meta):
         model = ServerSquare
         fields = BaseSquareSerializer.Meta.fields + ['buy_price','rent_prices']
 
 class ExitSquareSerializer(BaseSquareSerializer):
+    """
+    Serializer for ExitSquare model.
+    """
     class Meta(BaseSquareSerializer.Meta):
         model = ExitSquare
         fields = BaseSquareSerializer.Meta.fields + ['init_money']
 
 class GoToJailSquareSerializer(BaseSquareSerializer):
+    """
+    Serializer for GoToJailSquare model.
+    """
     class Meta(BaseSquareSerializer.Meta):
         model = GoToJailSquare
         fields = BaseSquareSerializer.Meta.fields
 
 class JailSquareSerializer(BaseSquareSerializer):
+    """
+    Serializer for JailSquare model.
+    """
     class Meta(BaseSquareSerializer.Meta):
         model = JailSquare
         fields = BaseSquareSerializer.Meta.fields + ['bail_price']
 
 class JailVisitSquareSerializer(BaseSquareSerializer):
+    """
+    Serializer for JailVisitSquare model.
+    """
     class Meta(BaseSquareSerializer.Meta):
         model = JailVisitSquare
         fields = BaseSquareSerializer.Meta.fields
 
 class GeneralSquareSerializer(serializers.ModelSerializer):
+    """
+    Polymorphic serializer for squares.
+    """
     mapping = {
         'PropertySquare': PropertySquareSerializer,
         'FantasySquare': FantasySquareSerializer,
@@ -149,7 +207,16 @@ class GeneralSquareSerializer(serializers.ModelSerializer):
     
     type = serializers.SerializerMethodField()
 
-    def to_representation(self, instance):
+    def to_representation(self, instance) -> dict:
+        """
+        Serializes the specific square instance using the appropriate subclass serializer.
+
+        Args:
+            instance (BaseSquare): The square instance to serialize.
+
+        Returns:
+            dict: The serialized square data including the type.
+        """
         square_type = instance.__class__.__name__
         serializer_class = self.mapping.get(square_type, BaseSquareSerializer)
         data = serializer_class(instance, context=self.context).data
@@ -163,59 +230,98 @@ class GeneralSquareSerializer(serializers.ModelSerializer):
 #############      Action serializers     #####################################
 ###############################################################################
 class ActionSerializer(serializers.ModelSerializer):
+    """
+    Base serializer for Actions.
+    """
     type = serializers.SerializerMethodField()
     class Meta:
         model = Action
         fields = ['type', 'game', 'player']
-    def get_type(self, obj):
+    def get_type(self, obj) -> str:
+        """
+        Retrieves the class name of the action instance.
+
+        Args:
+            obj (Action): The action instance.
+
+        Returns:
+            str: The name of the class.
+        """
         return obj.__class__.__name__
 
 class ActionThrowDicesSerializer(ActionSerializer):
+    """
+    Serializer for ActionThrowDices model.
+    """
     class Meta(ActionSerializer.Meta):
         model = ActionThrowDices
         fields = ActionSerializer.Meta.fields
 
 class ActionMoveToSerializer(ActionSerializer):
+    """
+    Serializer for ActionMoveTo model.
+    """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionMoveTo
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionTakeTramSerializer(ActionSerializer):
+    """
+    Serializer for ActionTakeTram model.
+    """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionTakeTram
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionBuySquareSerializer(ActionSerializer):
+    """
+    Serializer for ActionBuySquare model.
+    """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionBuySquare
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionBuildSerializer(ActionSerializer):
+    """
+    Serializer for ActionBuild model.
+    """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionBuild
         fields = ActionSerializer.Meta.fields + ['houses','square']
 
 class ActionDemolishSerializer(ActionSerializer):
+    """
+    Serializer for ActionDemolish model.
+    """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionDemolish
         fields = ActionSerializer.Meta.fields + ['houses','square']
 
 class ActionChooseCardSerializer(ActionSerializer):
+    """
+    Serializer for ActionChooseCard model.
+    """
     class Meta(ActionSerializer.Meta):
         model = ActionChooseCard
         fields = ActionSerializer.Meta.fields + ['chosen_revealed_card']
 
 class ActionSurrenderSerializer(ActionSerializer):
+    """
+    Serializer for ActionSurrender model.
+    """
     class Meta(ActionSerializer.Meta):
         model = ActionSurrender
         fields = ActionSerializer.Meta.fields
 
 class ActionTradeProposalSerializer(ActionSerializer):
+    """
+    Serializer for ActionTradeProposal model.
+    """
     offered_properties = serializers.PrimaryKeyRelatedField(
         many=True, 
         queryset=PropertyRelationship.objects.all(),
@@ -229,7 +335,16 @@ class ActionTradeProposalSerializer(ActionSerializer):
     class Meta(ActionSerializer.Meta):
         model = ActionTradeProposal
         fields = ActionSerializer.Meta.fields + ['destination_user','offered_money','asked_money','offered_properties','asked_properties']
-    def create(self, validated_data):
+    def create(self, validated_data) -> ActionTradeProposal:
+        """
+        Creates an ActionTradeProposal instance and sets Many-to-Many properties.
+
+        Args:
+            validated_data (dict): The validated data.
+
+        Returns:
+            ActionTradeProposal: The created instance.
+        """
         offered_ids = validated_data.pop('offered_properties', [])
         asked_ids = validated_data.pop('asked_properties', [])
         instance = ActionTradeProposal.objects.create(**validated_data)
@@ -240,55 +355,91 @@ class ActionTradeProposalSerializer(ActionSerializer):
         return instance
 
 class ActionTradeAnswerSerializer(ActionSerializer):
+    """
+    Serializer for ActionTradeAnswer model.
+    """
     class Meta(ActionSerializer.Meta):
         model = ActionTradeAnswer
         fields = ActionSerializer.Meta.fields + ['choose']
 
 class ActionMortgageSetSerializer(ActionSerializer):
+    """
+    Serializer for ActionMortgageSet model.
+    """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionMortgageSet
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionMortgageUnsetSerializer(ActionSerializer):
+    """
+    Serializer for ActionMortgageUnset model.
+    """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionMortgageUnset
         fields = ActionSerializer.Meta.fields + ['square']
 
 class ActionPayBailSerializer(ActionSerializer):
+    """
+    Serializer for ActionPayBail model.
+    """
     class Meta(ActionSerializer.Meta):
         model = ActionPayBail
         fields = ActionSerializer.Meta.fields
 
 class ActionNextPhaseSerializer(ActionSerializer):
+    """
+    Serializer for ActionNextPhase model.
+    """
     class Meta(ActionSerializer.Meta):
         model = ActionNextPhase
         fields = ActionSerializer.Meta.fields
 
 class ActionBidSerializer(ActionSerializer):
+    """
+    Serializer for ActionBid model.
+    """
     class Meta(ActionSerializer.Meta):
         model = ActionBid
         fields = ActionSerializer.Meta.fields + ['amount']
 
 class ActionDropPurchaseSerializer(ActionSerializer):
+    """
+    Serializer for ActionDropPurchase model.
+    """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionDropPurchase
         fields = ActionSerializer.Meta.fields + ['square']
 
 class AuctionSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Auction model.
+    """
     square = SquareCustomIdField()
     bids = serializers.SerializerMethodField()
     class Meta:
         model = Auction
         fields = ['id', 'square', 'winner', 'final_amount', 'is_active', 'is_tie', 'bids']
     
-    def get_bids(self, obj):
+    def get_bids(self, obj) -> dict:
+        """
+        Retrieves the bids dictionary.
+
+        Args:
+            obj (Auction): The auction instance.
+
+        Returns:
+            dict: The dictionary mapping user IDs to bid amounts.
+        """
         # Return dict of user_id -> amount to maintain frontend compatibility
         return obj.bids
 
 class GeneralActionSerializer(serializers.ModelSerializer):
+    """
+    Polymorphic serializer for actions.
+    """
     serializer_mapping = {
         'ActionThrowDices': ActionThrowDicesSerializer,
         'ActionMoveTo': ActionMoveToSerializer,
@@ -307,12 +458,21 @@ class GeneralActionSerializer(serializers.ModelSerializer):
         'ActionDropPurchase': ActionDropPurchaseSerializer, 
         'ActionNextPhase': ActionNextPhaseSerializer,
     }
-    def to_representation(self, instance):
+    def to_representation(self, instance) -> dict:
+        """
+        Serializes the specific action instance using the appropriate subclass serializer.
+
+        Args:
+            instance (Action): The action instance.
+
+        Returns:
+            dict: The serialized action data.
+        """
         action_type = instance.__class__.__name__
         serializer_class = self.serializer_mapping.get(action_type, ActionSerializer)
         return serializer_class(instance, context=self.context).data
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data) -> dict:
         """
         Deserializes the raw action data into the specific Action model based on the 'type' field.
 
@@ -343,7 +503,7 @@ class GeneralActionSerializer(serializers.ModelSerializer):
         
         return serializer.to_internal_value(data)
 
-    def create(self, validated_data):
+    def create(self, validated_data) -> Action:
         """
         Creates and returns a specific Action instance based on the provided action type.
 
@@ -375,11 +535,17 @@ class GeneralActionSerializer(serializers.ModelSerializer):
 #############      Fantasy serializers     ####################################
 ###############################################################################
 class FantasyEventSerializer(serializers.ModelSerializer):
+    """
+    Serializer for FantasyEvent model.
+    """
     class Meta:
         model = FantasyEvent
         fields = ['fantasy_type', 'value', 'card_cost']
 
 class FantasyResultSerializer(serializers.ModelSerializer):
+    """
+    Serializer for FantasyResult model.
+    """
     fantasy_event = FantasyEventSerializer(read_only=True)
     class Meta:
         model = FantasyResult
@@ -389,44 +555,71 @@ class FantasyResultSerializer(serializers.ModelSerializer):
 ############      Response serializers     ####################################
 ###############################################################################
 class ResponseSerializer(serializers.ModelSerializer):
+    """
+    Base serializer for Responses.
+    """
     class Meta:
         model = Response
         exclude = ['id']
 
 class ResponseAuctionSerializer(ResponseSerializer):
+    """
+    Serializer for ResponseAuction model.
+    """
     auction = AuctionSerializer()
     class Meta(ResponseSerializer.Meta):
         model = ResponseAuction
         exclude = ['auction']
 
 class ResponseMovementSerializer(serializers.ModelSerializer):
+    """
+    Serializer for ResponseMovement model.
+    """
     class Meta(ResponseSerializer.Meta):
         model = ResponseMovement
 
 class ResponseThrowDicesSerializer(serializers.ModelSerializer):
+    """
+    Serializer for ResponseThrowDices model.
+    """
     fantasy_event = FantasyEventSerializer(read_only=True)
     class Meta(ResponseSerializer.Meta):
         model = ResponseThrowDices
 
 class ResponseChooseSquareSerializer(serializers.ModelSerializer):
+    """
+    Serializer for ResponseChooseSquare model.
+    """
     fantasy_event = FantasyEventSerializer(read_only=True)
     class Meta(ResponseSerializer.Meta):
         model = ResponseChooseSquare
 
 class ResponseChooseFantasySerializer(serializers.ModelSerializer):
+    """
+    Serializer for ResponseChooseFantasy model.
+    """
     fantasy_result = FantasyResultSerializer(read_only=True)
     class Meta(ResponseSerializer.Meta):
         model = ResponseChooseFantasy
 
 class ResponseSkipPhaseSerializer(serializers.ModelSerializer):
+    """
+    Serializer for ResponseSkipPhase model.
+    """
     class Meta(ResponseSerializer.Meta):
         model = ResponseSkipPhase
 
 class ResponseBonusSerializer(serializers.ModelSerializer):
+    """
+    Serializer for ResponseBonus model.
+    """
     class Meta(ResponseSerializer.Meta):
         model = ResponseBonus
 
 class GeneralResponseSerializer(serializers.ModelSerializer):
+    """
+    Polymorphic serializer for responses.
+    """
     mapping = {
         'ResponseAuction': ResponseAuctionSerializer,
         'ResponseThrowDices': ResponseThrowDicesSerializer,
@@ -437,7 +630,16 @@ class GeneralResponseSerializer(serializers.ModelSerializer):
         'Response': ResponseSerializer,
     }
     type = serializers.SerializerMethodField()
-    def to_representation(self, instance):
+    def to_representation(self, instance) -> dict:
+        """
+        Serializes the specific response instance using the appropriate subclass serializer.
+
+        Args:
+            instance (Response): The response instance.
+
+        Returns:
+            dict: The serialized response data.
+        """
         action_type = instance.__class__.__name__
         serializer_class = self.mapping.get(action_type, ResponseSerializer)
         data = serializer_class(instance, context=self.context).data
@@ -452,6 +654,9 @@ class GeneralResponseSerializer(serializers.ModelSerializer):
 ###############################################################################
 
 class RegisterSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user registration.
+    """
     password  = serializers.CharField(write_only=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, label='Confirmar contraseña')
 
@@ -459,7 +664,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         model  = CustomUser
         fields = ('username', 'password', 'password2')
 
-    def validate(self, attrs):
+    def validate(self, attrs) -> dict:
         """
         Validates the registration data, specifically ensuring the passwords match.
 
@@ -476,7 +681,16 @@ class RegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'password': 'Las contraseñas no coinciden.'})
         return attrs
 
-    def create(self, validated_data):
+    def create(self, validated_data) -> CustomUser:
+        """
+        Creates and returns a new CustomUser instance.
+
+        Args:
+            validated_data (dict): The validated registration data.
+
+        Returns:
+            CustomUser: The newly created user instance.
+        """
         validated_data.pop('password2')
         return CustomUser.objects.create_user(
             username=validated_data['username'],
@@ -485,6 +699,9 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
+    """
+    Serializer for user login.
+    """
     username = serializers.CharField()
     password = serializers.CharField(write_only=True)
 
@@ -494,6 +711,9 @@ class LoginSerializer(serializers.Serializer):
 ################################################################################
 
 class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for user profile information.
+    """
     class Meta:
         model  = CustomUser
         fields = (
@@ -510,6 +730,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
 ################################### items ####################################
 ##############################################################################
 class ItemSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Item model, including an 'owned' status for the requesting user.
+    """
     owned = serializers.SerializerMethodField()
 
     class Meta:
@@ -517,15 +740,27 @@ class ItemSerializer(serializers.ModelSerializer):
         fields = ('custom_id', 'itemType', 'price', 'owned')
 
     def get_owned(self, obj) -> bool:
+        """
+        Determines if the current user owns the given item.
+
+        Args:
+            obj (Item): The item instance.
+
+        Returns:
+            bool: True if owned, False otherwise.
+        """
         request: Request = self.context['request']  # type: ignore
         user: CustomUser = request.user  # type: ignore
         return obj.owners.filter(pk=user.pk).exists()
 
 
 class PurchaseSerializer(serializers.Serializer):
+    """
+    Serializer for purchasing an item.
+    """
     custom_id = serializers.IntegerField()  # recibe custom_id del frontend
 
-    def validate_custom_id(self, value):
+    def validate_custom_id(self, value) -> int:
         """
         Validates the item ID before a purchase.
         Checks if the item exists, if the user already owns it, and if they have enough points.
@@ -558,9 +793,12 @@ class PurchaseSerializer(serializers.Serializer):
 
 
 class ChangePieceSerializer(serializers.Serializer):
+    """
+    Serializer for changing the user's active piece.
+    """
     custom_id = serializers.IntegerField()
 
-    def validate_custom_id(self, value):
+    def validate_custom_id(self, value) -> int:
         """
         Validates the piece ID before equipping it.
         Checks if the item exists, if it is classified as a 'piece', and if the user owns it.
@@ -591,7 +829,9 @@ class ChangePieceSerializer(serializers.Serializer):
     
 # Final summary
 class GameSummarySerializer(serializers.ModelSerializer):
+    """
+    Serializer for GameSummary model.
+    """
     class Meta:
         model = GameSummary
         fields = ['id', 'game', 'start_date', 'end_date', 'final_money']
-

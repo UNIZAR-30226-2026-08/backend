@@ -8,6 +8,9 @@ from magnate.exceptions import GameLogicError
 from magnate.game_utils import _build_square, _demolish_square, _get_jail_square, _unset_mortgage
 
 class FantasyEventFactory:
+    """
+    Factory class for generating random FantasyEvent instances.
+    """
     @staticmethod
     def generate() -> FantasyEvent:
         """
@@ -43,6 +46,9 @@ class FantasyEventFactory:
         | freeHouse                     | 80   | —                         |
         | reviveProperty                | 100  | —                         |
         | earthquake                    | 200  | —                         |
+
+        Args:
+            None
 
         Returns:
             FantasyEvent: A new, unsaved ``FantasyEvent`` instance with ``fantasy_type``,
@@ -699,4 +705,3 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             )
     else: 
         raise GameLogicError(f"undefined fantasy event: {fantasy_event.fantasy_type}")
-

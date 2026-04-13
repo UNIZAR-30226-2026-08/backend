@@ -289,7 +289,8 @@ class Game(models.Model):
 
     kick_out_task_id = models.CharField(max_length=255, null=True, blank=True)
     next_phase_task_id = models.CharField(max_length=255, null=True, blank=True)
-
+    auction_task_id = models.CharField(max_length=255, null=True, blank=True)
+    
     current_turn = models.PositiveIntegerField(default=1)
 
 class Auction(models.Model):

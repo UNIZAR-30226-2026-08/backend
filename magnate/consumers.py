@@ -229,8 +229,8 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             game.ordered_players = random.sample(game.ordered_players, len(game.ordered_players)) #random order of players
 
 
-            task = kick_out_callback.apply_async(args=[game.pk, users[0].pk], countdown=50) #necessary for first turn
-            game.kick_out_task_id = task.id
+            #task = kick_out_callback.apply_async(args=[game.pk, users[0].pk], countdown=50) #necessary for first turn
+            #game.kick_out_task_id = task.id
             game.save()
 
             
@@ -755,7 +755,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             
         room.delete()
 
-        GameManager._set_kick_out_timer(game, first_player)
+        #GameManager._set_kick_out_timer(game, first_player)
         
         game.save()
 

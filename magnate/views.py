@@ -347,3 +347,23 @@ class GetPrivateCodeView(APIView):
             code = ''.join(random.choices(characters, k=6))
             if not PrivateRoom.objects.filter(room_code=code).exists():
                 return code
+            
+class GetGamesPlayedView(APIView):
+    """
+    Returns a list of IDs for all games played by the authenticated user.
+
+    GET /user/games-played/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Responses:
+        200: Returns a list of game IDs (e.g., {"games": [1, 5, 12]}).
+        401: Missing or invalid token.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        game_ids = list(request.user.played_games.values_list('id', flat=True))
+        
+        return Response({'games': game_ids}, status=status.HTTP_200_OK)

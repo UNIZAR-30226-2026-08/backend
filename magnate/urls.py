@@ -37,5 +37,6 @@ urlpatterns = [
     path('shop/user-pieces/', UserPiecesView.as_view(), name='user_pieces'),
     path('shop/user-emojis/', UserEmojisView.as_view(), name='user_emojis'),
 
-    path('lobby/get-private-code', GetPrivateCodeView.as_view(), name='get private code')
+    path('lobby/get-private-code', GetPrivateCodeView.as_view(), name='get private code'),
+    path('lobby/check-code/<str:room_code>/', CheckPrivateRoomView.as_view(), name='check-room-code')
 ]

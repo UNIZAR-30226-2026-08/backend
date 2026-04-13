@@ -18,12 +18,6 @@
 ::: magnate.models.ActionBuySquare
 ::: magnate.serializers.ActionBuySquareSerializer
 
-::: magnate.models.ActionSellSquare
-::: magnate.serializers.ActionSellSquareSerializer
-
-::: magnate.models.ActionGoToJail
-::: magnate.serializers.ActionGoToJailSerializer
-
 ::: magnate.models.ActionBuild
 ::: magnate.serializers.ActionBuildSerializer
 

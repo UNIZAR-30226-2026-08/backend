@@ -12,9 +12,6 @@
 ::: magnate.models.ActionTakeTram
 ::: magnate.serializers.ActionTakeTramSerializer
 
-::: magnate.models.ActionDoNotTakeTram
-::: magnate.serializers.ActionDoNotTakeTramSerializer
-
 ::: magnate.models.ActionDropPurchase
 ::: magnate.serializers.ActionDropPurchaseSerializer
 

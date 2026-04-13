@@ -469,7 +469,8 @@ class Agent:
             else:
                 max_offer = int(self._ev_buying(wanted_sq) * 0.8)
                 if max_offer > 0 and money > 0:
-                    offered_money = random.randint(min(max_offer, money)//2, min(max_offer, money))
+                    max_val = int(min(max_offer, money))
+                    offered_money = random.randint(max_val // 2, max_val)
                 else:
                     offered_money = 0
 

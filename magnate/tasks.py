@@ -15,6 +15,16 @@ from asgiref.sync import async_to_sync
 from .agent import Agent
 
 def broadcast_to_game(game: Game, response: Response) -> None:
+    """
+    Broadcasts a serialized game response to all clients connected to the game's WebSocket group.
+
+    Args:
+        game (Game): The current game instance.
+        response (Response): The response object containing the state update to be broadcasted.
+
+    Returns:
+        None
+    """
     channel_layer = get_channel_layer()
     group_name = f"game_{game.pk}"
 
@@ -33,6 +43,16 @@ def broadcast_to_game(game: Game, response: Response) -> None:
 
 @shared_task
 def auction_callback(game_pk: int) -> None:
+    """
+    Celery task triggered when an auction's timer expires. Ends the active auction 
+    and broadcasts the finalized result to all players.
+
+    Args:
+        game_pk (int): The primary key of the game.
+
+    Returns:
+        None
+    """
     game = Game.objects.get(pk=game_pk)
     response = GameManager._end_auction(game)
     if response:
@@ -41,6 +61,18 @@ def auction_callback(game_pk: int) -> None:
 
 @shared_task
 def kick_out_callback(game_pk: int, user_pk: int) -> None:
+    """
+    Celery task triggered to bankrupt and remove a player from the game, typically 
+    used as a timeout mechanism for players in liquidation or inactivity. 
+    Broadcasts the updated game state. Not used due to rules' restrictions, but kept for potential future use.
+
+    Args:
+        game_pk (int): The primary key of the game.
+        user_pk (int): The primary key of the user to be bankrupt and removed.
+
+    Returns:
+        None
+    """
     game = Game.objects.get(pk=game_pk)
     user = CustomUser.objects.get(pk=user_pk)
     
@@ -51,12 +83,18 @@ def kick_out_callback(game_pk: int, user_pk: int) -> None:
 @shared_task
 def next_phase_callback(game_pk: int, user_pk: int) -> None:
     """
-    triggered at the end of _roll_dices_logic, after saving (phase is now CHOOSE_SQUARE, MANAGEMENT or LIQUIDATION)
-    triggered at the end of _square_chosen_logic, after saving (phase is now MANAGEMENT or LIQUIDATION)
-    triggered at the end of _choose_fantasy_logic, after saving (phase is now BUSINESS or ROLL_THE_DICES)
-    triggered at the end of _management_logic, after saving (phase is now BUSINESS or ROLL_THE_DICES)
-    triggered at the end of _answer_trade_proposal_logic, after saving (phase is now BUSINESS)
-    - Cancel at the start of every action handler that is not _roll_dices_logic or _pay_bail_logic
+    Celery task that acts as a timeout fallback. Automatically executes a default or 
+    random action based on the current game phase if the active user fails to act in time.
+
+    Args:
+        game_pk (int): The primary key of the game.
+        user_pk (int): The primary key of the user whose turn timed out.
+
+    Returns:
+        None
+
+    Raises:
+        GameLogicError: If the callback executes but it is no longer the target user's active phase.
     """
 
     response = None
@@ -116,6 +154,18 @@ def next_phase_callback(game_pk: int, user_pk: int) -> None:
 
 @shared_task
 def bot_play_callback(game_pk: int, user_pk: int) -> None:
+    """
+    Celery task that triggers the AI Agent for a bot player. 
+    Revokes any pending timeout tasks (like kick-out or next-phase), delegates decision-making 
+    to the Agent based on its difficulty level, and processes the chosen action.
+
+    Args:
+        game_pk (int): The primary key of the game.
+        user_pk (int): The primary key of the bot user.
+
+    Returns:
+        None
+    """
     game = Game.objects.get(pk=game_pk)
     active_player = game.active_phase_player
 

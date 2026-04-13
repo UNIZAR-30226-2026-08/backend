@@ -313,6 +313,18 @@ class GeneralActionSerializer(serializers.ModelSerializer):
         return serializer_class(instance, context=self.context).data
 
     def to_internal_value(self, data):
+        """
+        Deserializes the raw action data into the specific Action model based on the 'type' field.
+
+        Args:
+            data (dict): The raw JSON data from the request.
+
+        Returns:
+            dict: The validated data parsed by the appropriate specific serializer.
+
+        Raises:
+            serializers.ValidationError: If the 'type' field is missing or does not match a valid action type.
+        """
         action_type = data.get('type')
 
         if not action_type:
@@ -332,6 +344,18 @@ class GeneralActionSerializer(serializers.ModelSerializer):
         return serializer.to_internal_value(data)
 
     def create(self, validated_data):
+        """
+        Creates and returns a specific Action instance based on the provided action type.
+
+        Args:
+            validated_data (dict): The validated data dictionary.
+
+        Returns:
+            Action: A newly created instance of a specific Action subclass.
+
+        Raises:
+            serializers.ValidationError: If the action type is missing or invalid at the time of creation.
+        """
         action_type = self.initial_data.get('type') #type: ignore
         serializer_class = self.serializer_mapping.get(action_type)
 
@@ -436,6 +460,18 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ('username', 'password', 'password2')
 
     def validate(self, attrs):
+        """
+        Validates the registration data, specifically ensuring the passwords match.
+
+        Args:
+            attrs (dict): A dictionary containing 'username', 'password', and 'password2'.
+
+        Returns:
+            dict: The validated attributes.
+
+        Raises:
+            serializers.ValidationError: If the provided passwords do not match.
+        """
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({'password': 'Las contraseñas no coinciden.'})
         return attrs
@@ -490,6 +526,19 @@ class PurchaseSerializer(serializers.Serializer):
     custom_id = serializers.IntegerField()  # recibe custom_id del frontend
 
     def validate_custom_id(self, value):
+        """
+        Validates the item ID before a purchase.
+        Checks if the item exists, if the user already owns it, and if they have enough points.
+
+        Args:
+            value (int): The custom ID of the item being purchased.
+
+        Returns:
+            int: The validated custom ID.
+
+        Raises:
+            serializers.ValidationError: If the item does not exist, is already owned, or points are insufficient.
+        """
         try:
             item = Item.objects.get(custom_id=value)
         except Item.DoesNotExist:
@@ -512,6 +561,19 @@ class ChangePieceSerializer(serializers.Serializer):
     custom_id = serializers.IntegerField()
 
     def validate_custom_id(self, value):
+        """
+        Validates the piece ID before equipping it.
+        Checks if the item exists, if it is classified as a 'piece', and if the user owns it.
+
+        Args:
+            value (int): The custom ID of the piece to be equipped.
+
+        Returns:
+            int: The validated custom ID.
+
+        Raises:
+            serializers.ValidationError: If the item is not found, is not a piece, or is not owned by the user.
+        """
         try:
             item = Item.objects.get(custom_id=value)
         except Item.DoesNotExist:

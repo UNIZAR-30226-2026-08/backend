@@ -19,7 +19,7 @@ def get_tokens_for_user(user: CustomUser):
     Generates a JWT token pair for the given user.
 
     Args:
-        user: The authenticated CustomUser instance.
+        user (CustomUser): The authenticated CustomUser instance.
 
     Returns:
         A dict with 'access' and 'refresh' JWT tokens as strings.
@@ -52,6 +52,7 @@ class RegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user   = serializer.save()
@@ -340,7 +341,13 @@ class GetPrivateCodeView(APIView):
     def _generate_unique_code():
         """
         Generates a unique 6-character alphanumeric code in uppercase.
-        Ensures no existing PrivateRoom has this code.
+        Ensures no existing PrivateRoom is currently using this code in the database.
+
+        Args:
+            None
+
+        Returns:
+            str: The generated 6-character unique code.
         """
         characters = string.ascii_uppercase + string.digits
         while True:

@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 import time
 
+@patch('magnate.tasks.auction_callback.apply_async', **{'return_value.id': 'mock_auction_id'}) #type: ignore
 @patch('magnate.tasks.kick_out_callback.apply_async', **{'return_value.id': 'mock_kick_id'})  # type: ignore
 @patch('magnate.tasks.next_phase_callback.apply_async', **{'return_value.id': 'mock_phase_id'})  # type: ignore
 class AgentsTest(TestCase):
@@ -49,7 +50,7 @@ class AgentsTest(TestCase):
 
         self.game.save()
 
-    def test_simulate_game(self, mock_next_phase, mock_kick_out):
+    def test_simulate_game(self, mock_next_phase, mock_kick_out, mock_auction_task):
         agent1 = Agent(self.game, self.agent1, 'expert')
         agent2 = Agent(self.game, self.agent2, 'very_easy')
         

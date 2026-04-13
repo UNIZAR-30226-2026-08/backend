@@ -201,6 +201,19 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
     # TODO: be aware of race conditions -> new users while executing the method
     @database_sync_to_async
     def matchmaking_logic(self):
+        """
+        Checks if there are enough players in the queue. If so, creates a new game,
+        assigns starting positions and funds, randomizes the turn order, and removes 
+        the users from the public queue.
+
+        Args:
+            None
+
+        Returns:
+            tuple | None: A tuple containing the new game's primary key (`game_id`) and 
+                          a list of player channel names if a match is successfully made. 
+                          Returns `None` if there are not enough players in the queue.
+        """
         with transaction.atomic():
             
             players = list(PublicQueuePosition.objects.select_for_update().order_by('date_time')[:NUM_PUBLIC_GAME_PLAYERS])
@@ -703,6 +716,17 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def create_private_game(self, room_code):
+        """
+        Creates a game from a private room, filling empty slots with Bots according 
+        to the configured difficulty. Randomizes player order, initializes statistics, 
+        and deletes the lobby.
+
+        Args:
+            room_code (str): The unique string identifier for the private room.
+
+        Returns:
+            int: The primary key (`pk`) of the newly created Game instance.
+        """
         import random
         from django.utils import timezone
         from .models import PrivateRoom, Game, CustomUser
@@ -1146,9 +1170,22 @@ class GameConsumer(AsyncWebsocketConsumer):
    
     async def receive(self, text_data):
         """
-        Triggered when user sends a move -> broadcast to room group.
-        Also manages game over conditions triggering disconnects.
-        Manages DB interactions over purchases, rents etc
+        Processes WebSocket messages in the active game.
+        Differentiates between chat messages and game actions. Deserializes actions,
+        processes them via GameManager, and broadcasts the events (action sent and 
+        outcome) to all clients in the group. Deletes the action from the DB if a 
+        logic error occurs.
+
+        Args:
+            text_data (str): The raw JSON string received from the WebSocket client.
+
+        Returns:
+            None
+
+        Raises:
+            Sends an error via WebSocket (does not explicitly raise a Python exception) 
+            if the game is not found, data is invalid, or if GameManager throws a 
+            MaliciousUserInput, GameLogicError, or GameDesignError.
         """
        
         game = await self.get_game()

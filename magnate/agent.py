@@ -42,6 +42,20 @@ class Agent:
     ################################################################################
 
     def __init__(self, game: Game, user: Bot, level: str):
+        """
+        Initializes the AI Agent with a specific game, bot user, and difficulty level.
+
+        Args:
+            game (Game): The current game instance.
+            user (Bot): The bot user the agent will control.
+            level (str): The difficulty level string mapping to an epsilon value.
+
+        Returns:
+            None
+
+        Raises:
+            InvalidBotLevel: If the provided level string is not defined in the EPSILON mapping.
+        """
         if level not in EPSILON:
             raise InvalidBotLevel(game, level)
         self.epsilon = EPSILON[level]
@@ -51,7 +65,14 @@ class Agent:
     def choose_action(self) -> Action | None:
         """
         Retrieves all valid actions for the current phase and selects one.
-        Uses epsilon-greedy strategy: random action or the one with the highest EV.
+        Uses an epsilon-greedy strategy: picks a random action with probability `epsilon`, 
+        otherwise picks the action with the highest Expected Value (EV).
+
+        Args:
+            None
+
+        Returns:
+            Action | None: The chosen action instance to be executed, or None if no valid actions exist.
         """
         possible_actions = self._get_possible_actions()
         if len(possible_actions) == 0:
@@ -84,6 +105,15 @@ class Agent:
     def _get_possible_actions(self) -> list[Action]:
         """
         Dispatches to the specific action generator based on the current game phase.
+
+        Args:
+            None
+
+        Returns:
+            list[Action]: A list of all legally valid actions the bot can take in the current phase.
+
+        Raises:
+            GameLogicError: If the game is in an unrecognized or unhandled phase.
         """
         phase = self.game.phase
         if phase == Game.GamePhase.roll_the_dices:
@@ -108,7 +138,15 @@ class Agent:
         raise GameLogicError(f"Agent: unrecognised phase {phase}")
 
     def _get_possible_actions_roll_the_dices(self) -> list[Action]:
-        """Generates actions for the dice rolling phase, including paying bail if in jail."""
+        """
+        Generates actions for the dice rolling phase, including paying bail if the bot is in jail.
+
+        Args:
+            None
+
+        Returns:
+            list[Action]: Valid dice rolling or jail-exit actions.
+        """
         actions = []
         remaining = self.game.jail_remaining_turns.get(str(self.user.pk), 0)
     
@@ -122,7 +160,18 @@ class Agent:
         return actions
 
     def _get_possible_actions_choose_square(self) -> list[Action]:
-        """Generates movement actions for the available destinations."""
+        """
+        Generates movement actions for the available destinations when branching paths exist.
+
+        Args:
+            None
+
+        Returns:
+            list[Action]: A list of ActionMoveTo instances for all possible destinations.
+
+        Raises:
+            GameLogicError: If the phase is `choose_square` but no destinations are registered in the state.
+        """
         destinations = self.game.possible_destinations
         if not destinations:
             raise GameLogicError("Agent: choose_square phase but no possible_destinations")
@@ -133,7 +182,15 @@ class Agent:
         ]
     
     def _get_possible_actions_choose_fantasy(self) -> list[Action]:
-        """Generates actions to choose a fantasy card (revealed if affordable, or hidden)."""
+        """
+        Generates actions to choose a fantasy card, either paying to reveal it (if affordable) or picking blindly.
+
+        Args:
+            None
+
+        Returns:
+            list[Action]: A list of ActionChooseCard instances.
+        """
         actions = []
         fantasy_event = self.game.fantasy_event
         money = self.game.money[str(self.user.pk)]
@@ -151,7 +208,15 @@ class Agent:
         return actions
     
     def _get_possible_actions_management(self) -> list[Action]:
-        """Generates actions for the management phase (buy, drop, or take tram)."""
+        """
+        Generates actions for the management phase (buy property, drop purchase to trigger auction, or take a tram).
+
+        Args:
+            None
+
+        Returns:
+            list[Action]: Valid management actions based on the square the bot landed on and its funds.
+        """
         actions = []
         current_square = _get_user_square(self.game, self.user).get_real_instance()
         prop_rel = _get_relationship(self.game, current_square)
@@ -178,7 +243,15 @@ class Agent:
         return actions
 
     def _get_possible_actions_business(self) -> list[Action]:
-        """Generates actions for the business phase (build, demolish, mortgage, trade)."""
+        """
+        Generates actions for the business phase (build, demolish, mortgage, unmortgage, and propose trades).
+
+        Args:
+            None
+
+        Returns:
+            list[Action]: A list containing all valid structural, financial, and trade actions, ending with ActionNextPhase.
+        """
         actions = []
         money = self.game.money[str(self.user.pk)]
         owned = PropertyRelationship.objects.filter(game=self.game, owner=self.user).select_related('square')
@@ -246,7 +319,15 @@ class Agent:
         return actions
         
     def _get_possible_actions_liquidation(self) -> list[Action]:
-        """Generates actions to raise funds during liquidation (demolish, mortgage, or surrender)."""
+        """
+        Generates actions to raise funds during liquidation (demolish, mortgage) or surrender if impossible.
+
+        Args:
+            None
+
+        Returns:
+            list[Action]: Actions aimed at raising liquid cash, or ActionSurrender if bankrupt.
+        """
         actions = []
         owned = PropertyRelationship.objects.filter(game=self.game, owner=self.user).select_related('square')
     
@@ -270,7 +351,15 @@ class Agent:
         return actions
    
     def _get_possible_actions_proposal_acceptance(self) -> list[Action]:
-        """Generates actions to either accept or reject a trade proposal."""
+        """
+        Generates actions to either accept or reject a pending trade proposal.
+
+        Args:
+            None
+
+        Returns:
+            list[Action]: Accept (if funds permit) and reject ActionTradeAnswer instances.
+        """
         actions = []
         proposal = self.game.proposal
         money = self.game.money[str(self.user.pk)]
@@ -283,7 +372,18 @@ class Agent:
         return actions
     
     def _get_possible_actions_auction(self) -> list[Action]:
-        """Generates strategic bid actions respecting the maximum willing to pay and safety reserve."""
+        """
+        Generates strategic bid actions respecting the maximum amount willing to pay and a safety cash reserve.
+
+        Args:
+            None
+
+        Returns:
+            list[Action]: A list containing a pass bid (0) and the maximum calculated bid limit.
+
+        Raises:
+            GameLogicError: If the phase is `auction` but no active auction object exists in the state.
+        """
         auction = self.game.current_auction
         if auction is None:
             raise GameLogicError("Agent: auction phase but no current_auction")
@@ -311,7 +411,16 @@ class Agent:
         return [ActionBid(game=self.game, player=self.user, amount=amt) for amt in sorted(unique_bids)]
 
     def _get_random_trade_proposal(self, money: int) -> Action | None:
-        """Helper to generate and evaluate up to 5 random trade proposals."""
+        """
+        Helper to generate and evaluate up to 5 random trade proposals against opponents.
+        Selects the trade with the highest net Expected Value (EV) advantage.
+
+        Args:
+            money (int): The current liquid cash of the bot.
+
+        Returns:
+            Action | None: An ActionTradeProposal instance if a favorable trade is found, otherwise None.
+        """
         def is_tradable(rel):
             sq = rel.square.get_real_instance()
             if not isinstance(sq, PropertySquare):
@@ -394,8 +503,13 @@ class Agent:
     
     def _ev_action(self, action: Action) -> float:
         """
-        Top-level EV dispatcher. Routes the action to its specific expected value calculator.
-        Higher return value indicates a better strategic move.
+        Top-level Expected Value (EV) dispatcher. Routes the action to its specific EV calculator.
+
+        Args:
+            action (Action): The action to evaluate.
+
+        Returns:
+            float: The calculated expected value. Higher values indicate strategically better moves.
         """
         if isinstance(action, ActionThrowDices):
             return 0.0
@@ -471,8 +585,17 @@ class Agent:
 
     def _ev_buying(self, square: BaseSquare) -> float:
         """
-        Expected value of purchasing a square. Compares projected rent income 
-        (and blockade value) against the purchase price.
+        Expected value of purchasing a square. Compares projected rent income and monopoly blockade value 
+        against the purchase price.
+
+        Args:
+            square (BaseSquare): The buyable square to evaluate.
+
+        Returns:
+            float: The EV of the purchase.
+
+        Raises:
+            ValueError: If the target square is not a buyable property type.
         """
         if not isinstance(square, (PropertySquare, ServerSquare, BridgeSquare)):
             raise ValueError("EV buying only applies to buyable squares")
@@ -523,7 +646,15 @@ class Agent:
         return worth - float(amount)
 
     def _ev_build(self, square: BaseSquare) -> float:
-        """EV of building a house (Projected rent increase minus build cost)."""
+        """
+        Expected value of building a house. Compares the projected rent increase against the build cost.
+
+        Args:
+            square (BaseSquare): The property square to build on.
+
+        Returns:
+            float: The EV of constructing a building.
+        """
         if not isinstance(square, PropertySquare):
             return 0.0
     
@@ -599,7 +730,16 @@ class Agent:
         return total_recovered_income - cost
 
     def _ev_trade_answer(self, choose: bool) -> float:
-        """EV of accepting a trade (Net benefit differential against the proposer)."""
+        """
+        Expected value of answering a trade proposal. Calculates the net benefit differential 
+        between the bot and the proposing opponent.
+
+        Args:
+            choose (bool): True if accepting the trade, False if rejecting.
+
+        Returns:
+            float: The EV differential of accepting the trade (0.0 if rejecting).
+        """
         if not choose:
             return 0.0
 
@@ -624,7 +764,19 @@ class Agent:
         return my_benefit - (rival_benefit / opponents)
 
     def _evaluate_trade_net_benefit(self, player, properties_gained, properties_lost, money_gained, money_lost) -> float:
-        """Helper to compute the net EV gain/loss of a trade payload for a specific player."""
+        """
+        Helper to compute the net EV gain or loss of a trade payload for a specific player.
+
+        Args:
+            player (CustomUser): The player evaluating the trade.
+            properties_gained (list[BaseSquare]): Properties received in the trade.
+            properties_lost (list[BaseSquare]): Properties given away in the trade.
+            money_gained (int): Cash received.
+            money_lost (int): Cash given away.
+
+        Returns:
+            float: The net value change resulting from the trade parameters.
+        """
         gain = float(money_gained)
         for sq in properties_gained:
             gain += self._calculate_rent_delta(sq, player, gaining=True) * self._expected_visits() + sq.buy_price//2 #residual value
@@ -636,7 +788,19 @@ class Agent:
         return gain - loss
 
     def _ev_exit_jail(self) -> float:
-        """EV of exiting jail (Value of free movement minus risk of paying rent)."""
+        """
+        Expected value of exiting jail. Compares the value of free movement (landing on unowned properties) 
+        minus the risk of paying rent on opponent properties.
+
+        Args:
+            None
+
+        Returns:
+            float: The net EV of navigating the board freely.
+            
+        Raises:
+            GameLogicError: If an owned square is processed but lacks a property relationship.
+        """
         unowned = self._get_all_unowned_buyables()
         owned_by_others = self._get_buyables_owned_by_others()
 
@@ -667,7 +831,16 @@ class Agent:
         return ev_sum / 12.0
     
     def _ev_trade_proposal(self, action: ActionTradeProposal) -> float:
-        """EV of proposing a trade (Net benefit differential against the target)."""
+        """
+        Expected value of proposing a specific trade. Calculates the net benefit differential 
+        between the bot and the targeted opponent.
+
+        Args:
+            action (ActionTradeProposal): The specific trade proposal payload.
+
+        Returns:
+            float: The EV advantage of executing this trade.
+        """
         opponents = max(1, self.game.players.exclude(pk=self.user.pk).count())
         
         # Extraemos las instancias reales de las propiedades
@@ -739,7 +912,17 @@ class Agent:
         return 0
 
     def _calculate_rent_delta(self, square: BaseSquare, player, gaining: bool) -> float:
-        """Calculates the gross delta in rent income dynamically adjusting for monopoly/group synergies."""
+        """
+        Calculates the gross delta in rent income dynamically, adjusting for monopoly or group synergies.
+
+        Args:
+            square (BaseSquare): The target square.
+            player (CustomUser): The owner.
+            gaining (bool): True if simulating gaining the property, False if simulating losing it.
+
+        Returns:
+            float: The difference in potential rent yield.
+        """
         sq = square.get_real_instance()
         
         if isinstance(sq, PropertySquare):
@@ -793,7 +976,19 @@ class Agent:
         return float(self._calculate_dynamic_reserve() * n_players)
 
     def _max_willing_to_pay(self, square: BaseSquare) -> int:
-        """Calculates the maximum auction bid ensuring ROI and protecting the dynamic cash reserve."""
+        """
+        Calculates the maximum auction bid ensuring Return on Investment (ROI) and 
+        protecting the dynamic safety cash reserve.
+
+        Args:
+            square (BaseSquare): The buyable square up for auction.
+
+        Returns:
+            int: The maximum safe amount the bot is willing to bid.
+
+        Raises:
+            ValueError: If the square is not a buyable property type.
+        """
         if not isinstance(square, (PropertySquare, ServerSquare, BridgeSquare)):
             raise ValueError("Max bid only applies to buyable squares")
         

@@ -13,9 +13,9 @@ DEFAULT_WS_URL = "ws://localhost:8000"
 
 
 class GameClient:
-    def __init__(self, base_url, session_id=None):
+    def __init__(self, base_url, token=None):
         self.base_url = base_url
-        self.session_id = session_id
+        self.token = token
         self.websocket = None
         self.game_id = None
         self.player_id = None
@@ -34,11 +34,6 @@ class GameClient:
         print(prompt, end='', flush=True)
         return await self.input_queue.get()
 
-    def get_headers(self):
-        headers = {}
-        if self.session_id:
-            headers["Cookie"] = f"sessionid={self.session_id}"
-        return headers
     
 
     ## Gemini para hacer estas funciones
@@ -83,11 +78,11 @@ class GameClient:
         if mode == "join" and not room_code:
             room_code = await self.get_input("\nIntroduce el código de la sala para unirte: ")
 
-        url = f"{self.base_url}/ws/queue/private/{room_code}/"
+        url = f"{self.base_url}/ws/queue/private/{room_code}/?token={self.token}"
         print(f"Conectando a: {url}")
 
         try:
-            async with websockets.connect(url, additional_headers=self.get_headers()) as ws:
+            async with websockets.connect(url) as ws:
                 self.websocket = ws
 
                 if mode == "create":
@@ -166,10 +161,10 @@ class GameClient:
                 print("Comandos disponibles: 'chat <msg>', 'ready', 'notready', 'botlevel <nivel>', 'maxplayers <num>', 'start' (solo host), 'disconnect'")
 
     async def connect_to_queue(self):
-        url = f"{self.base_url}/ws/queue/public/"
+        url = f"{self.base_url}/ws/queue/public/?token={self.token}"
         print(f"Connecting to queue: {url}")
         try:
-            async with websockets.connect(url, additional_headers=self.get_headers()) as ws:
+            async with websockets.connect(url) as ws:
                 print("Connected to queue. Waiting for a match...")
                 async for message in ws:
                     data = json.loads(message)
@@ -187,11 +182,11 @@ class GameClient:
     async def play_game(self, game_id: int, player_id: int):
         self.game_id = game_id
         self.player_id = player_id
-        url = f"{self.base_url}/ws/game/{game_id}/"
+        url = f"{self.base_url}/ws/game/{game_id}/?token={self.token}"
         print(f"Connecting to game: {url}")
         
         try:
-            async with websockets.connect(url, additional_headers=self.get_headers()) as ws:
+            async with websockets.connect(url) as ws:
                 self.websocket = ws
                 
                 # Start listener and sender tasks
@@ -395,7 +390,7 @@ class GameClient:
 async def main():
     parser = argparse.ArgumentParser(description="Magnate Game CLI Client")
     parser.add_argument("--url", default=DEFAULT_WS_URL, help="Base WebSocket URL (e.g. ws://localhost:8000)")
-    parser.add_argument("--session", help="Django sessionid cookie value for authentication")
+    parser.add_argument("--token", help="JWT Access token for authentication")
     parser.add_argument("--game", help="Game ID to connect directly (skips queue)")
     parser.add_argument("--player_id", help="Player ID to connect")
     parser.add_argument("--mode", choices=["public", "create", "join"], default="public")
@@ -404,7 +399,7 @@ async def main():
     args = parser.parse_args()
 
 
-    client = GameClient(args.url, args.session)
+    client = GameClient(args.url, args.token)
     asyncio.create_task(client.input_worker())
 
     game_id = args.game

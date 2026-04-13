@@ -1,11 +1,9 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from django.contrib.sessions.backends.db import SessionStore
-from django.contrib.auth import SESSION_KEY, BACKEND_SESSION_KEY, HASH_SESSION_KEY
-from django.conf import settings
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class Command(BaseCommand):
-    help = 'Generates valid session IDs for two test users'
+    help = 'Generates valid JWT access tokens for two test users'
 
     def handle(self, *args, **kwargs):
         User = get_user_model()
@@ -18,20 +16,15 @@ class Command(BaseCommand):
         user2.set_password('1234')
         user2.save()
 
-        def create_session(user):
-            session = SessionStore()
-            session[SESSION_KEY] = user._meta.pk.value_to_string(user)
-            session[BACKEND_SESSION_KEY] = settings.AUTHENTICATION_BACKENDS[0]
-            session[HASH_SESSION_KEY] = user.get_session_auth_hash()
-            session.save()
-            return session.session_key
+        def create_token(user):
+            refresh = RefreshToken.for_user(user)
+            return str(refresh.access_token)
 
-        s1 = create_session(user1)
-        s2 = create_session(user2)
+        t1 = create_token(user1)
+        t2 = create_token(user2)
 
         self.stdout.write(self.style.SUCCESS('Sessions Generated!'))
-        self.stdout.write(f'User1 (ID: {user1.pk}) Session: {s1}')
-        self.stdout.write(f'User2 (ID: {user2.pk}) Session: {s2}')
+        self.stdout.write(f'User1 (ID: {user1.pk}) Session: {t1}')
+        self.stdout.write(f'User2 (ID: {user2.pk}) Session: {t2}')
         self.stdout.write('\nRUN THIS:')
-        self.stdout.write(f'python scripts/run_test.py --session1 {s1} --player_id1 {user1.pk} --session2 {s2} --player_id2 {user2.pk}')
-
+        self.stdout.write(f'python scripts/run_test.py --token1 {t1} --player_id1 {user1.pk} --token2 {t2} --player_id2 {user2.pk}')

@@ -20,7 +20,6 @@ class AuthTestCase(TestCase):
         # create a test user with enough points
         self.user = CustomUser.objects.create_user(
             username='testuser',
-            email='test@example.com',
             password='Segura123!',
         )
         self.user.points = 1000
@@ -51,7 +50,6 @@ class RegisterViewTest(AuthTestCase):
     def test_register_success(self):
         response: DRFResponse = self.client.post(reverse('register'), {  # type: ignore
             'username':  'newuser',
-            'email':     'new@example.com',
             'password':  'Segura123!',
             'password2': 'Segura123!',
         }, format='json')
@@ -64,7 +62,6 @@ class RegisterViewTest(AuthTestCase):
     def test_register_passwords_dont_match(self):
         response: DRFResponse = self.client.post(reverse('register'), {  # type: ignore
             'username':  'newuser',
-            'email':     'new@example.com',
             'password':  'Segura123!',
             'password2': 'Diferente123!',
         }, format='json')
@@ -72,21 +69,11 @@ class RegisterViewTest(AuthTestCase):
         assert response.data is not None
         self.assertIn('password', response.data)
 
-    def test_register_duplicate_email(self):
-        response: DRFResponse = self.client.post(reverse('register'), {  # type: ignore
-            'username':  'otheruser',
-            'email':     'test@example.com',
-            'password':  'Segura123!',
-            'password2': 'Segura123!',
-        }, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        assert response.data is not None
-        self.assertIn('email', response.data)
+
 
     def test_register_weak_password(self):
         response: DRFResponse = self.client.post(reverse('register'), {  # type: ignore
             'username':  'newuser',
-            'email':     'new@example.com',
             'password':  '1234',
             'password2': '1234',
         }, format='json')
@@ -304,7 +291,7 @@ class GetPrivateCodeViewTest(AuthTestCase):
     def test_get_private_code_authenticated(self):
         """Test that authenticated users can get a private room code."""
         client = self.auth_client()
-        response: DRFResponse = client.get(reverse('get private code'))  # type: ignore
+        response: DRFResponse = client.get(reverse('get_private_code'))  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data is not None
         self.assertIn('code', response.data)
@@ -313,13 +300,13 @@ class GetPrivateCodeViewTest(AuthTestCase):
 
     def test_get_private_code_unauthenticated(self):
         """Test that unauthenticated users cannot get a private room code."""
-        response: DRFResponse = self.client.get(reverse('get private code'))  # type: ignore
+        response: DRFResponse = self.client.get(reverse('get_private_code'))  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_private_code_format(self):
         """Test that the generated code has the correct format (6 alphanumeric uppercase chars)."""
         client = self.auth_client()
-        response: DRFResponse = client.get(reverse('get private code'))  # type: ignore
+        response: DRFResponse = client.get(reverse('get_private_code'))  # type: ignore
         assert response.data is not None
         code = response.data['code']
         
@@ -340,7 +327,7 @@ class GetPrivateCodeViewTest(AuthTestCase):
         
         codes = set()
         for _ in range(5):
-            response: DRFResponse = client.get(reverse('get private code'))  # type: ignore
+            response: DRFResponse = client.get(reverse('get_private_code'))  # type: ignore
             assert response.data is not None
             code = response.data['code']
             codes.add(code)
@@ -358,7 +345,7 @@ class GetPrivateCodeViewTest(AuthTestCase):
         )
         
         client = self.auth_client()
-        response: DRFResponse = client.get(reverse('get private code'))  # type: ignore
+        response: DRFResponse = client.get(reverse('get_private_code'))  # type: ignore
         assert response.data is not None
         code = response.data['code']
         
@@ -368,7 +355,7 @@ class GetPrivateCodeViewTest(AuthTestCase):
     def test_private_code_response_structure(self):
         """Test that the response has the correct structure."""
         client = self.auth_client()
-        response: DRFResponse = client.get(reverse('get private code'))  # type: ignore
+        response: DRFResponse = client.get(reverse('get_private_code'))  # type: ignore
         
         assert response.data is not None
         self.assertIsInstance(response.data, dict)

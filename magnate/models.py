@@ -807,6 +807,15 @@ class PlayerGameStatistic(models.Model):
         # 1 player and game for each stats
         unique_together = ('user', 'game')
 
+class GameSummary(models.Model):
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='summary')
+    
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    final_money = models.JSONField(default=dict, blank=True)
+    
+
 class BonusCategory(models.Model):
     class StatField(models.TextChoices):
         walked_squares    = 'walked_squares'

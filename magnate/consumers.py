@@ -229,8 +229,8 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             game.ordered_players = random.sample(game.ordered_players, len(game.ordered_players)) #random order of players
 
 
-            task = kick_out_callback.apply_async(args=[game.pk, users[0].pk], countdown=50) #necessary for first turn
-            game.kick_out_task_id = task.id
+            #task = kick_out_callback.apply_async(args=[game.pk, users[0].pk], countdown=50) #necessary for first turn
+            #game.kick_out_task_id = task.id
             game.save()
 
             
@@ -718,8 +718,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         for i in range(huecos):
             bot_username = f"Bot_{room_code}_{i+1}" 
             bot_user, _ = Bot.objects.get_or_create(
-                username=bot_username,
-                defaults={'email': f"{bot_username}@magnate.com" }
+                username=bot_username
             )
 
             bot_user.bot_level = room.bot_level
@@ -756,7 +755,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             
         room.delete()
 
-        GameManager._set_kick_out_timer(game, first_player)
+        #GameManager._set_kick_out_timer(game, first_player)
         
         game.save()
 

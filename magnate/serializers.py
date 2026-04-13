@@ -127,6 +127,11 @@ class JailSquareSerializer(BaseSquareSerializer):
         model = JailSquare
         fields = BaseSquareSerializer.Meta.fields + ['bail_price']
 
+class JailVisitSquareSerializer(BaseSquareSerializer):
+    class Meta(BaseSquareSerializer.Meta):
+        model = JailVisitSquare
+        fields = BaseSquareSerializer.Meta.fields
+
 class GeneralSquareSerializer(serializers.ModelSerializer):
     mapping = {
         'PropertySquare': PropertySquareSerializer,
@@ -138,6 +143,7 @@ class GeneralSquareSerializer(serializers.ModelSerializer):
         'ExitSquare': ExitSquareSerializer,
         'GoToJailSquare': GoToJailSquareSerializer,
         'JailSquare': JailSquareSerializer,
+        'JailVisitSquare': JailVisitSquareSerializer,
         'BaseSquare': BaseSquareSerializer, # Fallback
     }
     
@@ -388,12 +394,22 @@ class ResponseChooseFantasySerializer(serializers.ModelSerializer):
     class Meta(ResponseSerializer.Meta):
         model = ResponseChooseFantasy
 
+class ResponseSkipPhaseSerializer(serializers.ModelSerializer):
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseSkipPhase
+
+class ResponseBonusSerializer(serializers.ModelSerializer):
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseBonus
+
 class GeneralResponseSerializer(serializers.ModelSerializer):
     mapping = {
         'ResponseAuction': ResponseAuctionSerializer,
         'ResponseThrowDices': ResponseThrowDicesSerializer,
         'ResponseChooseSquare': ResponseChooseSquareSerializer,
         'ResponseChooseFantasy': ResponseChooseFantasySerializer,
+        'ResponseSkipPhase': ResponseSkipPhaseSerializer, 
+        'ResponseBonus': ResponseBonusSerializer,
         'Response': ResponseSerializer,
     }
     type = serializers.SerializerMethodField()
@@ -417,20 +433,17 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = CustomUser
-        fields = ('username', 'email', 'password', 'password2')
+        fields = ('username', 'password', 'password2')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({'password': 'Las contraseñas no coinciden.'})
-        if CustomUser.objects.filter(email=attrs['email']).exists():
-            raise serializers.ValidationError({'email': 'Este email ya está registrado.'})
         return attrs
 
     def create(self, validated_data):
         validated_data.pop('password2')
         return CustomUser.objects.create_user(
             username=validated_data['username'],
-            email=validated_data['email'],
             password=validated_data['password'],
         )
 
@@ -448,7 +461,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model  = CustomUser
         fields = (
-            'username', 'email',
+            'username', 
             'points', 'exp', 'elo',
             'date_joined',
             'num_played_games',
@@ -513,3 +526,10 @@ class ChangePieceSerializer(serializers.Serializer):
             raise serializers.ValidationError('You do not own this piece.')
 
         return value
+    
+# Final summary
+class GameSummarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GameSummary
+        fields = ['id', 'game', 'start_date', 'end_date', 'final_money']
+

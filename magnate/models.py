@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from polymorphic.models import PolymorphicModel
 
 class CustomUser(AbstractUser):
-    email = models.EmailField(unique=True)
     username = models.CharField(max_length=40, unique=True)
     current_private_room: "PrivateRoom | None" = models.ForeignKey( 'PrivateRoom', on_delete=models.SET_NULL,  null=True,  blank=True,related_name='players') # type: ignore
     ready_to_play = models.BooleanField(default=False) # depending of the current private room could be interpreted as  ready or looking for a public game
@@ -290,7 +289,8 @@ class Game(models.Model):
 
     kick_out_task_id = models.CharField(max_length=255, null=True, blank=True)
     next_phase_task_id = models.CharField(max_length=255, null=True, blank=True)
-
+    auction_task_id = models.CharField(max_length=255, null=True, blank=True)
+    
     current_turn = models.PositiveIntegerField(default=1)
 
 class Auction(models.Model):
@@ -806,6 +806,15 @@ class PlayerGameStatistic(models.Model):
     class Meta:
         # 1 player and game for each stats
         unique_together = ('user', 'game')
+
+class GameSummary(models.Model):
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='summary')
+    
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+
+    final_money = models.JSONField(default=dict, blank=True)
+    
 
 class BonusCategory(models.Model):
     class StatField(models.TextChoices):

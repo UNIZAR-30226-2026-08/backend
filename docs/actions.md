@@ -9,9 +9,6 @@
 ::: magnate.models.ActionMoveTo
 ::: magnate.serializers.ActionMoveToSerializer
 
-::: magnate.models.ActionTakeBus
-::: magnate.serializers.ActionTakeBusSerializer
-
 ::: magnate.models.ActionTakeTram
 ::: magnate.serializers.ActionTakeTramSerializer
 

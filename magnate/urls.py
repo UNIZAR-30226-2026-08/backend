@@ -38,6 +38,7 @@ urlpatterns = [
     path('shop/user-pieces/', UserPiecesView.as_view(), name='user_pieces'),
     path('shop/user-emojis/', UserEmojisView.as_view(), name='user_emojis'),
 
+    path('lobby/check-code/<str:room_code>/', CheckPrivateRoomView.as_view(), name='check-room-code')
     path('lobby/get-private-code', GetPrivateCodeView.as_view(), name='get_private_code'), 
 
     path('game/summary/<int:game_id>/', GetGameSummaryView.as_view(), name='game-summary'),

@@ -348,6 +348,26 @@ class GetPrivateCodeView(APIView):
             if not PrivateRoom.objects.filter(room_code=code).exists():
                 return code
             
+
+class CheckPrivateRoomView(APIView):
+    """
+    Checks if a private room with the given code exists.
+
+    GET /lobby/check-code/<room_code>/
+    
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Responses:
+        200: Returns a boolean indicating if the room exists ({'exists': true/false}).
+        401: Missing or invalid token.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_code):
+        exists = PrivateRoom.objects.filter(room_code=room_code).exists()
+        return Response({'exists': exists}, status=status.HTTP_200_OK)
+      
 class GetGamesPlayedView(APIView):
     """
     Returns a list of IDs for all games played by the authenticated user.
@@ -368,6 +388,7 @@ class GetGamesPlayedView(APIView):
         
         return Response({'games': game_ids}, status=status.HTTP_200_OK)
     
+
 
 class GetGameSummaryView(APIView):
     """

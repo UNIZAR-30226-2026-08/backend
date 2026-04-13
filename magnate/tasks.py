@@ -119,22 +119,29 @@ def bot_play_callback(game_pk: int, user_pk: int) -> None:
     game = Game.objects.get(pk=game_pk)
     active_player = game.active_phase_player
 
-    if not active_player or not Bot.objects.filter(pk=active_player.pk).exists() or game.phase == GameManager.END_GAME:
+    if game.phase == GameManager.END_GAME:
         return
 
-    bot = Bot.objects.get(pk=active_player.pk)
+    if game.phase != GameManager.AUCTION and game.active_phase_player.pk != user_pk:
+        return
+
+    if not Bot.objects.filter(pk=user_pk).exists():
+        return
+
+    bot = Bot.objects.get(pk=user_pk)
 
     from .celery import app
 
-    if game.kick_out_task_id:
-        app.control.revoke(game.kick_out_task_id, terminate=True)
-    if game.next_phase_task_id:
-        app.control.revoke(game.next_phase_task_id, terminate=True)
+    if game.phase != GameManager.AUCTION:
+        if game.kick_out_task_id:
+            app.control.revoke(game.kick_out_task_id, terminate=True)
+        if game.next_phase_task_id:
+            app.control.revoke(game.next_phase_task_id, terminate=True)
     # decision
     agent = Agent(game, bot, bot.bot_level)
     action = agent.choose_action()
 
     if action:
-        response = async_to_sync(GameManager.process_action)(game, active_player, action)
+        response = async_to_sync(GameManager.process_action)(game, bot, action)
         broadcast_to_game(game, response)
     

@@ -718,8 +718,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         for i in range(huecos):
             bot_username = f"Bot_{room_code}_{i+1}" 
             bot_user, _ = Bot.objects.get_or_create(
-                username=bot_username,
-                defaults={'email': f"{bot_username}@magnate.com" }
+                username=bot_username
             )
 
             bot_user.bot_level = room.bot_level

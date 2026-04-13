@@ -417,20 +417,17 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model  = CustomUser
-        fields = ('username', 'email', 'password', 'password2')
+        fields = ('username', 'password', 'password2')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({'password': 'Las contraseñas no coinciden.'})
-        if CustomUser.objects.filter(email=attrs['email']).exists():
-            raise serializers.ValidationError({'email': 'Este email ya está registrado.'})
         return attrs
 
     def create(self, validated_data):
         validated_data.pop('password2')
         return CustomUser.objects.create_user(
             username=validated_data['username'],
-            email=validated_data['email'],
             password=validated_data['password'],
         )
 
@@ -448,7 +445,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model  = CustomUser
         fields = (
-            'username', 'email',
+            'username', 
             'points', 'exp', 'elo',
             'date_joined',
             'num_played_games',

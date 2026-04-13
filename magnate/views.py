@@ -40,7 +40,6 @@ class RegisterView(APIView):
     Request body:
         {
             "username": "mario",
-            "email": "mario@example.com",
             "password": "Segura123!",
             "password2": "Segura123!"
         }

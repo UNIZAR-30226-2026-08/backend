@@ -3,7 +3,6 @@ from django.contrib.auth.models import AbstractUser
 from polymorphic.models import PolymorphicModel
 
 class CustomUser(AbstractUser):
-    email = models.EmailField(unique=True)
     username = models.CharField(max_length=40, unique=True)
     current_private_room: "PrivateRoom | None" = models.ForeignKey( 'PrivateRoom', on_delete=models.SET_NULL,  null=True,  blank=True,related_name='players') # type: ignore
     ready_to_play = models.BooleanField(default=False) # depending of the current private room could be interpreted as  ready or looking for a public game

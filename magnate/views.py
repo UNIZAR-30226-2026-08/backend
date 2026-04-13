@@ -10,8 +10,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import CustomUser, PrivateRoom
-from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer, ItemSerializer, PurchaseSerializer, ChangePieceSerializer
-from .models import CustomUser, Item
+from .serializers import LoginSerializer, RegisterSerializer, UserProfileSerializer, ItemSerializer, PurchaseSerializer, ChangePieceSerializer, GameSummarySerializer
+from .models import CustomUser, Item, GameSummary
 
 
 def get_tokens_for_user(user: CustomUser):
@@ -367,3 +367,33 @@ class GetGamesPlayedView(APIView):
         game_ids = list(request.user.played_games.values_list('id', flat=True))
         
         return Response({'games': game_ids}, status=status.HTTP_200_OK)
+    
+
+class GetGameSummaryView(APIView):
+    """
+    Returns a summary of a completed game, including start/end times and final money for each player.
+
+    GET /game/summary/<game_id>/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Responses:
+        200: Returns game summary with start_date, end_date, and final_money dict.
+        401: Missing or invalid token.
+        403: User did not participate in this game.
+        404: Game summary not found.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, game_id):
+        summary = get_object_or_404(GameSummary, game_id=game_id)
+
+        if not request.user.played_games.filter(id=game_id).exists():
+             return Response(
+                 {'error': 'No tienes permiso para ver el resumen de una partida en la que no participaste.'}, 
+                 status=status.HTTP_403_FORBIDDEN
+             )
+
+        serializer = GameSummarySerializer(summary)
+        return Response(serializer.data, status=status.HTTP_200_OK)

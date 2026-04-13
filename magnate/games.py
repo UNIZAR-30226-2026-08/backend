@@ -248,7 +248,7 @@ class GameManager:
             # All squares are suitable destinations
             possible_destinations = [s.custom_id for s in all_squares]
             possible_destinations.remove(_get_jail_square().custom_id)
-            game.possible_destinations = {str(c_id): 0 for c_id in possible_destinations}
+            game.possible_destinations = {c_id: 0 for c_id in possible_destinations}
             response.destinations = possible_destinations
             game.phase = GameManager.CHOOSE_SQUARE
             response.path = [current_pos_id]
@@ -1073,7 +1073,7 @@ class GameManager:
             if max_value and max_value > 0:
                 winners = list(stats.filter(**{field: max_value}).values_list('user__pk', flat=True))
                 for pk in winners:
-                    game.money[str(pk)] += category.bonus_amount
+                    game.money[str(pk)] = game.money.get(str(pk), 0) + category.bonus_amount
             else:
                 winners = []
 
@@ -1093,11 +1093,35 @@ class GameManager:
         if not game.finished:
             game.finished = True
             response = cls._apply_end_bonuses(game, num_bonuses=3)
+            
+            from django.utils import timezone
+            
+            # include eliminated users
+            all_participants = PlayerGameStatistic.objects.filter(game=game).select_related('user')
+            active_players = game.players.all()
+            
+            final_money_dict = {}
+            
+            for stat in all_participants:
+                participant = stat.user
+                if participant in active_players:
+                    # not eliminated
+                    final_money_dict[str(participant.pk)] = _calculate_net_worth(game, participant)
+                else:
+                    final_money_dict[str(participant.pk)] = 0
+            
+            GameSummary.objects.create(
+                game=game,
+                start_date=game.datetime,
+                end_date=timezone.now(),
+                final_money=final_money_dict
+            )
+
             response.save()
             game.bonus_response = response
             game.save()
+            
             from .models import Bot
-        
             bots_in_game = Bot.objects.filter(id__in=game.players.values_list('id', flat=True))
             bots_in_game.delete()
 

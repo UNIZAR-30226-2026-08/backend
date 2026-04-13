@@ -221,7 +221,7 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
 
             # initialize money and positions (see then what the optimal money)
             game.money = {str(u.pk): 1500 for u in users}
-            game.positions = {str(u.pk): "000" for u in users}
+            game.positions = {str(u.pk): 0 for u in users}
             
 
             game.players.set(users)
@@ -734,7 +734,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         )
 
         game.money = {str(u.pk): 1500 for u in users}
-        game.positions = {str(u.pk): "000" for u in users}
+        game.positions = {str(u.pk): 0 for u in users}
 
         game.players.set(users)
         ordered_pks = [u.pk for u in users]
@@ -755,11 +755,10 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             
         room.delete()
 
-        #GameManager._set_kick_out_timer(game, first_player)
+        # TODO: Make this an option
+        # GameManager._set_kick_out_timer(game, first_player)
         
         game.save()
-
-        
 
         return game.pk
 

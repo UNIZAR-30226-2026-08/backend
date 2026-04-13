@@ -14,15 +14,15 @@ from .serializers import LoginSerializer, RegisterSerializer, UserProfileSeriali
 from .models import CustomUser, Item, GameSummary
 
 
-def get_tokens_for_user(user: CustomUser):
+def get_tokens_for_user(user: CustomUser) -> dict:
     """
     Generates a JWT token pair for the given user.
 
     Args:
-        user: The authenticated CustomUser instance.
+        user (CustomUser): The authenticated CustomUser instance.
 
     Returns:
-        A dict with 'access' and 'refresh' JWT tokens as strings.
+        dict: A dictionary containing 'access' and 'refresh' JWT tokens as strings.
     """
     refresh = RefreshToken.for_user(user)
     return {
@@ -51,7 +51,17 @@ class RegisterView(APIView):
 
     permission_classes = [AllowAny]
 
-    def post(self, request):
+    def post(self, request) -> Response:
+        """
+        Handles the user registration request.
+
+        Args:
+            request (Request): The HTTP request object containing registration data.
+
+        Returns:
+            Response: The HTTP response containing registration results or errors.
+        """
+        
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user   = serializer.save()
@@ -86,7 +96,16 @@ class LoginView(APIView):
 
     permission_classes = [AllowAny]
 
-    def post(self, request):
+    def post(self, request) -> Response:
+        """
+        Handles the user login request.
+
+        Args:
+            request (Request): The HTTP request object containing login credentials.
+
+        Returns:
+            Response: The HTTP response containing login results or errors.
+        """
         serializer = LoginSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -136,7 +155,16 @@ class ProfileView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request) -> Response:
+        """
+        Handles the request to retrieve user profile data.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the user profile data.
+        """
         return Response(UserProfileSerializer(request.user).data)
     
 
@@ -160,7 +188,16 @@ class ShopItemListView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request) -> Response:
+        """
+        Handles the request to list available shop items.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the list of items.
+        """
         items = Item.objects.all()
         serializer = ItemSerializer(items, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -187,7 +224,16 @@ class BuyItemView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request) -> Response:
+        """
+        Handles the request to purchase a shop item.
+
+        Args:
+            request (Request): The HTTP request object containing the item identifier.
+
+        Returns:
+            Response: The HTTP response indicating purchase success or failure.
+        """
         serializer = PurchaseSerializer(data=request.data, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -223,7 +269,16 @@ class UserPiecesView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request) -> Response:
+        """
+        Handles the request to list pieces owned by the user.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the list of owned pieces.
+        """
         user: CustomUser = request.user  # type: ignore
         pieces = user.owned_items.filter(itemType='piece')
         serializer = ItemSerializer(pieces, many=True, context={'request': request})
@@ -243,7 +298,17 @@ class UserNamePieceView(APIView):
 
     permission_classes = [AllowAny]
 
-    def get(self, request, pk):
+    def get(self, request, pk) -> Response:
+        """
+        Handles the request to get a specific user's username and piece.
+
+        Args:
+            request (Request): The HTTP request object.
+            pk (int): The primary key of the user.
+
+        Returns:
+            Response: The HTTP response containing the user's name and piece.
+        """
         user = get_object_or_404(CustomUser, pk=pk)
         return Response({
             'username': user.username,
@@ -271,7 +336,16 @@ class ChangeUserPieceView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request) -> Response:
+        """
+        Handles the request to change the user's active piece.
+
+        Args:
+            request (Request): The HTTP request object containing the piece identifier.
+
+        Returns:
+            Response: The HTTP response indicating success or failure.
+        """
         serializer = ChangePieceSerializer(data=request.data, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -303,7 +377,16 @@ class UserEmojisView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request) -> Response:
+        """
+        Handles the request to list emojis owned by the user.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the list of owned emojis.
+        """
         user: CustomUser = request.user  # type: ignore
         emojis = user.owned_items.filter(itemType='emoji')
         serializer = ItemSerializer(emojis, many=True, context={'request': request})
@@ -326,7 +409,16 @@ class GetPrivateCodeView(APIView):
 
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request) -> Response:
+        """
+        Handles the request to generate a unique private room code.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the generated code.
+        """
         code = self._generate_unique_code()
         return Response({
             'code': code,
@@ -337,10 +429,16 @@ class GetPrivateCodeView(APIView):
     #2 peticiones muy seguidas y por mala suerte les dé el mismo número
     #aleatorio. En fin, srand() es mi pastor nada me falta.
     @staticmethod
-    def _generate_unique_code():
+    def _generate_unique_code() -> str:
         """
         Generates a unique 6-character alphanumeric code in uppercase.
-        Ensures no existing PrivateRoom has this code.
+        Ensures no existing PrivateRoom is currently using this code in the database.
+
+        Args:
+            None
+
+        Returns:
+            str: The generated 6-character unique code.
         """
         characters = string.ascii_uppercase + string.digits
         while True:
@@ -364,7 +462,17 @@ class CheckPrivateRoomView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, room_code):
+    def get(self, request, room_code) -> Response:
+        """
+        Handles the request to check if a private room exists.
+
+        Args:
+            request (Request): The HTTP request object.
+            room_code (str): The code of the room to check.
+
+        Returns:
+            Response: The HTTP response containing the existence check result.
+        """
         exists = PrivateRoom.objects.filter(room_code=room_code).exists()
         return Response({'exists': exists}, status=status.HTTP_200_OK)
       
@@ -383,7 +491,16 @@ class GetGamesPlayedView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def get(self, request):
+    def get(self, request) -> Response:
+        """
+        Handles the request to list all games played by the authenticated user.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the list of game IDs.
+        """
         game_ids = list(request.user.played_games.values_list('id', flat=True))
         
         return Response({'games': game_ids}, status=status.HTTP_200_OK)
@@ -407,7 +524,17 @@ class GetGameSummaryView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, game_id):
+    def get(self, request, game_id) -> Response:
+        """
+        Handles the request to retrieve a summary for a specific game.
+
+        Args:
+            request (Request): The HTTP request object.
+            game_id (int): The identifier of the game.
+
+        Returns:
+            Response: The HTTP response containing the game summary or an error.
+        """
         summary = get_object_or_404(GameSummary, game_id=game_id)
 
         if not request.user.played_games.filter(id=game_id).exists():

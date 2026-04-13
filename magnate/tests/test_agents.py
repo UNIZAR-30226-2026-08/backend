@@ -12,14 +12,36 @@ from unittest.mock import patch
 
 import time
 
+@patch('magnate.tasks.auction_callback.apply_async', **{'return_value.id': 'mock_auction_id'}) #type: ignore
 @patch('magnate.tasks.kick_out_callback.apply_async', **{'return_value.id': 'mock_kick_id'})  # type: ignore
 @patch('magnate.tasks.next_phase_callback.apply_async', **{'return_value.id': 'mock_phase_id'})  # type: ignore
 class AgentsTest(TestCase):
+    """
+    Test suite for the AI Agent logic and game simulation.
+    """
     @classmethod
     def setUpTestData(cls) -> None:
+        """
+        Initializes the board data before running the tests.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         call_command('init_boards')
 
     def setUp(self):
+        """
+        Sets up the test environment for each test case, including creating bots and a game.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.agent1 = Bot.objects.create(username="a1", email="a1@gmail.com")
         self.agent2 = Bot.objects.create(username="a2", email="a2@gmail.com")
         
@@ -49,7 +71,18 @@ class AgentsTest(TestCase):
 
         self.game.save()
 
-    def test_simulate_game(self, mock_next_phase, mock_kick_out):
+    def test_simulate_game(self, mock_next_phase, mock_kick_out, mock_auction_task):
+        """
+        Simulates a game session between two bots to ensure no logic errors occur over 500 turns.
+
+        Args:
+            mock_next_phase (Mock): Mocked next phase callback.
+            mock_kick_out (Mock): Mocked kick out callback.
+            mock_auction_task (Mock): Mocked auction callback.
+
+        Returns:
+            None
+        """
         agent1 = Agent(self.game, self.agent1, 'expert')
         agent2 = Agent(self.game, self.agent2, 'very_easy')
         

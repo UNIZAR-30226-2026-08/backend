@@ -27,6 +27,9 @@ class GameLogicError(Exception):
 
         Args:
             message (str, optional): Specific details about the logic error. Defaults to ''.
+
+        Returns:
+            None
         """
         self.message = "Internal logic error: " + message
         super().__init__(self.message)
@@ -47,6 +50,9 @@ class GameDesignError(Exception):
 
         Args:
             message (str, optional): Specific details about the configuration or design error. Defaults to ''.
+
+        Returns:
+            None
         """
         self.message = "Internal logic error: " + message
         super().__init__(self.message)
@@ -68,6 +74,9 @@ class MaliciousUserInput(Exception):
         Args:
             user (CustomUser): The user who triggered the exception.
             message (str, optional): Specific details about what the user attempted to do. Defaults to ''.
+
+        Returns:
+            None
         """
         self.message = f"[{user.pk}] Potentially malicious input: " + message
         super().__init__(self.message)
@@ -90,11 +99,17 @@ class MaliciousUserInputAction(MaliciousUserInput):
             game (Game): The current game instance where the violation occurred.
             user (CustomUser): The user attempting the invalid action.
             action (Action): The forbidden action the user attempted to perform.
+
+        Returns:
+            None
         """
         self.message = f"cannot perform action {action} in phase {game.phase}"
         super().__init__(user, self.message)
 
 class InvalidBotLevel(Exception):
+    """
+    Exception raised when an invalid difficulty level is provided for a bot.
+    """
     def __init__(self, game: Game, level: str):
         """
         Initializes the InvalidBotLevel exception.
@@ -102,6 +117,9 @@ class InvalidBotLevel(Exception):
         Args:
             game (Game): Th current game intance where the violation ocurred.
             level (str): The invalid bot level.
+
+        Returns:
+            None
         """
         self.message = f"invalid bot level {level} in game {game.pk}"
         super().__init__(self.message)

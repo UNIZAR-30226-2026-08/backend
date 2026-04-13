@@ -2,21 +2,19 @@
 Core Game Logic Module.
 
 This module handles the rules, state transitions, and actions of the game.
-It provides helper functions to calculate net worth, rent, building/demolishing
-rules, and a GameManager class that acts as a state machine for the different phases
-of a player's turn.
+It utilizes helper functions from game_utils to calculate net worth, rent, 
+building/demolishing rules, and provides a GameManager class that acts as 
+a state machine for the different phases of a player's turn.
 """
 
-from asyncio import Server
 import random 
-from tokenize import group
 from django.db import transaction
 from django.db.models import Max
 from .serializers import *
 from .models import *
 from .fantasy import *
 from .game_utils import (
-    _calculate_passed_go, _apply_square_arrival, _compute_dice_combinations, 
+    _apply_square_arrival, _compute_dice_combinations, 
     _move_player_logic, _build_square, _demolish_square, _get_jail_square,_set_mortgage,  
     _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, 
     _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id,
@@ -84,7 +82,7 @@ class GameManager:
             response = Response()
             return _add_basic_response_data(game, response)
 
-        if user != game.active_phase_player and not isinstance(action, ActionBid): # if aucction there are no turns
+        if user != game.active_phase_player and not isinstance(action, ActionBid): # if auction there are no turns
             raise MaliciousUserInput(user, "is not the active player")
 
 
@@ -125,14 +123,15 @@ class GameManager:
             # response = cls._end_game_logic(game,user,action)
             return cls._end_game_logic(game,user,action)
         else: 
-            raise GameLogicError(f"Fase no reconocida o no manejada: {game.phase}")
+            raise GameLogicError(f"Unrecognized or unhandled phase: {game.phase}")
 
         return _add_basic_response_data(game, response)
 
     @staticmethod
     def _pay_bail_logic(game: Game, user: CustomUser, action: ActionPayBail) -> Response:
         """
-        Processes the action to pay the jail bail.
+        Processes the action to pay the jail bail. Cancels previous timers, deducts money, resets jail turns, updates player 
+        statistics, and sets the timer for the next phase.
 
         Args:
             game (Game): The current game instance.
@@ -179,7 +178,12 @@ class GameManager:
     @staticmethod
     def _roll_dices_logic(game: Game, user: CustomUser, action: ActionThrowDices) -> Response: 
         """
-        Handles rolling the dice, checking for doubles/triples, and resolving jail mechanics.
+        Handles the dice rolling process, including double/triple streaks and jail mechanics.
+        
+        This method calculates the result of rolling three dice (including the bus die),
+        updates the player's movement streak, and determines possible destination squares.
+        It also handles logic for players attempting to leave jail via doubles or 
+        forced payment.
 
         Args:
             game (Game): The current game instance.
@@ -187,7 +191,11 @@ class GameManager:
             action (ActionThrowDices): The dice throw action payload.
 
         Returns:
-            Response: Standard response.
+            ResponseThrowDices: Contains dice values, streak status, possible destinations, 
+                               and the path to be traversed if only one destination exists.
+            
+        Raises:
+            GameLogicError: If the player has a jailed status but is not on a jail square.
         """
 
         GameManager._cancel_all_timers(game)
@@ -215,14 +223,14 @@ class GameManager:
         if is_jailed:
             jail_sq = current_pos_square
             if isinstance(jail_sq, JailSquare):
-                if remaining_jail_turns == 1: #obligado a salir
+                if remaining_jail_turns == 1: # Forced to leave jail (last turn)
                     game.money[str(user.pk)] -= jail_sq.bail_price
                     game.jail_remaining_turns[str(user.pk)] = 0
                     stats = PlayerGameStatistic.objects.get(user=user,game=game)
                     stats.turns_in_jail += 1
                     stats.lost_money += jail_sq.bail_price
                     stats.save()
-                elif doubles: #sale gratis
+                elif doubles: # Leaves jail for free due to doubles
                     game.jail_remaining_turns[str(user.pk)] = 0
                     game.streak = 0
                 else:
@@ -328,7 +336,9 @@ class GameManager:
     @staticmethod
     def _square_chosen_logic(game: Game, user: CustomUser, action: Action) -> Response:
         """
-        Handles the logic when a user selects their final destination (if multiple choices were given).
+        Handles the user's final destination selection.
+        Moves the player, evaluates passing Go, updates walked squares statistics, 
+        and resets timers.
 
         Args:
             game (Game): The current game instance.
@@ -336,10 +346,12 @@ class GameManager:
             action (ActionMoveTo): Action indicating the chosen square.
 
         Returns:
-            Response: Standard response.
+            Response: A ResponseChooseSquare object including the path taken.
 
         Raises:
-            MaliciousUserInput: If the chosen square is not in `possible_destinations`.
+            MaliciousUserInputAction: If the action type is incorrect.
+            MaliciousUserInput: If the chosen square is not in the allowed `possible_destinations`.
+            GameDesignError: If the jail square is missing from the board.
         """
 
         GameManager._cancel_all_timers(game)
@@ -391,6 +403,19 @@ class GameManager:
     
     @staticmethod
     def _choose_fantasy_logic(game: Game, user: CustomUser, action: ActionChooseCard) -> Response:
+        """
+        Applies a pre-existing fantasy event or randomly generates a new one.
+        Determines the next game phase and updates timers.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The active user making the choice.
+            action (ActionChooseCard): The payload of the card choice action.
+
+        Returns:
+            Response: A ResponseChooseFantasy object containing the fantasy event result.
+        """
+
         GameManager._cancel_all_timers(game)
 
         response = ResponseChooseFantasy()
@@ -429,21 +454,21 @@ class GameManager:
     @staticmethod
     def _management_logic(game: Game, user: CustomUser, action: Action) -> Response:
         """
-        Logic of management phase, where the user can buy properties, pay bills etc.
-
-        It checks the user's action against the current square they are on to update 
-        the game state and transition to the next phase.
+        Management phase logic (purchases, dropping a purchase, taking a tram).
+        Includes handling purchases for PropertySquare, ServerSquare, and BridgeSquare,
+        updating lost money statistics and timers.
 
         Args:
             game (Game): The current game instance.
             user (CustomUser): The acting user.
-            action (Action): The payload of the action taken (e.g., ActionBuySquare).
+            action (Action): The payload of the action taken (e.g., ActionBuySquare, ActionTakeTram).
 
         Returns:
             Response: Standard response.
 
         Raises:
-            MaliciousUserInputAction: If the action does not fit the phase/context.
+            MaliciousUserInputAction: If the action does not fit the phase, context, or square type.
+            MaliciousUserInput: If the user tries to take a tram to an invalid square or lacks funds.
         """
         GameManager._cancel_all_timers(game)
 
@@ -598,19 +623,24 @@ class GameManager:
     @staticmethod
     def _answer_trade_proposal_logic(game: Game, user: CustomUser, action: Action) -> Response:
         """
-        Processes a user's answer (accept/reject) to an active trade proposal.
+        Processes the response (accept/reject) to a trade proposal.
+        Transfers properties and money ensuring no player goes into negative balance, 
+        updates trade and money statistics for both players, and returns the turn 
+        to the proposer.
 
         Args:
             game (Game): The current game instance.
             user (CustomUser): The targeted user responding to the offer.
-            action (ActionTradeAnswer): The user's response payload.
+            action (ActionTradeAnswer): The user's response payload (contains `choose` boolean).
 
         Returns:
             Response: Standard response.
 
         Raises:
+            GameLogicError: If there is no active proposal in the game state.
             MaliciousUserInput: If an unauthorized user attempts to answer, 
-                or references an invalid proposal.
+                                or if the trade results in a negative money balance for either party.
+            MaliciousUserInputAction: If an invalid action type is passed.
         """
         if isinstance(action, ActionTradeAnswer):
             offer = game.proposal
@@ -710,7 +740,9 @@ class GameManager:
     @staticmethod
     def _bid_property_auction_logic(game: Game, user: CustomUser, action: Action) -> Response:
         """
-        Registers a player's bid during an active auction phase.
+        Registers a player's bid in an active auction.
+        Verifies that the player has not previously dropped the purchase of that property.
+        Automatically ends the auction if all eligible players have bid.
 
         Args:
             game (Game): The current game instance.
@@ -718,11 +750,13 @@ class GameManager:
             action (ActionBid): The action carrying the bid amount.
 
         Returns:
-            Response: Standard response.
+            Response: Standard response, or the resolved auction response if all players have bid.
 
         Raises:
-            GameLogicError: If auction state is corrupted.
-            MaliciousUserInput: If the user bids twice or exceeds their balance.
+            GameLogicError: If there is no active auction found.
+            MaliciousUserInputAction: If an invalid action type is passed.
+            MaliciousUserInput: If the user bids twice, triggered the auction drop themselves, 
+                                or if the bid exceeds their current balance.
         """
         if not isinstance(action, ActionBid):
             raise MaliciousUserInputAction(game, user, action)
@@ -918,6 +952,21 @@ class GameManager:
 
     @classmethod
     def _next_turn(cls, game: Game, user: CustomUser) -> None:
+        """
+        Advances the game to the next player in the established order.
+        Resets bot flags and manages timers for the new turn.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The current active user whose turn is ending.
+            
+        Returns:
+            None
+
+        Raises:
+            GameLogicError: If the current or next player cannot be identified in the player list.
+        """
+
         players_list = list(game.players.all()) 
         num_players = len(players_list)
         current_index = -1
@@ -957,6 +1006,24 @@ class GameManager:
  
     @classmethod
     def _propose_trade(cls, game: Game, user: CustomUser, action: ActionTradeProposal) -> None:
+        """
+        Validates and initiates a trade proposal between players.
+        Checks that there are no built houses in the involved groups.
+        Updates bot states if applicable and changes the phase to PROPOSAL_ACCEPTANCE.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The user proposing the trade.
+            action (ActionTradeProposal): The payload detailing offered/asked money and properties.
+
+        Returns:
+            None
+
+        Raises:
+            MaliciousUserInput: If the action involves negative money, references an invalid 
+                                destination player, attempts to trade unowned properties, or tries 
+                                to trade properties belonging to a group with built houses.
+        """
         if action.player.pk != user.pk or action.offered_money < 0 or action.asked_money < 0:
             raise MaliciousUserInput(user, "cannot do operation")
         if action.destination_user not in game.players.all():
@@ -1009,6 +1076,18 @@ class GameManager:
 
     @classmethod
     def _bankrupt_player(cls, game: Game, user: CustomUser):
+        """
+        Eliminates a player from the game due to bankruptcy, clearing their properties 
+        and state. If only one player remains, ends the game. Otherwise, passes the turn 
+        to the next player.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The user going bankrupt.
+
+        Returns:
+            None
+        """
         try:
             current_idx = game.ordered_players.index(user.pk)
             next_pk = game.ordered_players[(current_idx + 1) % len(game.ordered_players)]
@@ -1059,6 +1138,17 @@ class GameManager:
     #TODO: llegar a fase final donde se reparte esto
     @classmethod
     def _apply_end_bonuses(cls, game: Game, num_bonuses: int = 3) -> ResponseBonus:
+        """
+        Selects random bonus categories and awards extra money to players based on 
+        their game statistics.
+
+        Args:
+            game (Game): The current game instance.
+            num_bonuses (int): The number of categories to pick for bonuses (default: 3).
+
+        Returns:
+            ResponseBonus: An object mapping the chosen bonus categories and their winners.
+        """
         all_categories = list(BonusCategory.objects.all())
         chosen = random.sample(all_categories, min(num_bonuses, len(all_categories)))
 
@@ -1088,6 +1178,22 @@ class GameManager:
 
     @classmethod
     def _end_game_logic(cls, game: Game, user: CustomUser, action: Action) -> Response:
+        """
+        Ends the game, applies final bonuses, generates the summary (GameSummary) 
+        with the net worth of all participants (including eliminated ones), and 
+        removes the bots.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The user associated with triggering the end game phase.
+            action (Action): The final action payload.
+
+        Returns:
+            Response: The final response containing the applied bonuses.
+
+        Raises:
+            GameLogicError: If the game has already been marked as finished.
+        """
         GameManager._cancel_all_timers(game)
 
         if not game.finished:
@@ -1134,6 +1240,17 @@ class GameManager:
 
     @staticmethod
     def _set_next_phase_timer(game: Game, user: CustomUser):
+        """
+        Cancels all active timers and sets a new timer for the next game phase.
+        If the active user is a bot, it also schedules an immediate bot play task.
+
+        Args:
+            game (Game): The current game instance.
+            user (CustomUser): The user whose turn or phase it currently is.
+
+        Returns:
+            None
+        """
         from .tasks import next_phase_callback, bot_play_callback
         from .celery import app
         
@@ -1148,6 +1265,17 @@ class GameManager:
 
     #@staticmethod
     #def _set_kick_out_timer(game: Game, user: CustomUser):
+    #     """
+    #     Revokes any existing kick-out timer and sets a new one to remove an inactive player.
+    #     If the user is a bot, it schedules a bot play task.
+    #
+    #     Args:
+    #         game (Game): The current game instance.
+    #         user (CustomUser): The user subject to the kick-out timer.
+    #
+    #     Returns:
+    #         None
+    #     """
     #    from .tasks import kick_out_callback, bot_play_callback
     #    from .celery import app
     #    
@@ -1163,6 +1291,16 @@ class GameManager:
 
     @staticmethod
     def _cancel_all_timers(game: Game):
+        """
+        Revokes both the next phase and kick-out Celery tasks if they are active,
+        ensuring the current task is not self-cancelled. Clears the task IDs from the game.
+
+        Args:
+            game (Game): The current game instance.
+
+        Returns:
+            None
+        """
         from .celery import app
         from celery import current_task
         
@@ -1187,6 +1325,16 @@ class GameManager:
 
     @staticmethod
     def _set_auction_timer(game: Game):
+        """
+        Cancels any existing auction timer and schedules a new one to end the auction.
+        Also schedules bot play tasks with random delays for all bots currently in the game.
+
+        Args:
+            game (Game): The current game instance.
+
+        Returns:
+            None
+        """
         import random
         from .tasks import auction_callback, bot_play_callback
         
@@ -1201,6 +1349,16 @@ class GameManager:
 
     @staticmethod
     def _cancel_auction_timer(game: Game):
+        """
+        Revokes the active auction Celery task if it exists and is not the current task.
+        Clears the auction task ID from the game.
+
+        Args:
+            game (Game): The current game instance.
+
+        Returns:
+            None
+        """
         from .celery import app
         from celery import current_task
         

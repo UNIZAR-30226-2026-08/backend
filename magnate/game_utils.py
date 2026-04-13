@@ -11,9 +11,9 @@ def _build_square(game: Game,
                   free_build: bool) -> PropertyRelationship:
     """
     Builds houses or hotels on a property.
-
-    Validates that the user owns the complete color group and respects 
-    the uniform building rule.
+    Validates that the user owns the complete color group, ensures no properties 
+    in the group are mortgaged, and respects the uniform building rule. Updates 
+    player statistics and deducts funds accordingly.
 
     Args:
         game (Game): The current game instance.
@@ -23,12 +23,13 @@ def _build_square(game: Game,
         free_build (bool): If True, the user is not charged for the construction.
 
     Returns:
-        PropertyRelationship: The updated ownership relationship.
+        PropertyRelationship: The updated ownership relationship reflecting the new houses.
 
     Raises:
-        MaliciousUserInput: If the user does not own the full group,  a square in the group is mortgaged, violates 
-            uniform building rules, or tries to build beyond the max limit.
-        GameLogicError: If negative house values are encountered.
+        MaliciousUserInput: If the target is not a property square, the user does not 
+                            own the full group, a square in the group is mortgaged, 
+                            it violates uniform building rules, or it exceeds the max limit.
+        GameLogicError: If negative house values are encountered in the database.
     """
     # Check if it's  a property and take its group
     building_square = building_square.get_real_instance()
@@ -98,9 +99,9 @@ def _demolish_square(game: Game,
                      number_demolished: int,
                      free_demolish: bool) -> PropertyRelationship:
     """
-    Demolishes houses/hotels on a property and returns money to the user.
-
-    Ensures that uniform building rules are respected during demolition.
+    Demolishes houses/hotels on a property and returns half the build price to the user.
+    Ensures that uniform building rules are respected during the demolition process 
+    and updates player statistics.
 
     Args:
         game (Game): The current game instance.
@@ -114,9 +115,10 @@ def _demolish_square(game: Game,
 
     Raises:
         MaliciousUserInput: If the property is unowned, owned by someone else, 
-            is not a property square, or violates uniform building rules.
+                            is not a property square, attempts to demolish more houses 
+                            than exist, or violates uniform building rules.
     """
-    # Check if it's a property
+    
     demolition_square = demolition_square.get_real_instance()
     if not isinstance(demolition_square, PropertySquare):
         raise MaliciousUserInput(user, "tried to demolish a non property square")
@@ -125,7 +127,7 @@ def _demolish_square(game: Game,
 
     if relationship is None:
         raise MaliciousUserInput(user, "no user owns this square")
-    
+
     if relationship.owner != user:
         raise MaliciousUserInput(user, "tried to demolish an unowned property")
 
@@ -170,11 +172,14 @@ def _get_jail_square() -> BaseSquare:
     """
     Retrieves the designated Jail square for the board.
 
+    Args:
+        None
+
     Returns:
         BaseSquare: The JailSquare instance.
 
     Raises:
-        GameDesignError: If there are no jail squares or too many jail squares.
+        GameDesignError: If there are no jail squares or multiple jail squares configured in the database.
     """
     try:
         return JailSquare.objects.get()
@@ -184,22 +189,23 @@ def _get_jail_square() -> BaseSquare:
         raise GameDesignError("there are too many jail squares")
 
 
-#TODO: si hay hipotecada no se cuenta grupo completo?
 def _unset_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_unset_mortgage: bool) -> PropertyRelationship:
     """
-    Lifts the mortgage from a property by paying the required fee.
+    Lifts the mortgage from a property by paying the required fee (half the buy price).
+    Updates the player's lost money statistics.
 
     Args:
         game (Game): The current game instance.
         user (CustomUser): The user lifting the mortgage.
         target_square (BaseSquare): The property to unmortgage.
-        free_unset_mortgage (bool): If True, the user is not charged.
+        free_unset_mortgage (bool): If True, the user is not charged the unmortgage fee.
 
     Returns:
-        PropertyRelationship: The updated relationship.
+        PropertyRelationship: The updated relationship reflecting the lifted mortgage.
 
     Raises:
-        MaliciousUserInput: If not owned, not mortgaged, or wrong type of square.
+        MaliciousUserInput: If the target is not a buyable square, is unowned, 
+                            is owned by another player, or is not currently mortgaged.
     """
     target_square = target_square.get_real_instance()
     if not (isinstance(target_square, PropertySquare) or
@@ -235,14 +241,14 @@ def _unset_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, fre
 
 def _get_relationship(game: Game, square: BaseSquare) -> Optional[PropertyRelationship]:
     """
-    Gets the ownership relationship between a game and a specific square.
+    Retrieves the ownership relationship for a specific square in a game.
 
     Args:
         game (Game): The current game instance.
-        square (BaseSquare): The property square to check.
+        square (BaseSquare): The square instance.
 
     Returns:
-        Optional[PropertyRelationship]: The relationship object if owned, None otherwise.
+        PropertyRelationship | None: The relationship instance if owned, otherwise None.
 
     Raises:
         GameLogicError: If more than one owner is found for the same square.
@@ -258,16 +264,16 @@ def _get_relationship(game: Game, square: BaseSquare) -> Optional[PropertyRelati
 
 def _get_square_by_custom_id(custom_id: int) -> BaseSquare:
     """
-    Retrieves a BaseSquare instance by its custom_id.
+    Retrieves a BaseSquare instance by its designated custom_id.
 
     Args:
         custom_id (int): The custom identifier of the square.
 
     Returns:
-        BaseSquare: The square instance.
+        BaseSquare: The corresponding square instance.
 
     Raises:
-        GameLogicError: If no square with the given custom_id exists.
+        GameLogicError: If no square with the given custom_id exists in the database.
     """
     square = BaseSquare.objects.filter(custom_id=custom_id).first()
     if square is None:
@@ -298,10 +304,9 @@ def _get_user_square(game: Game, user: CustomUser) -> BaseSquare:
 
 def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -> int:
     """
-    Calculates the rent price a user must pay when landing on a square.
-
-    Handles different logic for PropertySquares (houses), TramSquares, 
-    BridgeSquares, and ServerSquares based on ownership and multipliers.
+    Calculates the exact rent price a user must pay when landing on a square.
+    Handles different pricing logic for PropertySquares (houses and monopolies), 
+    TramSquares, BridgeSquares, and ServerSquares based on ownership multipliers.
 
     Args:
         game (Game): The current game instance.
@@ -309,11 +314,12 @@ def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -> i
         square (BaseSquare): The square being landed on.
 
     Returns:
-        int: The calculated rent amount to pay. Returns 0 if unowned or owned by the user.
+        int: The calculated rent amount to pay. Returns 0 if the square is unowned, 
+             mortgaged, or owned by the user landing on it.
 
     Raises:
-        GameDesignError: If the rent arrays on the square are incorrectly configured.
-        GameLogicError: If an unexpected condition occurs during calculation.
+        GameDesignError: If the rent arrays on the square are incorrectly configured or missing.
+        GameLogicError: If an unexpected condition occurs during server square calculation.
     """
     # If it is not owned or is owned by the same user, no rent is paid
     prop_rel = _get_relationship(game, square)
@@ -375,7 +381,8 @@ def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -> i
 
 def _set_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_mortgage: bool) -> PropertyRelationship:
     """
-    Mortgages a property to receive immediate funds.
+    Mortgages a property to receive immediate funds (half the buy price).
+    Ensures that no properties within the same color group currently have houses built.
 
     Args:
         game (Game): The current game instance.
@@ -384,11 +391,13 @@ def _set_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_
         free_mortgage (bool): If True, no money is added to the user's balance.
 
     Returns:
-        PropertyRelationship: The updated relationship.
+        PropertyRelationship: The updated relationship reflecting the active mortgage.
 
     Raises:
-        MaliciousUserInput: If not owned, already mortgaged, there's a square in the group with houses or wrong type of square.
-        GameLogicError: If trying to mortgage a property that still has houses built on it.
+        MaliciousUserInput: If the target is not a buyable square, is unowned, 
+                            is owned by another player, or is already mortgaged.
+        GameLogicError: If the user tries to mortgage a property while there are still houses 
+                        built on any property within its color group.
     """
     target_square = target_square.get_real_instance()
     if not (isinstance(target_square, PropertySquare) or
@@ -439,10 +448,9 @@ def _set_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_
 
 def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
     """
-    Calculates the final destination and path of a player moving a set number of steps.
-
-    Handles specific movement mechanics such as passing Go, taking bridges, 
-    and landing on the "Go to Jail" square.
+    Calculates the final destination and traversed path of a player moving a set number of steps.
+    Handles specific movement mechanics such as passing Go, navigating through bridges, 
+    and landing exactly on the "Go to Jail" square.
 
     Args:
         curr (BaseSquare): The starting square instance.
@@ -450,13 +458,14 @@ def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
 
     Returns:
         dict: A dictionary containing:
-            - final_id (int): Custom ID of the final square.
-            - path (list[int]): List of custom IDs traversed.
-            - passed_go (bool): True if the player passed the Go square.
-            - jailed (bool): True if the player landed on Go to Jail.
+            - "final_id" (int): Custom ID of the final landing square.
+            - "path" (list[int]): Ordered list of custom IDs traversed along the way.
+            - "passed_go" (bool): True if the player passed the Go/Exit square.
+            - "jailed" (bool): True if the player landed directly on Go to Jail.
 
     Raises:
-        GameDesignError: If a successor square cannot be found or the jail doesn't exist.
+        GameLogicError: If the current square passed is None.
+        GameDesignError: If a successor square cannot be found (broken board links) or bridge logic fails.
     """
     if curr is None:
         raise GameLogicError('current square is None')
@@ -495,7 +504,8 @@ def _move_player_logic(curr: BaseSquare, total_steps: int) -> dict:
 
 def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinations: list[int]) ->tuple[dict[int,int], dict[str, bool]]:
     """
-    Calculates all possible destination square IDs based on dice combinations.
+    Calculates all possible destination square IDs and their associated step counts 
+    and "passed go" flags based on available dice combinations.
 
     Args:
         game (Game): The current game instance.
@@ -503,7 +513,9 @@ def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinatio
         dice_combinations (list[int]): Possible total steps generated by the dice roll.
 
     Returns:
-        list[int]: A sorted list of unique destination custom_ids.
+        tuple[dict[str, int], dict[str, bool]]: 
+            - A dictionary mapping the destination `custom_id` (as a string) to the number of steps taken to get there.
+            - A dictionary mapping the destination `custom_id` (as a string) to a boolean indicating if Go was passed.
     """
     destination_ids = dict()
     current_pos_id = game.positions[str(user.pk)]
@@ -526,15 +538,14 @@ def _get_possible_destinations_ids(game: Game, user: CustomUser, dice_combinatio
 def _get_max_liquidation_value(game: Game, user: CustomUser) -> int:
     """
     Calculates the absolute maximum money a user can raise by liquidating all assets.
-
-    This includes selling all houses and mortgaging all unmortgaged properties.
+    This simulates selling all built houses and mortgaging all unmortgaged properties.
 
     Args:
         game (Game): The current game instance.
         user (CustomUser): The target user.
 
     Returns:
-        int: The maximum liquidation value in cash.
+        int: The maximum potential liquidation value in cash.
     """
     total_value = game.money[str(user.pk)] 
     
@@ -556,11 +567,13 @@ def _get_max_liquidation_value(game: Game, user: CustomUser) -> int:
 
 def _calculate_net_worth(game: Game, user: CustomUser) -> int:
     """
-    Calculates the total net worth of a user (Cash + Property Value + Building Value).
+    Calculates the total net worth of a user.
+    This includes liquid cash, the full buy price of all unmortgaged properties, 
+    and the full build price of all constructed houses/hotels.
 
     Args:
         game (Game): The current game instance.
-        user (CustomUser): The user to calculate for.
+        user (CustomUser): The user to calculate the net worth for.
 
     Returns:
         int: The total calculated net worth.
@@ -590,19 +603,24 @@ def _apply_square_arrival(
     passed_go: bool,
     streak: int = 0) -> ResponseMovement:
     """
-    Centralizes all side-effects of a player arriving at a square
-
-    Does NOT update game.positions nor decide the next phase.
-    Does NOT call game.save()
+    Centralizes all side-effects of a player arriving at a square (e.g., collecting Go money, 
+    paying rent, claiming parking money, triggering fantasy events). 
+    Modifies the game state and the response object, but does NOT save to the database 
+    nor update the player's position array directly.
 
     Args:
         game (Game): The current game instance.
         user (CustomUser): The acting user.
+        response (ResponseMovement): The response object being constructed.
         square (BaseSquare): The square where the user arrived.
         passed_go (bool): Whether the move path included the ExitSquare.
+        streak (int): The current double-roll streak (default: 0).
 
     Returns:
-        Optional[FantasyEvent]: A generated fantasy event if the user landed on a FantasySquare.
+        ResponseMovement: The updated response object, potentially containing a generated fantasy event.
+
+    Raises:
+        GameLogicError: If rent needs to be paid but no ownership relationship is found.
     """
     real_square = square.get_real_instance()
 
@@ -660,14 +678,20 @@ def _apply_square_arrival(
 
     return response
 
-@staticmethod
+
 def _compute_dice_combinations(d1: int, d2: int, d3: int) -> list[int]:
     """
     Returns the possible move amounts given three dice values.
-    d3 <= 3 means the bus die is numeric (sum all three),
-    otherwise the player can move d1, d2, or d1+d2.
+    If the bus die (d3) is numeric (1-3), the only combination is the sum of all three.
+    If it is a special face (4-6), the player can choose to move d1, d2, or d1+d2.
 
-    Not to use with triples
+    Args:
+        d1 (int): The value of the first standard die.
+        d2 (int): The value of the second standard die.
+        d3 (int): The value of the bus die.
+
+    Returns:
+        list[int]: A list of possible step counts the player can take.
     """
     if d3 <= 3:
         return [d1 + d2 + d3]
@@ -675,7 +699,8 @@ def _compute_dice_combinations(d1: int, d2: int, d3: int) -> list[int]:
 
 def _calculate_passed_go(current_square: BaseSquare, target_custom_id: int, d1: int, d2: int, d3: int) -> bool:
     """
-    Not handling triples
+    Determines if any valid path from the current square to the target destination 
+    involves passing the Go (Exit) square, based on the rolled dice combinations.
 
     Args:
         current_square (BaseSquare): The square the player is moving from.
@@ -685,7 +710,7 @@ def _calculate_passed_go(current_square: BaseSquare, target_custom_id: int, d1: 
         d3 (int): Bus die value.
 
     Returns:
-        bool: True if the player passed Go on any valid path to the destination.
+        bool: True if the player passed Go on any valid path to the destination, False otherwise.
     """
     dice_combinations = _compute_dice_combinations(d1, d2, d3)
     
@@ -697,6 +722,17 @@ def _calculate_passed_go(current_square: BaseSquare, target_custom_id: int, d1: 
     return False
 
 def _add_basic_response_data(game: Game, response: Response) -> Response:
+    """
+    Appends the fundamental game state data (money, active players, phase, and positions) 
+    to the response object before it is serialized and broadcasted.
+
+    Args:
+        game (Game): The current game instance.
+        response (Response): The response object to be populated.
+
+    Returns:
+        Response: The fully populated response object ready for broadcasting.
+    """
     response.money = game.money
     response.active_phase_player = game.active_phase_player
     response.active_turn_player = game.active_turn_player
@@ -704,4 +740,3 @@ def _add_basic_response_data(game: Game, response: Response) -> Response:
     response.positions = game.positions
 
     return response
-

@@ -937,18 +937,42 @@ class ResponseAuction(Response):
 
     @property
     def winner(self):
+        """
+        Retrieves the winner of the auction.
+
+        Returns:
+            CustomUser | None: The winning user.
+        """
         return self.auction.winner
     
     @property
     def final_amount(self):
+        """
+        Retrieves the final bid amount of the auction.
+
+        Returns:
+            int: The winning bid amount.
+        """
         return self.auction.final_amount
     
     @property
     def is_tie(self):
+        """
+        Indicates if the auction ended in a tie.
+
+        Returns:
+            bool: True if tied, False otherwise.
+        """
         return self.auction.is_tie
 
     @property
     def bids(self):
+        """
+        Retrieves all bids placed during the auction.
+
+        Returns:
+            dict: Mapping of user IDs to bid amounts.
+        """
         return self.auction.bids
     
 class ResponseBonus(Response):

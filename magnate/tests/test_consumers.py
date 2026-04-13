@@ -20,12 +20,33 @@ application = URLRouter([
 
 @override_settings(CHANNEL_LAYERS={"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}})
 class ConsumersTest(TransactionTestCase):
+    """
+    Test suite for WebSocket consumers including matchmaking, private lobbies, and gameplay.
+    """
 
     @classmethod
     def setUpTestData(cls):
+        """
+        Initializes the board data before running the tests.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         call_command('init_boards')
     
     def setUp(self):
+        """
+        Sets up the test environment for each test case.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         os.environ['DJANGO_TESTING'] = '1'
         call_command('init_boards')
 
@@ -33,6 +54,15 @@ class ConsumersTest(TransactionTestCase):
     ##### PUBLIC MATCHMAKING ####
     ############################
     async def test_public_queue_matchmaking(self):
+        """
+        Tests the public queue matchmaking logic with multiple concurrent connections.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         communicators = []
         users = []
 
@@ -63,6 +93,15 @@ class ConsumersTest(TransactionTestCase):
     ##### PUBLIC LOBBY #####
     ######################
     async def test_private_lobby_flow(self):
+        """
+        Tests the full lifecycle of a private lobby: creation, joining, and starting a game.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         """
         Player creates a lobby other joins and both ready to start game
         """
@@ -143,6 +182,15 @@ class ConsumersTest(TransactionTestCase):
     ############################
     async def test_game_consumer_connection(self):
         """
+        Tests that only game participants can successfully connect to the GameConsumer.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        """
         Accept conexion if in the game
         """
         user = await database_sync_to_async(CustomUser.objects.create)(
@@ -179,6 +227,15 @@ class ConsumersTest(TransactionTestCase):
         await comm.disconnect()
 
         async def test_game_action_broadcast(self):
+            """
+            Tests that valid game actions are correctly broadcasted to all participants.
+
+            Args:
+                None
+
+            Returns:
+                None
+            """
             user = await database_sync_to_async(CustomUser.objects.create)(
                 username="p_broadcast", email="p_b@gmail.com"
             )

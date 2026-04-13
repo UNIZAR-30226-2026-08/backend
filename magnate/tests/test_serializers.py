@@ -8,6 +8,15 @@ from magnate.fantasy import FantasyEventFactory
 from typing import cast
 
 def action_from_json(data) -> Action:
+    """
+    Helper function to deserialize an action from a JSON-like dictionary.
+
+    Args:
+        data (dict): The raw action data.
+
+    Returns:
+        Action: The deserialized Action instance.
+    """
     serializer = GeneralActionSerializer(data=data)
 
     serializer.is_valid(raise_exception=True)
@@ -15,8 +24,20 @@ def action_from_json(data) -> Action:
     return cast(Action, serializer.save())
 
 class SerializerTest(TestCase):
+    """
+    Test suite for ensuring all serializers (Square, Action, Response) correctly handle data.
+    """
     @classmethod
     def setUpTestData(cls):
+        """
+        Initializes the board and common test data.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         call_command('init_boards')
 
         ############################# actions
@@ -74,6 +95,15 @@ class SerializerTest(TestCase):
         cls.actionPayBail = ActionPayBail.objects.create(game=cls.game,player=cls.player2)
 
     def pre_test_1(self):
+        """
+        Example helper test.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         casillas = BaseSquare.objects.all()
         print('printear')
         print(casillas[1])
@@ -83,6 +113,15 @@ class SerializerTest(TestCase):
     ############################################################### squares
 
     def test_property_square(self):
+        """
+        Tests serialization of a PropertySquare.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         casilla = BaseSquare.objects.get(custom_id=8)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
@@ -95,6 +134,15 @@ class SerializerTest(TestCase):
         self.assertEqual(data["build_price"],50)
 
     def test_bridge_square(self):
+        """
+        Tests serialization of a BridgeSquare.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         casilla = BaseSquare.objects.get(custom_id=15)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
@@ -105,6 +153,15 @@ class SerializerTest(TestCase):
         self.assertEqual(data["rent_prices"],[20,40])
 
     def test_tram_square(self):
+        """
+        Tests serialization of a TramSquare.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         casilla = BaseSquare.objects.get(custom_id=107)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
@@ -114,6 +171,15 @@ class SerializerTest(TestCase):
         self.assertEqual(data["buy_price"],30)
            
     def test_server_square(self):
+        """
+        Tests serialization of a ServerSquare.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         casilla = BaseSquare.objects.get(custom_id=25)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
@@ -124,6 +190,15 @@ class SerializerTest(TestCase):
         self.assertEqual(data["rent_prices"],[20,60])
 
     def test_exit_square(self):
+        """
+        Tests serialization of the ExitSquare.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         casilla = BaseSquare.objects.get(custom_id=0)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
@@ -133,6 +208,15 @@ class SerializerTest(TestCase):
         self.assertEqual(data["init_money"],200)
 
     def test_go_to_jail_square(self):
+        """
+        Tests serialization of a GoToJailSquare.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         casilla = BaseSquare.objects.get(custom_id=20)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
@@ -141,6 +225,15 @@ class SerializerTest(TestCase):
         self.assertEqual(data["custom_id"],20)
         
     def test_jail_square(self):
+        """
+        Tests serialization of a JailSquare.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         casilla = BaseSquare.objects.get(custom_id=201)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
@@ -152,6 +245,15 @@ class SerializerTest(TestCase):
     #TODO: visit jail
 
     def test_parking_square(self):
+        """
+        Tests serialization of a ParkingSquare.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         casilla = BaseSquare.objects.get(custom_id=111)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
@@ -160,6 +262,15 @@ class SerializerTest(TestCase):
         self.assertEqual(data["custom_id"],111)
 
     def test_fantasy_square(self):
+        """
+        Tests serialization of a FantasySquare.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         casilla = BaseSquare.objects.get(custom_id=109)
         data = GeneralSquareSerializer(casilla).data
         assert isinstance(data,dict)
@@ -172,6 +283,15 @@ class SerializerTest(TestCase):
     ################################################## actions
 
     def test_action_throw_dices(self):
+        """
+        Tests serialization/deserialization of ActionThrowDices.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionThrowDices).data
         assert isinstance(data,dict)
         json_in = {"type": "ActionThrowDices",
@@ -183,6 +303,15 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.game,self.game)
 
     def test_action_move_to(self):
+        """
+        Tests serialization/deserialization of ActionMoveTo.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionMoveTo).data
         assert isinstance(data,dict)
         self.assertEqual(data["square"],12)
@@ -199,6 +328,15 @@ class SerializerTest(TestCase):
         
 
     def test_action_take_tram(self):
+        """
+        Tests serialization/deserialization of ActionTakeTram.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionTakeTram).data
         assert isinstance(data,dict)
         self.assertEqual(data["square"],13)
@@ -214,6 +352,15 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.square.custom_id,102)
 
     def test_action_buy_square(self):
+        """
+        Tests serialization/deserialization of ActionBuySquare.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionBuySquare).data
         assert isinstance(data,dict)
         self.assertEqual(data["square"],14)
@@ -229,6 +376,15 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.square.custom_id,103)
 
     def test_action_build(self):
+        """
+        Tests serialization/deserialization of ActionBuild.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionBuild).data
         assert isinstance(data,dict)
         self.assertEqual(data["square"],17)
@@ -247,6 +403,15 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.square.custom_id,105)
         
     def test_action_demolish(self):
+        """
+        Tests serialization/deserialization of ActionDemolish.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionDemolish).data
         assert isinstance(data,dict)
         self.assertEqual(data["square"],18)
@@ -265,6 +430,15 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.square.custom_id,106)
 
     def test_choose_card(self):
+        """
+        Tests serialization/deserialization of ActionChooseCard.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionChooseCard).data
         assert isinstance(data,dict)
         self.assertEqual(data["chosen_revealed_card"],True)
@@ -280,6 +454,15 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.chosen_revealed_card,True)
     
     def test_action_surrender(self):
+        """
+        Tests serialization/deserialization of ActionSurrender.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionSurrender).data
         assert isinstance(data,dict)
         self.assertEqual(data["player"],self.player.pk)
@@ -293,6 +476,15 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.game,self.game)
 
     def test_trade_proposal(self):
+        """
+        Tests serialization/deserialization of ActionTradeProposal.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionTradeProposal).data
         assert isinstance(data,dict)
         self.assertEqual(data["destination_user"],self.player2.pk)
@@ -320,6 +512,15 @@ class SerializerTest(TestCase):
         self.assertEqual(list(instance.asked_properties.all()),[self.property_relationship2])
 
     def test_trade_answer(self):
+        """
+        Tests serialization/deserialization of ActionTradeAnswer.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionTradeAnswer).data
         assert isinstance(data,dict)
         self.assertEqual(data["choose"],True)
@@ -338,6 +539,15 @@ class SerializerTest(TestCase):
 
 
     def test_mortgage_set(self):
+        """
+        Tests serialization/deserialization of ActionMortgageSet.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionMortgageSet).data
         assert isinstance(data,dict)
         self.assertEqual(data["square"],19)
@@ -353,6 +563,15 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.square.custom_id,107)
 
     def test_mortgage_unset(self):
+        """
+        Tests serialization/deserialization of ActionMortgageUnset.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionMortgageUnset).data
         assert isinstance(data,dict)
         self.assertEqual(data["square"],20)
@@ -368,6 +587,15 @@ class SerializerTest(TestCase):
         self.assertEqual(instance.square.custom_id,108)
 
     def test_action_pay_bail(self):
+        """
+        Tests serialization/deserialization of ActionPayBail.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         data = GeneralActionSerializer(self.actionPayBail).data
         assert isinstance(data,dict)
         self.assertEqual(data["player"],self.player2.pk)
@@ -383,6 +611,15 @@ class SerializerTest(TestCase):
 
 ##############################################################################fantsy serializers
     def test_fantasy_event(self):
+        """
+        Tests serialization of a FantasyEvent.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         fantasyEvent1 = FantasyEvent(fantasy_type='winPlainMoney',
                                          value=1, card_cost=2)
         fantasyEvent2 = FantasyEventFactory.generate()
@@ -400,4 +637,3 @@ class SerializerTest(TestCase):
         self.assertEqual(data2['fantasy_type'],fantasyEvent2.fantasy_type)
         self.assertEqual(data2['value'],fantasyEvent2.value)
         self.assertEqual(data2['card_cost'],fantasyEvent2.card_cost)
-

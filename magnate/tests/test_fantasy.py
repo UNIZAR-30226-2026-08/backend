@@ -8,11 +8,32 @@ from magnate.games import _get_relationship, _get_jail_square
 import random
 
 class FantasyTest(TestCase):
+    """
+    Test suite for fantasy event generation and application logic.
+    """
     @classmethod
     def setUpTestData(cls) -> None:
+        """
+        Initializes board data before tests.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         call_command('init_boards')
 
     def setUp(self) -> None:
+        """
+        Sets up players, game state, and properties for each test case.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         ################################# set up players
         self.player1 = CustomUser.objects.create(username="aaa",email="aaa@gmail.com")
         self.player2 = CustomUser.objects.create(username="bbb",email="bbb@gmail.com")
@@ -67,15 +88,42 @@ class FantasyTest(TestCase):
 
     ####################################################################tests de prueba
     def pre_test_1(self):
+        """
+        Example helper test.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.game.money[str(self.player1.pk)] += 1234
         self.game.save()
         print(self.game.money[str(self.player1.pk)])
 
     def pre_test_2(self):
+        """
+        Example helper test.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         print(self.game.money[str(self.player1.pk)])
 
     ####################################################################### tests
     def test_win_plain_money(self):
+        """
+        Tests the 'winPlainMoney' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='winPlainMoney',
                              value=60,
                              card_cost=130)
@@ -86,6 +134,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.money[str(self.player1.pk)],160)
 
     def test_win_ratio_money(self):
+        """
+        Tests the 'winRatioMoney' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='winRatioMoney',
                              value=5,
                              card_cost=500)
@@ -96,6 +153,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.money[str(self.player2.pk)],210)
 
     def test_lose_plain_money(self):
+        """
+        Tests the 'losePlainMoney' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='losePlainMoney',
                              value=60,
                              card_cost=130)
@@ -106,6 +172,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.money[str(self.player1.pk)],40)
 
     def test_lose_ratio_money(self):
+        """
+        Tests the 'loseRatioMoney' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='loseRatioMoney',
                              value=5,
                              card_cost=500)
@@ -116,6 +191,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.money[str(self.player2.pk)],190)
 
     def test_break_opponent_house(self):
+        """
+        Tests the 'breakOpponentHouse' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='breakOpponentHouse',
                              value=None,
                              card_cost=500)
@@ -152,6 +236,15 @@ class FantasyTest(TestCase):
             self.assertTrue(False)
 
     def test_break_opponent_house2(self):
+        """
+        Tests the 'breakOpponentHouse' fantasy event with a single player owning all houses.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='breakOpponentHouse',
                              value=None,
                              card_cost=500)
@@ -212,6 +305,15 @@ class FantasyTest(TestCase):
             self.assertTrue(False, 'else')
 
     def test_break_opponent_house3(self):
+        """
+        Tests the 'breakOpponentHouse' fantasy event when no opponents have houses.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='breakOpponentHouse',
                              value=None,
                              card_cost=500)
@@ -251,6 +353,15 @@ class FantasyTest(TestCase):
         
 
     def test_break_own_house(self):
+        """
+        Tests the 'breakOwnHouse' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.propRelation5 = PropertyRelationship.objects.create(
             game=self.game,owner=self.player1,
             square=BaseSquare.objects.get(custom_id=3),#mismo grupo que 1
@@ -300,6 +411,15 @@ class FantasyTest(TestCase):
             self.assertTrue(False, 'else')
 
     def test_shuffle_positions(self): #TODO: test con carcel cuando esté
+        """
+        Tests the 'shufflePositions' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='shufflePositions',
                              value=None,
                              card_cost=1)
@@ -311,6 +431,15 @@ class FantasyTest(TestCase):
             #print(self.game.positions[str(player.pk)])
 
     def test_move_anywhere_random(self):
+        """
+        Tests the 'moveAnywhereRandom' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='moveAnywhereRandom',
                              value=None,
                              card_cost=1)
@@ -322,6 +451,15 @@ class FantasyTest(TestCase):
         #print(self.game.positions[str(self.player1.pk)])
 
     def test_move_opponent_anywhere_random(self):
+        """
+        Tests the 'moveOpponentAnywhereRandom' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='moveOpponentAnywhereRandom',
                              value=None,
                              card_cost=1)
@@ -338,6 +476,15 @@ class FantasyTest(TestCase):
         #print(self.game.positions[str(result.result['target_player_pk'])])
 
     def test_share_money_all(self):
+        """
+        Tests the 'shareMoneyAll' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='shareMoneyAll',
                              value=30,
                              card_cost=1)
@@ -351,6 +498,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.money[str(self.player4.pk)],400+30)
         
     def test_free_house1(self):
+        """
+        Tests the 'freeHouse' fantasy event with a complete group.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.propRelation1.delete()
         self.propRelation2.delete()
         self.propRelation3.delete()
@@ -404,6 +560,15 @@ class FantasyTest(TestCase):
         self.assertEqual(targeted_property_relationship.houses,3)
 
     def test_free_house2(self):
+        """
+        Tests the 'freeHouse' fantasy event with no completed groups.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.propRelation1.delete()
         self.propRelation2.delete()
         self.propRelation3.delete()
@@ -428,6 +593,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.propRelation4.houses,-1)
 
     def test_free_house3(self):
+        """
+        Tests the 'freeHouse' fantasy event ensuring uniform build rules are respected.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.propRelation1.delete()
         self.propRelation2.delete()
         self.propRelation3.delete()
@@ -473,6 +647,15 @@ class FantasyTest(TestCase):
         self.assertEqual(targeted_property_relationship.houses,1)
 
     def test_go_to_jail(self):
+        """
+        Tests the 'goToJail' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='goToJail',
                              value=None,
                              card_cost=1)
@@ -485,6 +668,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)],3)
 
     def test_send_to_jail(self):
+        """
+        Tests the 'sendToJail' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='sendToJail',
                              value=None,
                              card_cost=1)
@@ -501,6 +693,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.jail_remaining_turns[str(result.result['target_player'])],3)
     
     def test_everybody_to_jail(self):
+        """
+        Tests the 'everybodyToJail' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='everybodyToJail',
                              value=None,
                              card_cost=1)
@@ -514,6 +715,15 @@ class FantasyTest(TestCase):
             self.assertEqual(self.game.jail_remaining_turns[str(p.pk)],3)
 
     def test_double_or_nothing(self):
+        """
+        Tests the 'doubleOrNothing' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='doubleOrNothing',
                              value=None,
                              card_cost=1)
@@ -534,6 +744,15 @@ class FantasyTest(TestCase):
             self.assertEqual(self.game.money[str(self.player1.pk)],0)
 
     def test_get_parking_money(self):
+        """
+        Tests the 'getParkingMoney' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.game.parking_money = 1500
         self.game.save()
 
@@ -547,6 +766,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.money[str(self.player1.pk)],1600)
 
     def test_revive_property1(self):
+        """
+        Tests the 'reviveProperty' fantasy event with a mortgaged property.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.propRelation1.delete()
         self.propRelation2.delete()
         self.propRelation3.delete()
@@ -593,6 +821,15 @@ class FantasyTest(TestCase):
         self.assertEqual(targeted_property_relationship.mortgage,False)
         
     def test_revive_property2(self):
+        """
+        Tests the 'reviveProperty' fantasy event when no properties are mortgaged.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.propRelation1.delete()
         self.propRelation2.delete()
         self.propRelation3.delete()
@@ -628,6 +865,15 @@ class FantasyTest(TestCase):
         self.assertEqual(result.result, None)    
 
     def test_earthquake(self):
+        """
+        Tests the 'earthquake' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         self.propRelation5 = PropertyRelationship.objects.create(
             game=self.game,owner=self.player1,
             square=BaseSquare.objects.get(custom_id=19),
@@ -655,6 +901,15 @@ class FantasyTest(TestCase):
         self.assertEqual(len(result.result['squares']),4)
 
     def test_everybody_sends_you_money(self):
+        """
+        Tests the 'everybodySendsYouMoney' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         event = FantasyEvent(fantasy_type='everybodySendsYouMoney',
                              value=30,
                              card_cost=1)
@@ -668,6 +923,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.money[str(self.player4.pk)],400-30)
 
     def test_magnetism(self):
+        """
+        Tests the 'magnetism' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         jail_id = _get_jail_square().custom_id
         self.game.positions[str(self.player4.pk)] = jail_id
         self.game.save()
@@ -687,6 +951,15 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.positions[str(self.player4.pk)],jail_id)
 
     def test_go_to_start(self):
+        """
+        Tests the 'goToStart' fantasy event.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         jail_id = _get_jail_square().custom_id
         self.game.positions[str(self.player2.pk)] = jail_id
         self.game.save()

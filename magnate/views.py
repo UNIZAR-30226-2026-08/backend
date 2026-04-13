@@ -46,7 +46,7 @@ class RegisterView(APIView):
 
     Responses:
         201: User created successfully. Returns user data and JWT tokens.
-        400: Validation error (passwords don't match, email already exists, etc).
+        400: Validation error (passwords don't match  etc).
     """
 
     permission_classes = [AllowAny]

@@ -29,6 +29,7 @@ urlpatterns = [
     
     path('user/info/',  ProfileView.as_view(),  name='profile'),
     path('user/change-piece/', ChangeUserPieceView.as_view(), name='change_piece'),
+    path(' /user/games-played/', GetGamesPlayedView.as_view(), name='get_games_played'),
 
     path('info/user-name-piece/<int:pk>/', UserNamePieceView.as_view(), name='usernamepieceview'),
 
@@ -37,5 +38,6 @@ urlpatterns = [
     path('shop/user-pieces/', UserPiecesView.as_view(), name='user_pieces'),
     path('shop/user-emojis/', UserEmojisView.as_view(), name='user_emojis'),
 
-    path('lobby/get-private-code', GetPrivateCodeView.as_view(), name='get private code')
+    path('lobby/get-private-code', GetPrivateCodeView.as_view(), name='get_private_code')
+    
 ]

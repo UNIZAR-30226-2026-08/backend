@@ -7,4 +7,6 @@
 
 ::: magnate.fantasy.FantasyEventFactory.generate
 
+## Fantasy results
+
 ::: magnate.fantasy.apply_fantasy_event

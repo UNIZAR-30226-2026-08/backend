@@ -231,7 +231,13 @@ class GeneralSquareSerializer(serializers.ModelSerializer):
 ###############################################################################
 class ActionSerializer(serializers.ModelSerializer):
     """
-    Base serializer for Actions.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "Action",
+      "game": 1,
+      "player": 2,
+    }
     """
     type = serializers.SerializerMethodField()
     class Meta:
@@ -251,7 +257,14 @@ class ActionSerializer(serializers.ModelSerializer):
 
 class ActionThrowDicesSerializer(ActionSerializer):
     """
-    Serializer for ActionThrowDices model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionThrowDices",
+      "game": 1,
+      "player": 2,
+    }
+    ```
     """
     class Meta(ActionSerializer.Meta):
         model = ActionThrowDices
@@ -259,7 +272,15 @@ class ActionThrowDicesSerializer(ActionSerializer):
 
 class ActionMoveToSerializer(ActionSerializer):
     """
-    Serializer for ActionMoveTo model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionThrowDices",
+      "game": 1,
+      "player": 2,
+      "square": 101,
+    }
+    ```
     """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
@@ -268,16 +289,49 @@ class ActionMoveToSerializer(ActionSerializer):
 
 class ActionTakeTramSerializer(ActionSerializer):
     """
-    Serializer for ActionTakeTram model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionTakeTram",
+      "game": 1,
+      "player": 2,
+      "square": 200,
+    }
+    ```
     """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
         model = ActionTakeTram
         fields = ActionSerializer.Meta.fields + ['square']
 
+class ActionDropPurchaseSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionDropPurchase",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
+    """
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionDropPurchase
+        fields = ActionSerializer.Meta.fields + ['square']
+
 class ActionBuySquareSerializer(ActionSerializer):
     """
-    Serializer for ActionBuySquare model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionBuySquare",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
     """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
@@ -286,7 +340,16 @@ class ActionBuySquareSerializer(ActionSerializer):
 
 class ActionBuildSerializer(ActionSerializer):
     """
-    Serializer for ActionBuild model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionBuild",
+      "game": 1,
+      "player": 2,
+      "houses": 1,
+      "square": 12
+    }
+    ```
     """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
@@ -295,7 +358,16 @@ class ActionBuildSerializer(ActionSerializer):
 
 class ActionDemolishSerializer(ActionSerializer):
     """
-    Serializer for ActionDemolish model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionDemolish",
+      "game": 1,
+      "player": 2,
+      "houses": 1,
+      "square": 12
+    }
+    ```
     """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
@@ -304,7 +376,15 @@ class ActionDemolishSerializer(ActionSerializer):
 
 class ActionChooseCardSerializer(ActionSerializer):
     """
-    Serializer for ActionChooseCard model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionChooseCard",
+      "game": 1,
+      "player": 2,
+      "chosen_revealed_card": true
+    }
+    ```
     """
     class Meta(ActionSerializer.Meta):
         model = ActionChooseCard
@@ -312,7 +392,14 @@ class ActionChooseCardSerializer(ActionSerializer):
 
 class ActionSurrenderSerializer(ActionSerializer):
     """
-    Serializer for ActionSurrender model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionSurrender",
+      "game": 1,
+      "player": 2
+    }
+    ```
     """
     class Meta(ActionSerializer.Meta):
         model = ActionSurrender
@@ -320,7 +407,19 @@ class ActionSurrenderSerializer(ActionSerializer):
 
 class ActionTradeProposalSerializer(ActionSerializer):
     """
-    Serializer for ActionTradeProposal model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionTradeProposal",
+      "game": 1,
+      "player": 2,
+      "destination_user": 3,
+      "offered_money": 200,
+      "asked_money": 0,
+      "offered_properties": [5, 6],
+      "asked_properties": [12]
+    }
+    ```
     """
     offered_properties = serializers.PrimaryKeyRelatedField(
         many=True, 
@@ -356,7 +455,15 @@ class ActionTradeProposalSerializer(ActionSerializer):
 
 class ActionTradeAnswerSerializer(ActionSerializer):
     """
-    Serializer for ActionTradeAnswer model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionTradeAnswer",
+      "game": 1,
+      "player": 2,
+      "choose": true,
+    }
+    ```
     """
     class Meta(ActionSerializer.Meta):
         model = ActionTradeAnswer
@@ -364,7 +471,15 @@ class ActionTradeAnswerSerializer(ActionSerializer):
 
 class ActionMortgageSetSerializer(ActionSerializer):
     """
-    Serializer for ActionMortgageSet model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionMortgageSet",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
     """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
@@ -373,7 +488,15 @@ class ActionMortgageSetSerializer(ActionSerializer):
 
 class ActionMortgageUnsetSerializer(ActionSerializer):
     """
-    Serializer for ActionMortgageUnset model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionMortgageUnset",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
     """
     square = SquareCustomIdField()
     class Meta(ActionSerializer.Meta):
@@ -382,7 +505,14 @@ class ActionMortgageUnsetSerializer(ActionSerializer):
 
 class ActionPayBailSerializer(ActionSerializer):
     """
-    Serializer for ActionPayBail model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionPayBail",
+      "game": 1,
+      "player": 2
+    }
+    ```
     """
     class Meta(ActionSerializer.Meta):
         model = ActionPayBail
@@ -390,7 +520,14 @@ class ActionPayBailSerializer(ActionSerializer):
 
 class ActionNextPhaseSerializer(ActionSerializer):
     """
-    Serializer for ActionNextPhase model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionNextPhase",
+      "game": 1,
+      "player": 2
+    }
+    ```
     """
     class Meta(ActionSerializer.Meta):
         model = ActionNextPhase
@@ -398,20 +535,22 @@ class ActionNextPhaseSerializer(ActionSerializer):
 
 class ActionBidSerializer(ActionSerializer):
     """
-    Serializer for ActionBid model.
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionBid",
+      "game": 1,
+      "player": 2,
+      "auction": 4,
+      "amount": 150
+    }
+    ```
     """
     class Meta(ActionSerializer.Meta):
         model = ActionBid
         fields = ActionSerializer.Meta.fields + ['amount']
 
-class ActionDropPurchaseSerializer(ActionSerializer):
-    """
-    Serializer for ActionDropPurchase model.
-    """
-    square = SquareCustomIdField()
-    class Meta(ActionSerializer.Meta):
-        model = ActionDropPurchase
-        fields = ActionSerializer.Meta.fields + ['square']
+
 
 class AuctionSerializer(serializers.ModelSerializer):
     """
@@ -531,12 +670,21 @@ class GeneralActionSerializer(serializers.ModelSerializer):
         model = Action
         fields = '__all__'
 
+
+
 ###############################################################################
 #############      Fantasy serializers     ####################################
 ###############################################################################
 class FantasyEventSerializer(serializers.ModelSerializer):
     """
-    Serializer for FantasyEvent model.
+    Frontend Fantasy Payload Example:
+    ```json
+    {
+      "type": "win_plain_money",
+      "value": 20,
+      "cost": 130
+    }
+    ```
     """
     class Meta:
         model = FantasyEvent
@@ -556,31 +704,75 @@ class FantasyResultSerializer(serializers.ModelSerializer):
 ###############################################################################
 class ResponseSerializer(serializers.ModelSerializer):
     """
-    Base serializer for Responses.
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "Response",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "management"
+    }
+    ```
     """
     class Meta:
         model = Response
         exclude = ['id']
 
-class ResponseAuctionSerializer(ResponseSerializer):
+class ResponseSkipPhaseSerializer(serializers.ModelSerializer):
     """
-    Serializer for ResponseAuction model.
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "Response",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "management"
+    }
+    ```
     """
-    auction = AuctionSerializer()
     class Meta(ResponseSerializer.Meta):
-        model = ResponseAuction
-        exclude = ['auction']
+        model = ResponseSkipPhase
 
 class ResponseMovementSerializer(serializers.ModelSerializer):
     """
-    Serializer for ResponseMovement model.
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "ResponseMovement",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "moving",
+      "path": [10, 11, 12, 13, 14, 15],
+      "fantasy_event": null
+    }
+    ```
     """
     class Meta(ResponseSerializer.Meta):
         model = ResponseMovement
 
 class ResponseThrowDicesSerializer(serializers.ModelSerializer):
     """
-    Serializer for ResponseThrowDices model.
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "ResponseThrowDices",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "moving",
+      "path": [10, 11, 12],
+      "fantasy_event": null,
+      "dice1": 4,
+      "dice2": 3,
+      "dice_bus": 1,
+      "destinations": [17],
+      "triple": false,
+      "streak": 0
+    }
+    ```
     """
     fantasy_event = FantasyEventSerializer(read_only=True)
     class Meta(ResponseSerializer.Meta):
@@ -588,7 +780,18 @@ class ResponseThrowDicesSerializer(serializers.ModelSerializer):
 
 class ResponseChooseSquareSerializer(serializers.ModelSerializer):
     """
-    Serializer for ResponseChooseSquare model.
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "ResponseChooseSquare",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "moving",
+      "path": [10, 25],
+      "fantasy_event": null
+    }
+    ```
     """
     fantasy_event = FantasyEventSerializer(read_only=True)
     class Meta(ResponseSerializer.Meta):
@@ -596,22 +799,61 @@ class ResponseChooseSquareSerializer(serializers.ModelSerializer):
 
 class ResponseChooseFantasySerializer(serializers.ModelSerializer):
     """
-    Serializer for ResponseChooseFantasy model.
+    Frontend Response Payload Example:
+    ```json
+    {'type': 'ResponseChooseFantasy',
+     'fantasy_result': {'fantasy_event': {'fantasy_type': 'freeHouse', 'value': None, 'card_cost': 80}, 'result': None},
+     'money': {'1': 1440, '2': 1500},
+     'phase': 'business',
+     'positions': {'1': '10', '2': '17'},
+     'active_phase_player': 2,
+     'active_turn_player': 2
+    }
+    ```
     """
     fantasy_result = FantasyResultSerializer(read_only=True)
     class Meta(ResponseSerializer.Meta):
         model = ResponseChooseFantasy
 
-class ResponseSkipPhaseSerializer(serializers.ModelSerializer):
+class ResponseAuctionSerializer(ResponseSerializer):
     """
-    Serializer for ResponseSkipPhase model.
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "ResponseAuction",
+      "money": {"1": 1150, "2": 1200},
+      "active_phase_player": 1,
+      "active_turn_player": 2,
+      "phase": "management",
+      "winner": 1,
+      "final_amount": 350,
+      "is_tie": false,
+      "bids": {1: 100, 2: 200}
+    }
+    ```
     """
+    auction = AuctionSerializer()
     class Meta(ResponseSerializer.Meta):
-        model = ResponseSkipPhase
+        model = ResponseAuction
+        exclude = ['auction']
 
 class ResponseBonusSerializer(serializers.ModelSerializer):
     """
-    Serializer for ResponseBonus model.
+    Frontend Response Payload Example:
+    ```json
+    {
+    "type": "ResponseBonus",
+    "money": {"1": 1600, "2": 1200},
+    "active_phase_player": 2,
+    "active_turn_player": 2,
+    "phase": "management",
+    "bonuses": {
+        "walked_squares": {"display_name": "El más viajero", "bonus_amount": 200, "winners": [1, 3]},
+        "built_houses":   {"display_name": "El más constructor", "bonus_amount": 200, "winners": [2]},
+        "num_trades":     {"display_name": "El más trader", "bonus_amount": 200, "winners": []}}
+        }
+    }
+    ```
     """
     class Meta(ResponseSerializer.Meta):
         model = ResponseBonus

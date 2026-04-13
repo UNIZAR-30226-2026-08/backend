@@ -271,7 +271,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         ratio_to_add = fantasy_event.value
         previous_money = game.money[str(user.pk)]
-        game.money[str(user.pk)] = int(game.money[str(user.pk)] * (1 + ratio_to_add/100))
+        game.money[str(user.pk)] = game.money[str(user.pk)] * (1 + ratio_to_add/100)
         game.save()
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
         stats.won_money += game.money[str(user.pk)] - previous_money
@@ -304,7 +304,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         ratio_to_sub = fantasy_event.value
         previous_money = game.money[str(user.pk)]
-        game.money[str(user.pk)] = int(game.money[str(user.pk)] * (1 - ratio_to_sub/100))
+        game.money[str(user.pk)] = game.money[str(user.pk)] * (1 - ratio_to_sub/100)
         game.save()
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
         stats.lost_money += previous_money - game.money[str(user.pk)]

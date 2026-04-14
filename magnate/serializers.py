@@ -959,6 +959,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model  = CustomUser
         fields = (
+            'pk',
             'username', 
             'points', 'exp', 'elo',
             'date_joined',

@@ -395,13 +395,16 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
     ## Messages: Server → Client
  
     ### Player Joined
-    Broadcast to all members when someone connects.
+    ### Player Joined
+    Broadcast to all members when someone connects. Includes current room settings.
     ```json
     {
         "action": "joined",
         "user": "alice",
         "owner": "alice",
         "is_owner": true,
+        "bot_level": "easy",
+        "target_players": 4,
         "players": [
             { "username": "alice", "ready_to_play": false }
         ]

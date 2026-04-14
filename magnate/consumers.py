@@ -586,8 +586,8 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         )
         
 
-        players = await self.join_room_group_db(self.room_code, self.user)
-        if not players:
+        room_data = await self.join_room_group_db(self.room_code, self.user)
+        if not room_data:
             await self.close(code=4003)
             return
 
@@ -598,8 +598,10 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                 'type': 'lobby_update',
                 'action': 'joined',
                 'user': self.user.username,
-                'players': players,
-                'owner': players[0]['username']
+                'players': room_data['players'],
+                'owner': room_data['owner'],
+                'bot_level': room_data['bot_level'],
+                'target_players': room_data['target_players']
             }
         )
 
@@ -996,23 +998,31 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def join_room_group_db(self, room_code, user):
         """
-        Updates the database to reflect a user joining a private room.
+        Updates the database to reflect a user joining a private room and 
+        retrieves the room's full current state and configuration.
 
         Args:
             room_code (str): The room identifier.
             user (CustomUser): The user joining.
 
         Returns:
-            list[dict]: A list of dictionary objects representing members of the room.
+            dict: A dictionary containing 'players' (list of dicts), 
+                  'owner' (str or None), 'bot_level' (str), and 
+                  'target_players' (int).
         """
         current_user = CustomUser.objects.get(username=user.username)
         room = PrivateRoom.objects.get(room_code=room_code)
         
-        current_user.current_private_room = PrivateRoom.objects.get(room_code=room_code)
+        current_user.current_private_room = room
         current_user.ready_to_play = False
         current_user.save()
 
-        return list(room.players.values('username', 'ready_to_play'))
+        return {
+            'players': list(room.players.values('username', 'ready_to_play')),
+            'owner': room.owner.username if room.owner else None,
+            'bot_level': room.bot_level,
+            'target_players': room.target_players
+        }
 
     @database_sync_to_async
     def leave_room_and_update_host(self, room_code, user):
@@ -1152,6 +1162,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             return None
         
         return room.owner.username
+ 
 
     async def send_error(self, message):
         """
@@ -1186,6 +1197,8 @@ def validate_and_save_action(data):
     
     action_instance = serializer.save() 
     return action_instance, None
+
+
 
 class GameConsumer(AsyncWebsocketConsumer):
     """

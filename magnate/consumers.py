@@ -783,7 +783,9 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                 'user': event['user'],
                 'owner': event['owner'],
                 'is_owner': (self.user.username == event['owner']),
-                'players': event['players']
+                'players': event['players'],
+                'bot_level': event.get('bot_level'),        
+                'target_players': event.get('target_players')  
             }))
         elif event['action'] == 'player_left':
             await self.send(text_data=json.dumps({

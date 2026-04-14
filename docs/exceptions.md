@@ -7,3 +7,4 @@
         - GameDesignError
         - MaliciousUserInput
         - MaliciousUserInputAction
+        - InvalidBotLevel

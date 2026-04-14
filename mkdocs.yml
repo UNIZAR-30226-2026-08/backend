@@ -17,6 +17,7 @@ plugins:
 nav:
   - Home: index.md
   - Integration:
+    - REST API: api.md
     - WebSockets (Real-time): websockets.md
     - Game: game.md
     - Actions: actions.md

@@ -14,14 +14,14 @@ The game operates as a finite state machine where players transition through spe
 ## 🛠 Utility & Data Functions
 These functions handle the database-level interactions required to resolve game logic.
 
-::: magnate.games
+::: magnate.game_utils
     options:
       members:
         - _get_square_by_custom_id
         - _get_user_square
         - _get_relationship
         - _get_jail_square
-        - calculate_net_worth
+        - _calculate_net_worth
         - _get_max_liquidation_value
 
 ---
@@ -31,7 +31,7 @@ Calculates financial impacts, building constraints, and mortgage status.
 
 
 
-::: magnate.games
+::: magnate.game_utils
     options:
       members:
         - _calculate_rent_price
@@ -53,5 +53,15 @@ The primary gateway for all frontend actions. Every action sent via WebSocket or
         - _pay_bail_logic
         - _roll_dices_logic
         - _square_chosen_logic
+        - _choose_fantasy_logic
         - _management_logic
         - _business_logic
+        - _answer_trade_proposal_logic
+        - _initiate_auction
+        - _bid_property_auction_logic
+        - _end_auction
+        - _next_turn
+        - _propose_trade
+        - _bankrupt_player
+        - _apply_end_bonuses
+        - _end_game_logic

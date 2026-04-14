@@ -29,3 +29,13 @@
 ::: magnate.models.ResponseAuction
 ### Serializer
 ::: magnate.serializers.ResponseAuctionSerializer
+
+## ResponseSkipPhase
+::: magnate.models.ResponseSkipPhase
+### Serializer
+::: magnate.serializers.ResponseSkipPhaseSerializer
+
+## ResponseBonus
+::: magnate.models.ResponseBonus
+### Serializer
+::: magnate.serializers.ResponseBonusSerializer

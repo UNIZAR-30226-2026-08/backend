@@ -1,4 +1,4 @@
-# Actions
+# Game
 
 Game class
 

@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+
+<html data-bs-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Actions - Magnate Backend API Documentation</title>
+<link href="../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../css/fontawesome.min.css" rel="stylesheet"/>
+<link href="../css/brands.min.css" rel="stylesheet"/>
+<link href="../css/solid.min.css" rel="stylesheet"/>
+<link href="../css/v4-font-face.min.css" rel="stylesheet"/>
+<link href="../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" id="hljs-light" rel="stylesheet"/>
+<link disabled="" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" id="hljs-dark" rel="stylesheet"/>
+<link href="../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<link href="../docs/doc_api.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="..">Magnate Backend API Documentation</a>
+<!-- Expander button -->
+<button aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbar-collapse" data-bs-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="nav-item">
+<a class="nav-link" href="..">Home</a>
+</li>
+<li class="nav-item dropdown">
+<a aria-current="page" aria-expanded="false" class="nav-link dropdown-toggle active" data-bs-toggle="dropdown" href="#" role="button">Integration</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api/">REST API</a>
+</li>
+<li>
+<a class="dropdown-item" href="../websockets/">WebSockets</a>
+</li>
+<li>
+<a class="dropdown-item" href="../game/">Game</a>
+</li>
+<li>
+<a aria-current="page" class="dropdown-item active" href="./">Actions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../responses/">Responses</a>
+</li>
+<li>
+<a class="dropdown-item" href="../fantasy_events/">Fantasy events</a>
+</li>
+</ul>
+</li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">Technical reference</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../games/">Game logic</a>
+</li>
+<li>
+<a class="dropdown-item" href="../exceptions/">Exceptions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../agent_heuristics/">Agent heuristics</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ms-md-auto">
+<li class="nav-item">
+<a class="nav-link" data-bs-target="#mkdocs_search_modal" data-bs-toggle="modal" href="#">
+<i class="fa fa-search"></i> Search
+                            </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../game/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../responses/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-bs-target="#toc-collapse" data-bs-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-body-tertiary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="1"><a class="nav-link" href="#actions">Actions</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#action">Action</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.Action">Action</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionSerializer">ActionSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionSerializer.get_type">get_type</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionthrowdices">ActionThrowDices</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionThrowDices">ActionThrowDices</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionThrowDicesSerializer">ActionThrowDicesSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionmoveto">ActionMoveTo</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionMoveTo">ActionMoveTo</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionMoveToSerializer">ActionMoveToSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actiontaketram">ActionTakeTram</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionTakeTram">ActionTakeTram</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionTakeTramSerializer">ActionTakeTramSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actiondroppurchase">ActionDropPurchase</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionDropPurchase">ActionDropPurchase</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionDropPurchaseSerializer">ActionDropPurchaseSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionbuysquare">ActionBuySquare</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionBuySquare">ActionBuySquare</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionBuySquareSerializer">ActionBuySquareSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionbuild">ActionBuild</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionBuild">ActionBuild</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionBuildSerializer">ActionBuildSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actiondemolish">ActionDemolish</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionDemolish">ActionDemolish</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionDemolishSerializer">ActionDemolishSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionchoosecard">ActionChooseCard</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionChooseCard">ActionChooseCard</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionChooseCardSerializer">ActionChooseCardSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionsurrender">ActionSurrender</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionSurrender">ActionSurrender</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionSurrenderSerializer">ActionSurrenderSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actiontradeproposal">ActionTradeProposal</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionTradeProposal">ActionTradeProposal</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionTradeProposalSerializer">ActionTradeProposalSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionTradeProposalSerializer.create">create</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actiontradeanswer">ActionTradeAnswer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionTradeAnswer">ActionTradeAnswer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionTradeAnswerSerializer">ActionTradeAnswerSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionmortgageset">ActionMortgageSet</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionMortgageSet">ActionMortgageSet</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionMortgageSetSerializer">ActionMortgageSetSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionmortgageunset">ActionMortgageUnset</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionMortgageUnset">ActionMortgageUnset</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionMortgageUnsetSerializer">ActionMortgageUnsetSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionpaybail">ActionPayBail</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionPayBail">ActionPayBail</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionPayBailSerializer">ActionPayBailSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionnextphase">ActionNextPhase</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionNextPhase">ActionNextPhase</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionNextPhaseSerializer">ActionNextPhaseSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#actionbid">ActionBid</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ActionBid">ActionBid</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ActionBidSerializer">ActionBidSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="actions">Actions</h1>
+<h2 id="action">Action</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.Action"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="django.db.models.Model">Model</span></code></p>
+<p>Base model representing a player action within a game.</p>
+<p>All concrete action types inherit from this model, sharing the game context
+and the player who performed the action. The action log is queryable for
+replays, auditing, and bot decision-making.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Action.game">game</span></code></td>
+<td>
+<code>ForeignKey -&gt; Game</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The game session in which the action was performed.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Action.player">player</span></code></td>
+<td>
+<code>ForeignKey -&gt; CustomUser</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The player who performed the action.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class Action(models.Model):
+    """
+    Base model representing a player action within a game.
+
+    All concrete action types inherit from this model, sharing the game context
+    and the player who performed the action. The action log is queryable for
+    replays, auditing, and bot decision-making.
+
+    Attributes:
+        game (ForeignKey -&gt; Game): The game session in which the action was performed.
+        player (ForeignKey -&gt; CustomUser): The player who performed the action.
+    """
+    game = models.ForeignKey('Game', on_delete=models.CASCADE, related_name='in_game')
+    player = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='made_by')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.serializers.ModelSerializer">ModelSerializer</span></code></p>
+<p>Frontend Request Payload Example:
+```json
+{
+  "type": "Action",
+  "game": 1,
+  "player": 2,
+}</p>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionSerializer(serializers.ModelSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "Action",
+      "game": 1,
+      "player": 2,
+    }
+    """
+    type = serializers.SerializerMethodField()
+    class Meta:
+        model = Action
+        fields = ['type', 'game', 'player']
+    def get_type(self, obj) -&gt; str:
+        """
+        Retrieves the class name of the action instance.
+
+        Args:
+            obj (Action): The action instance.
+
+        Returns:
+            str: The name of the class.
+        """
+        return obj.__class__.__name__</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.serializers.ActionSerializer.get_type">
+<code class="highlight language-python">get_type(obj)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Retrieves the class name of the action instance.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>obj</code>
+</td>
+<td>
+<code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The action instance.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>str</code></td> <td>
+<code><span title="str">str</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The name of the class.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">def get_type(self, obj) -&gt; str:
+    """
+    Retrieves the class name of the action instance.
+
+    Args:
+        obj (Action): The action instance.
+
+    Returns:
+        str: The name of the class.
+    """
+    return obj.__class__.__name__</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h2 id="actionthrowdices">ActionThrowDices</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionThrowDices"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player throwing the dice to begin their turn.</p>
+<p>No additional data is stored beyond the inherited <code>Action</code> fields; the
+actual dice values are computed server-side and returned in a <code>ResponseThrowDices</code>.</p>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionThrowDices(Action):
+    """
+    Action representing a player throwing the dice to begin their turn.
+
+    No additional data is stored beyond the inherited ``Action`` fields; the
+    actual dice values are computed server-side and returned in a ``ResponseThrowDices``.
+    """
+    pass</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_1">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionThrowDicesSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionThrowDices",
+  "game": 1,
+  "player": 2,
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionThrowDicesSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionThrowDices",
+      "game": 1,
+      "player": 2,
+    }
+    ```
+    """
+    class Meta(ActionSerializer.Meta):
+        model = ActionThrowDices
+        fields = ActionSerializer.Meta.fields</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actionmoveto">ActionMoveTo</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionMoveTo"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player moving to a specific square after a dice roll.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionMoveTo.square">square</span></code></td>
+<td>
+<code>ForeignKey -&gt; BaseSquare</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The destination square the player
+moves to following normal dice movement.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionMoveTo(Action):
+    """
+    Action representing a player moving to a specific square after a dice roll.
+
+    Attributes:
+        square (ForeignKey -&gt; BaseSquare): The destination square the player
+            moves to following normal dice movement.
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='move_to')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_2">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionMoveToSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionThrowDices",
+  "game": 1,
+  "player": 2,
+  "square": 101,
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionMoveToSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionThrowDices",
+      "game": 1,
+      "player": 2,
+      "square": 101,
+    }
+    ```
+    """
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionMoveTo
+        fields = ActionSerializer.Meta.fields + ['square']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actiontaketram">ActionTakeTram</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionTakeTram"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player choosing to board the tram network.</p>
+<p>Triggered during the <code>GamePhase.choose_square</code> phase when a player's dice
+roll lands them on or near a <code>TramSquare</code> with an available shortcut route.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionTakeTram.square">square</span></code></td>
+<td>
+<code>ForeignKey -&gt; BaseSquare</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The tram destination square the player
+has chosen to travel to.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionTakeTram(Action):
+    """
+    Action representing a player choosing to board the tram network.
+
+    Triggered during the ``GamePhase.choose_square`` phase when a player's dice
+    roll lands them on or near a ``TramSquare`` with an available shortcut route.
+
+    Attributes:
+        square (ForeignKey -&gt; BaseSquare): The tram destination square the player
+            has chosen to travel to.
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='tram_move_to')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_3">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionTakeTramSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionTakeTram",
+  "game": 1,
+  "player": 2,
+  "square": 200,
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionTakeTramSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionTakeTram",
+      "game": 1,
+      "player": 2,
+      "square": 200,
+    }
+    ```
+    """
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionTakeTram
+        fields = ActionSerializer.Meta.fields + ['square']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actiondroppurchase">ActionDropPurchase</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionDropPurchase"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player declining to buy an unowned property.</p>
+<p>Declining immediately triggers an <code>Auction</code> for the property, entering the
+<code>GamePhase.auction</code> phase.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionDropPurchase.square">square</span></code></td>
+<td>
+<code>ForeignKey -&gt; BaseSquare</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The property that was declined.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionDropPurchase(Action):
+    """
+    Action representing a player declining to buy an unowned property.
+
+    Declining immediately triggers an ``Auction`` for the property, entering the
+    ``GamePhase.auction`` phase.
+
+    Attributes:
+        square (ForeignKey -&gt; BaseSquare): The property that was declined.
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='dropped')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_4">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionDropPurchaseSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionDropPurchase",
+  "game": 1,
+  "player": 2,
+  "square": 15
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionDropPurchaseSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionDropPurchase",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
+    """
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionDropPurchase
+        fields = ActionSerializer.Meta.fields + ['square']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actionbuysquare">ActionBuySquare</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionBuySquare"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player purchasing an unowned property from the bank.</p>
+<p>The property's <code>buy_price</code> is deducted from the player's balance and a
+<code>PropertyRelationship</code> record is created.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionBuySquare.square">square</span></code></td>
+<td>
+<code>ForeignKey -&gt; BaseSquare</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The property being purchased.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionBuySquare(Action):
+    """
+    Action representing a player purchasing an unowned property from the bank.
+
+    The property's ``buy_price`` is deducted from the player's balance and a
+    ``PropertyRelationship`` record is created.
+
+    Attributes:
+        square (ForeignKey -&gt; BaseSquare): The property being purchased.
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='bought')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_5">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionBuySquareSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionBuySquare",
+  "game": 1,
+  "player": 2,
+  "square": 15
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionBuySquareSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionBuySquare",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
+    """
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionBuySquare
+        fields = ActionSerializer.Meta.fields + ['square']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actionbuild">ActionBuild</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionBuild"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player building houses or a hotel on an owned property.</p>
+<p>Only valid during <code>GamePhase.business</code> when the player owns the full colour
+group. Building is limited by the even-build rule (houses must be distributed
+evenly across the group).</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionBuild.houses">houses</span></code></td>
+<td>
+<code><span title="IntegerField">IntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The number of houses being added in this action.
+A value of <code>5</code> indicates a hotel is being placed.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionBuild.square">square</span></code></td>
+<td>
+<code>ForeignKey -&gt; BaseSquare</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The property on which construction takes place.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionBuild(Action):
+    """
+    Action representing a player building houses or a hotel on an owned property.
+
+    Only valid during ``GamePhase.business`` when the player owns the full colour
+    group. Building is limited by the even-build rule (houses must be distributed
+    evenly across the group).
+
+    Attributes:
+        houses (IntegerField): The number of houses being added in this action.
+            A value of ``5`` indicates a hotel is being placed.
+        square (ForeignKey -&gt; BaseSquare): The property on which construction takes place.
+    """
+    houses = models.IntegerField(default=1)
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='build_square')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_6">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionBuildSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionBuild",
+  "game": 1,
+  "player": 2,
+  "houses": 1,
+  "square": 12
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionBuildSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionBuild",
+      "game": 1,
+      "player": 2,
+      "houses": 1,
+      "square": 12
+    }
+    ```
+    """
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionBuild
+        fields = ActionSerializer.Meta.fields + ['houses','square']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actiondemolish">ActionDemolish</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionDemolish"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player demolishing houses or a hotel on an owned property.</p>
+<p>Demolishing returns a portion of the build cost. The even-build rule also
+applies to demolition (houses must be removed evenly across the group).</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionDemolish.houses">houses</span></code></td>
+<td>
+<code><span title="IntegerField">IntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The number of houses being removed in this action.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionDemolish.square">square</span></code></td>
+<td>
+<code>ForeignKey -&gt; BaseSquare</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The property from which construction is removed.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionDemolish(Action):
+    """
+    Action representing a player demolishing houses or a hotel on an owned property.
+
+    Demolishing returns a portion of the build cost. The even-build rule also
+    applies to demolition (houses must be removed evenly across the group).
+
+    Attributes:
+        houses (IntegerField): The number of houses being removed in this action.
+        square (ForeignKey -&gt; BaseSquare): The property from which construction is removed.
+    """
+    houses = models.IntegerField(default=0)
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='demolish_square')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_7">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionDemolishSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionDemolish",
+  "game": 1,
+  "player": 2,
+  "houses": 1,
+  "square": 12
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionDemolishSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionDemolish",
+      "game": 1,
+      "player": 2,
+      "houses": 1,
+      "square": 12
+    }
+    ```
+    """
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionDemolish
+        fields = ActionSerializer.Meta.fields + ['houses','square']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actionchoosecard">ActionChooseCard</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionChooseCard"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player interacting with a fantasy card draw.</p>
+<p>Players may have the option to reveal a card they purchased in advance
+(<code>chosen_revealed_card = True</code>) or draw a random card from the deck.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionChooseCard.chosen_revealed_card">chosen_revealed_card</span></code></td>
+<td>
+<code><span title="BooleanField">BooleanField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p><code>True</code> if the player chose to play
+a pre-purchased revealed card; <code>False</code> if drawing randomly from the deck.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionChooseCard(Action):
+    """
+    Action representing a player interacting with a fantasy card draw.
+
+    Players may have the option to reveal a card they purchased in advance
+    (``chosen_revealed_card = True``) or draw a random card from the deck.
+
+    Attributes:
+        chosen_revealed_card (BooleanField): ``True`` if the player chose to play
+            a pre-purchased revealed card; ``False`` if drawing randomly from the deck.
+    """
+    chosen_revealed_card = models.BooleanField(default=False)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_8">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionChooseCardSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionChooseCard",
+  "game": 1,
+  "player": 2,
+  "chosen_revealed_card": true
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionChooseCardSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionChooseCard",
+      "game": 1,
+      "player": 2,
+      "chosen_revealed_card": true
+    }
+    ```
+    """
+    class Meta(ActionSerializer.Meta):
+        model = ActionChooseCard
+        fields = ActionSerializer.Meta.fields + ['chosen_revealed_card']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actionsurrender">ActionSurrender</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionSurrender"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player voluntarily quitting the game.</p>
+<p>The player's assets are returned to the bank and they are removed from
+<code>Game.players</code>. No additional data beyond the inherited <code>Action</code> fields
+is required.</p>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionSurrender(Action):
+    """
+    Action representing a player voluntarily quitting the game.
+
+    The player's assets are returned to the bank and they are removed from
+    ``Game.players``. No additional data beyond the inherited ``Action`` fields
+    is required.
+    """
+    pass</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_9">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionSurrenderSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionSurrender",
+  "game": 1,
+  "player": 2
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionSurrenderSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionSurrender",
+      "game": 1,
+      "player": 2
+    }
+    ```
+    """
+    class Meta(ActionSerializer.Meta):
+        model = ActionSurrender
+        fields = ActionSerializer.Meta.fields</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actiontradeproposal">ActionTradeProposal</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionTradeProposal"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a trade offer sent from one player to another.</p>
+<p>Creates a pending <code>proposal</code> on the <code>Game</code>, pausing the game in
+<code>GamePhase.proposal_acceptance</code> until the recipient responds.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionTradeProposal.destination_user">destination_user</span></code></td>
+<td>
+<code>ForeignKey -&gt; CustomUser</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The player receiving the trade offer.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionTradeProposal.offered_money">offered_money</span></code></td>
+<td>
+<code><span title="PositiveIntegerField">PositiveIntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Amount of money the proposing player
+is offering to give to the destination player.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionTradeProposal.asked_money">asked_money</span></code></td>
+<td>
+<code><span title="PositiveIntegerField">PositiveIntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Amount of money the proposing player
+is requesting from the destination player.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionTradeProposal.offered_properties">offered_properties</span></code></td>
+<td>
+<code>ManyToManyField -&gt; PropertyRelationship</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Properties the
+proposing player is offering to transfer to the destination player.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionTradeProposal.asked_properties">asked_properties</span></code></td>
+<td>
+<code>ManyToManyField -&gt; PropertyRelationship</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Properties the
+proposing player is requesting from the destination player in return.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionTradeProposal(Action):
+    """
+    Action representing a trade offer sent from one player to another.
+
+    Creates a pending ``proposal`` on the ``Game``, pausing the game in
+    ``GamePhase.proposal_acceptance`` until the recipient responds.
+
+    Attributes:
+        destination_user (ForeignKey -&gt; CustomUser): The player receiving the trade offer.
+        offered_money (PositiveIntegerField): Amount of money the proposing player
+            is offering to give to the destination player.
+        asked_money (PositiveIntegerField): Amount of money the proposing player
+            is requesting from the destination player.
+        offered_properties (ManyToManyField -&gt; PropertyRelationship): Properties the
+            proposing player is offering to transfer to the destination player.
+        asked_properties (ManyToManyField -&gt; PropertyRelationship): Properties the
+            proposing player is requesting from the destination player in return.
+    """
+    destination_user = models.ForeignKey('CustomUser', on_delete=models.CASCADE, related_name='destination_user')
+    offered_money = models.PositiveIntegerField(default=0)
+    asked_money = models.PositiveIntegerField(default=0)
+    offered_properties = models.ManyToManyField('PropertyRelationship', related_name='offered_properties')
+    asked_properties = models.ManyToManyField('PropertyRelationship', related_name='asked_properties')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_10">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionTradeProposalSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionTradeProposal",
+  "game": 1,
+  "player": 2,
+  "destination_user": 3,
+  "offered_money": 200,
+  "asked_money": 0,
+  "offered_properties": [5, 6],
+  "asked_properties": [12]
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionTradeProposalSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionTradeProposal",
+      "game": 1,
+      "player": 2,
+      "destination_user": 3,
+      "offered_money": 200,
+      "asked_money": 0,
+      "offered_properties": [5, 6],
+      "asked_properties": [12]
+    }
+    ```
+    """
+    offered_properties = serializers.PrimaryKeyRelatedField(
+        many=True, 
+        queryset=PropertyRelationship.objects.all(),
+        required=False
+    )
+    asked_properties = serializers.PrimaryKeyRelatedField(
+        many=True, 
+        queryset=PropertyRelationship.objects.all(),
+        required=False
+    )
+    class Meta(ActionSerializer.Meta):
+        model = ActionTradeProposal
+        fields = ActionSerializer.Meta.fields + ['destination_user','offered_money','asked_money','offered_properties','asked_properties']
+    def create(self, validated_data) -&gt; ActionTradeProposal:
+        """
+        Creates an ActionTradeProposal instance and sets Many-to-Many properties.
+
+        Args:
+            validated_data (dict): The validated data.
+
+        Returns:
+            ActionTradeProposal: The created instance.
+        """
+        offered_ids = validated_data.pop('offered_properties', [])
+        asked_ids = validated_data.pop('asked_properties', [])
+        instance = ActionTradeProposal.objects.create(**validated_data)
+        if offered_ids:
+            instance.offered_properties.set(offered_ids)
+        if asked_ids:
+            instance.asked_properties.set(asked_ids)
+        return instance</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.serializers.ActionTradeProposalSerializer.create">
+<code class="highlight language-python">create(validated_data)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Creates an ActionTradeProposal instance and sets Many-to-Many properties.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>validated_data</code>
+</td>
+<td>
+<code><span title="dict">dict</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The validated data.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>ActionTradeProposal</code></td> <td>
+<code><a class="autorefs autorefs-internal" href="#magnate.models.ActionTradeProposal" title="magnate.models.ActionTradeProposal">ActionTradeProposal</a></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The created instance.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">def create(self, validated_data) -&gt; ActionTradeProposal:
+    """
+    Creates an ActionTradeProposal instance and sets Many-to-Many properties.
+
+    Args:
+        validated_data (dict): The validated data.
+
+    Returns:
+        ActionTradeProposal: The created instance.
+    """
+    offered_ids = validated_data.pop('offered_properties', [])
+    asked_ids = validated_data.pop('asked_properties', [])
+    instance = ActionTradeProposal.objects.create(**validated_data)
+    if offered_ids:
+        instance.offered_properties.set(offered_ids)
+    if asked_ids:
+        instance.asked_properties.set(asked_ids)
+    return instance</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h2 id="actiontradeanswer">ActionTradeAnswer</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionTradeAnswer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player's response to a pending trade proposal.</p>
+<p>Resolves the <code>GamePhase.proposal_acceptance</code> phase. If accepted, properties
+and money are transferred between the two parties.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionTradeAnswer.choose">choose</span></code></td>
+<td>
+<code><span title="BooleanField">BooleanField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p><code>True</code> if the trade was accepted; <code>False</code> if declined.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionTradeAnswer(Action):
+    """
+    Action representing a player's response to a pending trade proposal.
+
+    Resolves the ``GamePhase.proposal_acceptance`` phase. If accepted, properties
+    and money are transferred between the two parties.
+
+    Attributes:
+        choose (BooleanField): ``True`` if the trade was accepted; ``False`` if declined.
+    """
+    choose = models.BooleanField(default=False)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_11">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionTradeAnswerSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionTradeAnswer",
+  "game": 1,
+  "player": 2,
+  "choose": true,
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionTradeAnswerSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionTradeAnswer",
+      "game": 1,
+      "player": 2,
+      "choose": true,
+    }
+    ```
+    """
+    class Meta(ActionSerializer.Meta):
+        model = ActionTradeAnswer
+        fields = ActionSerializer.Meta.fields + ['choose']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actionmortgageset">ActionMortgageSet</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionMortgageSet"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player mortgaging one of their properties.</p>
+<p>The player receives half the property's <code>buy_price</code> from the bank. While
+mortgaged, no rent is collected and no houses can be built on the property.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionMortgageSet.square">square</span></code></td>
+<td>
+<code>ForeignKey -&gt; BaseSquare</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The property being mortgaged.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionMortgageSet(Action):
+    """
+    Action representing a player mortgaging one of their properties.
+
+    The player receives half the property's ``buy_price`` from the bank. While
+    mortgaged, no rent is collected and no houses can be built on the property.
+
+    Attributes:
+        square (ForeignKey -&gt; BaseSquare): The property being mortgaged.
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='mortgage_set_square')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_12">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionMortgageSetSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionMortgageSet",
+  "game": 1,
+  "player": 2,
+  "square": 15
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionMortgageSetSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionMortgageSet",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
+    """
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionMortgageSet
+        fields = ActionSerializer.Meta.fields + ['square']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actionmortgageunset">ActionMortgageUnset</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionMortgageUnset"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player lifting the mortgage on one of their properties.</p>
+<p>The player pays the bank to reinstate the property (typically the mortgage
+value plus an interest surcharge). The property can then collect rent again.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionMortgageUnset.square">square</span></code></td>
+<td>
+<code>ForeignKey -&gt; BaseSquare</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The property being unmortgaged.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionMortgageUnset(Action):
+    """
+    Action representing a player lifting the mortgage on one of their properties.
+
+    The player pays the bank to reinstate the property (typically the mortgage
+    value plus an interest surcharge). The property can then collect rent again.
+
+    Attributes:
+        square (ForeignKey -&gt; BaseSquare): The property being unmortgaged.
+    """
+    square = models.ForeignKey('BaseSquare', on_delete=models.CASCADE, related_name='mortgage_unset_square')</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_13">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionMortgageUnsetSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionMortgageUnset",
+  "game": 1,
+  "player": 2,
+  "square": 15
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionMortgageUnsetSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionMortgageUnset",
+      "game": 1,
+      "player": 2,
+      "square": 15
+    }
+    ```
+    """
+    square = SquareCustomIdField()
+    class Meta(ActionSerializer.Meta):
+        model = ActionMortgageUnset
+        fields = ActionSerializer.Meta.fields + ['square']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actionpaybail">ActionPayBail</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionPayBail"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player paying the bail fee to leave jail immediately.</p>
+<p>The player's balance is reduced by <code>JailSquare.bail_price</code> and they are
+released to resume normal turns. No additional data is needed beyond the
+inherited <code>Action</code> fields.</p>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionPayBail(Action):
+    """
+    Action representing a player paying the bail fee to leave jail immediately.
+
+    The player's balance is reduced by ``JailSquare.bail_price`` and they are
+    released to resume normal turns. No additional data is needed beyond the
+    inherited ``Action`` fields.
+    """
+    pass</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_14">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionPayBailSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionPayBail",
+  "game": 1,
+  "player": 2
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionPayBailSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionPayBail",
+      "game": 1,
+      "player": 2
+    }
+    ```
+    """
+    class Meta(ActionSerializer.Meta):
+        model = ActionPayBail
+        fields = ActionSerializer.Meta.fields</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actionnextphase">ActionNextPhase</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionNextPhase"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player explicitly advancing to the next game phase or ending their turn.</p>
+<p>Used as a confirmation signal (e.g. ending the <code>business</code> phase) when the player has
+no further actions to perform. No additional data is needed beyond the inherited
+<code>Action</code> fields.</p>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionNextPhase(Action):
+    """
+    Action representing a player explicitly advancing to the next game phase or ending their turn.
+
+    Used as a confirmation signal (e.g. ending the ``business`` phase) when the player has
+    no further actions to perform. No additional data is needed beyond the inherited
+    ``Action`` fields.
+    """
+    pass</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_15">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionNextPhaseSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionNextPhase",
+  "game": 1,
+  "player": 2
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionNextPhaseSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionNextPhase",
+      "game": 1,
+      "player": 2
+    }
+    ```
+    """
+    class Meta(ActionSerializer.Meta):
+        model = ActionNextPhase
+        fields = ActionSerializer.Meta.fields</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="actionbid">ActionBid</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ActionBid"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Action" title="magnate.models.Action">Action</a></code></p>
+<p>Action representing a player placing a bid during an active auction.</p>
+<p>Submitted bids are recorded in <code>Auction.bids</code>. The auction ends once all
+players have bid or the auction timer expires.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ActionBid.amount">amount</span></code></td>
+<td>
+<code><span title="PositiveIntegerField">PositiveIntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The bid amount in in-game currency.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionBid(Action):
+    """
+    Action representing a player placing a bid during an active auction.
+
+    Submitted bids are recorded in ``Auction.bids``. The auction ends once all
+    players have bid or the auction timer expires.
+
+    Attributes:
+        amount (PositiveIntegerField): The bid amount in in-game currency.
+    """
+    amount = models.PositiveIntegerField(default=0)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_16">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ActionBidSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ActionSerializer" title="magnate.serializers.ActionSerializer">ActionSerializer</a></code></p>
+<p>Frontend Request Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ActionBid",
+  "game": 1,
+  "player": 2,
+  "auction": 4,
+  "amount": 150
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ActionBidSerializer(ActionSerializer):
+    """
+    Frontend Request Payload Example:
+    ```json
+    {
+      "type": "ActionBid",
+      "game": 1,
+      "player": 2,
+      "auction": 4,
+      "amount": 150
+    }
+    ```
+    """
+    class Meta(ActionSerializer.Meta):
+        model = ActionBid
+        fields = ActionSerializer.Meta.fields + ['amount']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script src="../js/base.js"></script>
+<script src="../search/main.js"></script>
+<div aria-hidden="true" aria-labelledby="searchModalLabel" class="modal" id="mkdocs_search_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="searchModalLabel">Search</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p>From here you can search these documents. Enter your search terms below.</p>
+<form>
+<div class="form-group">
+<input class="form-control" id="mkdocs-search-query" placeholder="Search..." title="Type search term here" type="search"/>
+</div>
+</form>
+<div data-no-results-text="No results found" id="mkdocs-search-results"></div>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div><div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

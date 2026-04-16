@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+
+<html data-bs-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Game - Magnate Backend API Documentation</title>
+<link href="../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../css/fontawesome.min.css" rel="stylesheet"/>
+<link href="../css/brands.min.css" rel="stylesheet"/>
+<link href="../css/solid.min.css" rel="stylesheet"/>
+<link href="../css/v4-font-face.min.css" rel="stylesheet"/>
+<link href="../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" id="hljs-light" rel="stylesheet"/>
+<link disabled="" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" id="hljs-dark" rel="stylesheet"/>
+<link href="../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<link href="../docs/doc_api.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="..">Magnate Backend API Documentation</a>
+<!-- Expander button -->
+<button aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbar-collapse" data-bs-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="nav-item">
+<a class="nav-link" href="..">Home</a>
+</li>
+<li class="nav-item dropdown">
+<a aria-current="page" aria-expanded="false" class="nav-link dropdown-toggle active" data-bs-toggle="dropdown" href="#" role="button">Integration</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api/">REST API</a>
+</li>
+<li>
+<a class="dropdown-item" href="../websockets/">WebSockets</a>
+</li>
+<li>
+<a aria-current="page" class="dropdown-item active" href="./">Game</a>
+</li>
+<li>
+<a class="dropdown-item" href="../actions/">Actions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../responses/">Responses</a>
+</li>
+<li>
+<a class="dropdown-item" href="../fantasy_events/">Fantasy events</a>
+</li>
+</ul>
+</li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">Technical reference</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../games/">Game logic</a>
+</li>
+<li>
+<a class="dropdown-item" href="../exceptions/">Exceptions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../agent_heuristics/">Agent heuristics</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ms-md-auto">
+<li class="nav-item">
+<a class="nav-link" data-bs-target="#mkdocs_search_modal" data-bs-toggle="modal" href="#">
+<i class="fa fa-search"></i> Search
+                            </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../websockets/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../actions/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-bs-target="#toc-collapse" data-bs-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-body-tertiary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="1"><a class="nav-link" href="#game">Game</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models">models</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.Game">Game</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers">serializers</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.GameStatusSerializer">GameStatusSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="game">Game</h1>
+<p>Game class</p>
+<div class="doc doc-object doc-module">
+<a id="magnate.models"></a>
+<div class="doc doc-contents first">
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.models.Game">
+<code>Game</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="django.db.models.Model">Model</span></code></p>
+<p>Represents the core state and data of a single "Magnate" game session.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.datetime">datetime</span></code></td>
+<td>
+<code><span title="DateTimeField">DateTimeField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The timestamp of when the game was created or started.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.positions">positions</span></code></td>
+<td>
+<code><span title="JSONField">JSONField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Maps a player's user ID (str/int) to their current square's custom ID (int).</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.money">money</span></code></td>
+<td>
+<code><span title="JSONField">JSONField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Maps a player's user ID (str/int) to their current money balance (int).</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.active_phase_player">active_phase_player</span></code></td>
+<td>
+<code><span title="ForeignKey">ForeignKey</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user who must take action in the current micro-phase 
+(e.g., the user who needs to respond to a trade, which might differ from the active_turn_player).</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.active_turn_player">active_turn_player</span></code></td>
+<td>
+<code><span title="ForeignKey">ForeignKey</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user whose actual turn it is on the board.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.phase">phase</span></code></td>
+<td>
+<code><span title="CharField">CharField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The current <code>GamePhase</code> of the game state machine.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.players">players</span></code></td>
+<td>
+<code><span title="ManyToManyField">ManyToManyField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The pool of users actively participating in this game.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.ordered_players">ordered_players</span></code></td>
+<td>
+<code><span title="JSONField">JSONField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A list of player primary keys <code>[pk1, pk2, pk3, ...]</code> 
+representing the strict turn order of the game.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.streak">streak</span></code></td>
+<td>
+<code><span title="IntegerField">IntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Tracks consecutive identical dice rolls (e.g., rolling doubles). 
+Usually triggers jail time if it hits 3.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.possible_destinations">possible_destinations</span></code></td>
+<td>
+<code>JSONField list</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Maps a target <code>square_id</code> (str) to the <code>dice_combination</code> (int) 
+required to get there. Used when a player has multiple routing options (e.g., taking a tram).</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.parking_money">parking_money</span></code></td>
+<td>
+<code><span title="PositiveIntegerField">PositiveIntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The accumulated jackpot for landing on the "Free Parking" equivalent.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.jail_remaining_turns">jail_remaining_turns</span></code></td>
+<td>
+<code><span title="JSONField">JSONField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Maps a player's user ID (str/int) to the number of turns (int) 
+they have left to serve in jail.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.proposal">proposal</span></code></td>
+<td>
+<code><span title="ForeignKey">ForeignKey</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A reference to an active trade proposal (<code>ActionTradeProposal</code>) currently 
+blocking the game state awaiting a response.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.fantasy_event">fantasy_event</span></code></td>
+<td>
+<code><span title="ForeignKey">ForeignKey</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A reference to an active chance/community chest style event 
+(<code>FantasyEvent</code>) currently being resolved.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.current_auction">current_auction</span></code></td>
+<td>
+<code><span title="ForeignKey">ForeignKey</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A reference to an active property auction (<code>Auction</code>) taking place.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.finished">finished</span></code></td>
+<td>
+<code><span title="BooleanField">BooleanField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Flag indicating if the game has concluded.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.bonus_response">bonus_response</span></code></td>
+<td>
+<code><span title="ForeignKey">ForeignKey</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Reference to a specific bonus or penalty modifier (<code>ResponseBonus</code>)
+applied to the current state.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.kick_out_task_id">kick_out_task_id</span></code></td>
+<td>
+<code><span title="CharField">CharField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The ID of the scheduled Celery task responsible for kicking 
+a player if they fail to act within the time limit.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.next_phase_task_id">next_phase_task_id</span></code></td>
+<td>
+<code><span title="CharField">CharField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The ID of the scheduled Celery task responsible for auto-advancing 
+the game to the next phase if a timeout occurs.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.auction_task_id">auction_task_id</span></code></td>
+<td>
+<code><span title="CharField">CharField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The ID of the scheduled Celery task managing auction timing and
+auto-advancing the auction if no bids are placed within the time limit.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.current_turn">current_turn</span></code></td>
+<td>
+<code><span title="PositiveIntegerField">PositiveIntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The global counter for the number of turns that have elapsed.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class Game(models.Model):
+    """
+    Represents the core state and data of a single "Magnate" game session.
+
+    Attributes:
+        datetime (DateTimeField): The timestamp of when the game was created or started.
+        positions (JSONField): Maps a player's user ID (str/int) to their current square's custom ID (int).
+        money (JSONField): Maps a player's user ID (str/int) to their current money balance (int).
+        active_phase_player (ForeignKey): The user who must take action in the current micro-phase 
+            (e.g., the user who needs to respond to a trade, which might differ from the active_turn_player).
+        active_turn_player (ForeignKey): The user whose actual turn it is on the board.
+        phase (CharField): The current ``GamePhase`` of the game state machine.
+        players (ManyToManyField): The pool of users actively participating in this game.
+        ordered_players (JSONField): A list of player primary keys ``[pk1, pk2, pk3, ...]`` 
+            representing the strict turn order of the game.
+        streak (IntegerField): Tracks consecutive identical dice rolls (e.g., rolling doubles). 
+            Usually triggers jail time if it hits 3.
+        possible_destinations (JSONField list): Maps a target ``square_id`` (str) to the ``dice_combination`` (int) 
+            required to get there. Used when a player has multiple routing options (e.g., taking a tram).
+        parking_money (PositiveIntegerField): The accumulated jackpot for landing on the "Free Parking" equivalent.
+        jail_remaining_turns (JSONField): Maps a player's user ID (str/int) to the number of turns (int) 
+            they have left to serve in jail.
+        proposal (ForeignKey): A reference to an active trade proposal (``ActionTradeProposal``) currently 
+            blocking the game state awaiting a response.
+        fantasy_event (ForeignKey): A reference to an active chance/community chest style event 
+            (``FantasyEvent``) currently being resolved.
+        current_auction (ForeignKey): A reference to an active property auction (``Auction``) taking place.
+        finished (BooleanField): Flag indicating if the game has concluded.
+        bonus_response (ForeignKey): Reference to a specific bonus or penalty modifier (``ResponseBonus``)
+            applied to the current state.
+        kick_out_task_id (CharField): The ID of the scheduled Celery task responsible for kicking 
+            a player if they fail to act within the time limit.
+        next_phase_task_id (CharField): The ID of the scheduled Celery task responsible for auto-advancing 
+            the game to the next phase if a timeout occurs.
+        auction_task_id (CharField): The ID of the scheduled Celery task managing auction timing and
+            auto-advancing the auction if no bids are placed within the time limit.
+        current_turn (PositiveIntegerField): The global counter for the number of turns that have elapsed.
+    """
+    datetime = models.DateTimeField()
+    # Maps user_id -&gt; square_custom_id
+    positions = models.JSONField(default=dict, blank=True)
+    # Maps user_id -&gt; amount
+    money = models.JSONField(default=dict, blank=True)
+    active_phase_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='phase_to_play')
+    active_turn_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='turns_to_play')
+
+    class GamePhase(models.TextChoices):
+        """
+        Enumeration of the possible states (phases) within a game's turn cycle.
+
+        Attributes:
+            roll_the_dices: The initial phase of a turn. The ``active_turn_player`` 
+                must throw the dice to determine movement.
+            choose_square: Triggered when a player's movement path presents a fork 
+                or routing option (e.g., deciding whether to take a tram/subway line). 
+                The player must select their specific destination square.
+            choose_fantasy: Triggered when a player lands on a dynamic event square 
+                The player must acknowledge and resolve the active ``fantasy_event``.
+            management: Triggered when a player lands on an unowned property. The 
+                player must choose to either purchase the property at its list price 
+                or decline the purchase (which typically immediately triggers an ``auction``).
+            business: A versatile phase usually occurring at the end of a turn 
+                or before a roll. The player can build/demolish houses, mortgage/unmortgage 
+                properties, or finalize their board state before passing the turn.
+            liquidation: An emergency phase triggered when a player owes a debt 
+                (to the bank or another player) that exceeds their current liquid cash. 
+                They are forced to sell assets or mortgage properties to cover the debt, 
+                or face bankruptcy.
+            auction: A competitive, multi-player phase triggered when a property 
+                is declined in the ``management`` phase. The standard turn loop pauses, and 
+                players take turns placing bids until a winner is determined.
+            proposal_acceptance: An interruptive phase triggered when one player 
+                sends a trade request to another. The game loop pauses, the 
+                ``active_phase_player`` switches to the recipient, and they must either 
+                accept or decline the pending ``proposal``.
+            end_game: A terminal state indicating the match has concluded, usually 
+                because all other players have gone bankrupt. No further actions can 
+                be taken.
+        """
+        roll_the_dices = 'roll_the_dices'
+        choose_square = 'choose_square'
+        choose_fantasy = 'choose_fantasy'
+        management = 'management'
+        liquidation = 'liquidation'
+        business = 'business'
+        auction = 'auction'
+        proposal_acceptance = 'proposal_acceptance'
+        end_game = 'end_game'
+
+
+    phase = models.CharField(choices=GamePhase, max_length=20, default='roll_the_dices')
+    players = models.ManyToManyField('CustomUser', related_name='active_playing')
+    # ordered_player = [pk1, pk2, pk3, ...]
+    ordered_players = models.JSONField(default=list)
+    streak = models.IntegerField(default=0)
+    #dict[string,int], key=square_id, value=dice_combination to get there
+    possible_destinations = models.JSONField(default=list, blank=True)
+    parking_money = models.PositiveIntegerField(default=0)
+    # Maps user_id -&gt; uint
+    jail_remaining_turns = models.JSONField(default=dict, blank=True)
+    proposal = models.ForeignKey('ActionTradeProposal', on_delete=models.SET_NULL, null=True, blank=True, related_name='trade_proposal')
+
+    fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.SET_NULL, null=True, blank=True, related_name='fantasy_event')
+
+    current_auction = models.ForeignKey('Auction', on_delete=models.SET_NULL, null=True, blank=True, related_name='active_game')
+
+    finished = models.BooleanField(default=False)
+    bonus_response = models.ForeignKey('ResponseBonus', on_delete=models.SET_NULL, null=True, blank=True, related_name='bonus_response')
+
+    kick_out_task_id = models.CharField(max_length=255, null=True, blank=True)
+    next_phase_task_id = models.CharField(max_length=255, null=True, blank=True)
+    auction_task_id = models.CharField(max_length=255, null=True, blank=True)
+
+    current_turn = models.PositiveIntegerField(default=1)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h3 class="doc doc-heading" id="magnate.models.Game.GamePhase">
+<code>GamePhase</code>
+</h3>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="django.db.models.TextChoices">TextChoices</span></code></p>
+<p>Enumeration of the possible states (phases) within a game's turn cycle.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.GamePhase.roll_the_dices">roll_the_dices</span></code></td>
+<td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The initial phase of a turn. The <code>active_turn_player</code> 
+must throw the dice to determine movement.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.GamePhase.choose_square">choose_square</span></code></td>
+<td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Triggered when a player's movement path presents a fork 
+or routing option (e.g., deciding whether to take a tram/subway line). 
+The player must select their specific destination square.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.GamePhase.choose_fantasy">choose_fantasy</span></code></td>
+<td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Triggered when a player lands on a dynamic event square 
+The player must acknowledge and resolve the active <code>fantasy_event</code>.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.GamePhase.management">management</span></code></td>
+<td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Triggered when a player lands on an unowned property. The 
+player must choose to either purchase the property at its list price 
+or decline the purchase (which typically immediately triggers an <code>auction</code>).</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.GamePhase.business">business</span></code></td>
+<td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A versatile phase usually occurring at the end of a turn 
+or before a roll. The player can build/demolish houses, mortgage/unmortgage 
+properties, or finalize their board state before passing the turn.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.GamePhase.liquidation">liquidation</span></code></td>
+<td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>An emergency phase triggered when a player owes a debt 
+(to the bank or another player) that exceeds their current liquid cash. 
+They are forced to sell assets or mortgage properties to cover the debt, 
+or face bankruptcy.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.GamePhase.auction">auction</span></code></td>
+<td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A competitive, multi-player phase triggered when a property 
+is declined in the <code>management</code> phase. The standard turn loop pauses, and 
+players take turns placing bids until a winner is determined.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.GamePhase.proposal_acceptance">proposal_acceptance</span></code></td>
+<td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>An interruptive phase triggered when one player 
+sends a trade request to another. The game loop pauses, the 
+<code>active_phase_player</code> switches to the recipient, and they must either 
+accept or decline the pending <code>proposal</code>.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Game.GamePhase.end_game">end_game</span></code></td>
+<td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>A terminal state indicating the match has concluded, usually 
+because all other players have gone bankrupt. No further actions can 
+be taken.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class GamePhase(models.TextChoices):
+    """
+    Enumeration of the possible states (phases) within a game's turn cycle.
+
+    Attributes:
+        roll_the_dices: The initial phase of a turn. The ``active_turn_player`` 
+            must throw the dice to determine movement.
+        choose_square: Triggered when a player's movement path presents a fork 
+            or routing option (e.g., deciding whether to take a tram/subway line). 
+            The player must select their specific destination square.
+        choose_fantasy: Triggered when a player lands on a dynamic event square 
+            The player must acknowledge and resolve the active ``fantasy_event``.
+        management: Triggered when a player lands on an unowned property. The 
+            player must choose to either purchase the property at its list price 
+            or decline the purchase (which typically immediately triggers an ``auction``).
+        business: A versatile phase usually occurring at the end of a turn 
+            or before a roll. The player can build/demolish houses, mortgage/unmortgage 
+            properties, or finalize their board state before passing the turn.
+        liquidation: An emergency phase triggered when a player owes a debt 
+            (to the bank or another player) that exceeds their current liquid cash. 
+            They are forced to sell assets or mortgage properties to cover the debt, 
+            or face bankruptcy.
+        auction: A competitive, multi-player phase triggered when a property 
+            is declined in the ``management`` phase. The standard turn loop pauses, and 
+            players take turns placing bids until a winner is determined.
+        proposal_acceptance: An interruptive phase triggered when one player 
+            sends a trade request to another. The game loop pauses, the 
+            ``active_phase_player`` switches to the recipient, and they must either 
+            accept or decline the pending ``proposal``.
+        end_game: A terminal state indicating the match has concluded, usually 
+            because all other players have gone bankrupt. No further actions can 
+            be taken.
+    """
+    roll_the_dices = 'roll_the_dices'
+    choose_square = 'choose_square'
+    choose_fantasy = 'choose_fantasy'
+    management = 'management'
+    liquidation = 'liquidation'
+    business = 'business'
+    auction = 'auction'
+    proposal_acceptance = 'proposal_acceptance'
+    end_game = 'end_game'</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="doc doc-object doc-module">
+<a id="magnate.serializers"></a>
+<div class="doc doc-contents first">
+<div class="doc doc-children">
+<div class="doc doc-object doc-class">
+<h2 class="doc doc-heading" id="magnate.serializers.GameStatusSerializer">
+<code>GameStatusSerializer</code>
+</h2>
+<div class="doc doc-contents">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.serializers.ModelSerializer">ModelSerializer</span></code></p>
+<p>Serializes the game status allowing reconnection. It excludes certain
+fields from Game model and also includes active <code>property_relationships</code>.
+Example:
+    A standard serialized response during the 'roll_the_dices' phase:
+    <code>json
+    {
+        "id": 1,
+        "datetime": "2026-04-06T18:30:00Z",
+        "positions": {"42": 0, "85": 12},
+        "money": {"42": 1500, "85": 1350},
+        "active_phase_player": 42,
+        "active_turn_player": 42,
+        "phase": "roll_the_dices",
+        "players": [42, 85],
+        "ordered_players": [42, 85],
+        "streak": 0,
+        "possible_destinations": [],
+        "parking_money": 200,
+        "jail_remaining_turns": {'2': 3},
+        "finished": false,
+        "bonus_response": null,
+        "current_turn": 5,
+        "property_relationships": [
+            {"owner": 1, "square": 3, "houses": 2, "mortgage": False},
+            {"owner": 2, "square": 4, "houses": 3, "mortgage": False}
+            ],
+    }</code></p>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class GameStatusSerializer(serializers.ModelSerializer):
+    """
+    Serializes the game status allowing reconnection. It excludes certain
+    fields from Game model and also includes active `property_relationships`.
+    Example:
+        A standard serialized response during the 'roll_the_dices' phase:
+        ```json
+        {
+            "id": 1,
+            "datetime": "2026-04-06T18:30:00Z",
+            "positions": {"42": 0, "85": 12},
+            "money": {"42": 1500, "85": 1350},
+            "active_phase_player": 42,
+            "active_turn_player": 42,
+            "phase": "roll_the_dices",
+            "players": [42, 85],
+            "ordered_players": [42, 85],
+            "streak": 0,
+            "possible_destinations": [],
+            "parking_money": 200,
+            "jail_remaining_turns": {'2': 3},
+            "finished": false,
+            "bonus_response": null,
+            "current_turn": 5,
+            "property_relationships": [
+                {"owner": 1, "square": 3, "houses": 2, "mortgage": False},
+                {"owner": 2, "square": 4, "houses": 3, "mortgage": False}
+                ],
+        }
+        ```
+    """
+    property_relationships = PropertyRelationshipSerializer(many=True, read_only=True)
+    class Meta:
+        model = Game
+        exclude = ['proposal', 'fantasy_event', 'current_auction',
+                   'bonus_response',
+                   'kick_out_task_id', 'next_phase_task_id']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script src="../js/base.js"></script>
+<script src="../search/main.js"></script>
+<div aria-hidden="true" aria-labelledby="searchModalLabel" class="modal" id="mkdocs_search_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="searchModalLabel">Search</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p>From here you can search these documents. Enter your search terms below.</p>
+<form>
+<div class="form-group">
+<input class="form-control" id="mkdocs-search-query" placeholder="Search..." title="Type search term here" type="search"/>
+</div>
+</form>
+<div data-no-results-text="No results found" id="mkdocs-search-results"></div>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div><div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

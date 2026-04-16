@@ -1,0 +1,2200 @@
+<!DOCTYPE html>
+
+<html data-bs-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>REST API - Magnate Backend API Documentation</title>
+<link href="../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../css/fontawesome.min.css" rel="stylesheet"/>
+<link href="../css/brands.min.css" rel="stylesheet"/>
+<link href="../css/solid.min.css" rel="stylesheet"/>
+<link href="../css/v4-font-face.min.css" rel="stylesheet"/>
+<link href="../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" id="hljs-light" rel="stylesheet"/>
+<link disabled="" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" id="hljs-dark" rel="stylesheet"/>
+<link href="../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<link href="../docs/doc_api.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="..">Magnate Backend API Documentation</a>
+<!-- Expander button -->
+<button aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbar-collapse" data-bs-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="nav-item">
+<a class="nav-link" href="..">Home</a>
+</li>
+<li class="nav-item dropdown">
+<a aria-current="page" aria-expanded="false" class="nav-link dropdown-toggle active" data-bs-toggle="dropdown" href="#" role="button">Integration</a>
+<ul class="dropdown-menu">
+<li>
+<a aria-current="page" class="dropdown-item active" href="./">REST API</a>
+</li>
+<li>
+<a class="dropdown-item" href="../websockets/">WebSockets</a>
+</li>
+<li>
+<a class="dropdown-item" href="../game/">Game</a>
+</li>
+<li>
+<a class="dropdown-item" href="../actions/">Actions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../responses/">Responses</a>
+</li>
+<li>
+<a class="dropdown-item" href="../fantasy_events/">Fantasy events</a>
+</li>
+</ul>
+</li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">Technical reference</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../games/">Game logic</a>
+</li>
+<li>
+<a class="dropdown-item" href="../exceptions/">Exceptions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../agent_heuristics/">Agent heuristics</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ms-md-auto">
+<li class="nav-item">
+<a class="nav-link" data-bs-target="#mkdocs_search_modal" data-bs-toggle="modal" href="#">
+<i class="fa fa-search"></i> Search
+                            </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href=".." rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../websockets/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-bs-target="#toc-collapse" data-bs-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-body-tertiary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="1"><a class="nav-link" href="#rest-api">REST API</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#authentication">Authentication</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.RegisterView">RegisterView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.RegisterView.post">post</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.LoginView">LoginView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.LoginView.post">post</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#user-information">User Information</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.ProfileView">ProfileView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.ProfileView.get">get</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.GetGamesPlayedView">GetGamesPlayedView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.GetGamesPlayedView.get">get</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.UserNamePieceView">UserNamePieceView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.UserNamePieceView.get">get</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#shop-customization">Shop &amp; Customization</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.ShopItemListView">ShopItemListView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.ShopItemListView.get">get</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.BuyItemView">BuyItemView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.BuyItemView.post">post</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.UserPiecesView">UserPiecesView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.UserPiecesView.get">get</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.UserEmojisView">UserEmojisView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.UserEmojisView.get">get</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.ChangeUserPieceView">ChangeUserPieceView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.ChangeUserPieceView.post">post</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#lobby-matchmaking">Lobby &amp; Matchmaking</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.GetPrivateCodeView">GetPrivateCodeView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.GetPrivateCodeView.get">get</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.CheckPrivateRoomView">CheckPrivateRoomView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.CheckPrivateRoomView.get">get</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#game-summary">Game Summary</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.GetGameSummaryView">GetGameSummaryView</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.views.GetGameSummaryView.get">get</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="rest-api">REST API</h1>
+<p>This section documents the REST API endpoints available in the Magnate backend. All endpoints (except registration and login) require a valid JWT access token in the <code>Authorization</code> header.</p>
+<h2 id="authentication">Authentication</h2>
+<h3 id="register">Register</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.RegisterView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Endpoint for registering a new user.</p>
+<p>POST /auth/register/</p>
+<details class="request-body" open="">
+<summary>Request body</summary>
+<p>{
+    "username": "mario",
+    "password": "Segura123!",
+    "password2": "Segura123!"
+}</p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>201: User created successfully. Returns user data and JWT tokens.
+400: Validation error (passwords don't match  etc).</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class RegisterView(APIView):
+    """
+    Endpoint for registering a new user.
+
+    POST /auth/register/
+
+    Request body:
+        {
+            "username": "mario",
+            "password": "Segura123!",
+            "password2": "Segura123!"
+        }
+
+    Responses:
+        201: User created successfully. Returns user data and JWT tokens.
+        400: Validation error (passwords don't match  etc).
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request) -&gt; Response:
+        """
+        Handles the user registration request.
+
+        Args:
+            request (Request): The HTTP request object containing registration data.
+
+        Returns:
+            Response: The HTTP response containing registration results or errors.
+        """
+
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user   = serializer.save()
+            assert isinstance(user, CustomUser)
+            tokens = get_tokens_for_user(user)
+            return Response({
+                'message': 'correctly registered user',
+                'user':    UserProfileSerializer(user).data,
+                'tokens':  tokens,
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.RegisterView.post">
+<code class="highlight language-python">post(request)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the user registration request.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object containing registration data.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing registration results or errors.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def post(self, request) -&gt; Response:
+    """
+    Handles the user registration request.
+
+    Args:
+        request (Request): The HTTP request object containing registration data.
+
+    Returns:
+        Response: The HTTP response containing registration results or errors.
+    """
+
+    serializer = RegisterSerializer(data=request.data)
+    if serializer.is_valid():
+        user   = serializer.save()
+        assert isinstance(user, CustomUser)
+        tokens = get_tokens_for_user(user)
+        return Response({
+            'message': 'correctly registered user',
+            'user':    UserProfileSerializer(user).data,
+            'tokens':  tokens,
+        }, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h3 id="login">Login</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.LoginView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Endpoint for authenticating an existing user.</p>
+<p>POST /auth/login/</p>
+<details class="request-body" open="">
+<summary>Request body</summary>
+<p>{
+    "username": "mario",
+    "password": "Segura123!"
+}</p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: Login successful. Returns user data and JWT tokens.
+400: Missing or malformed fields.
+401: Invalid credentials.
+403: Bots are not allowed to log in.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class LoginView(APIView):
+    """
+    Endpoint for authenticating an existing user.
+
+    POST /auth/login/
+
+    Request body:
+        {
+            "username": "mario",
+            "password": "Segura123!"
+        }
+
+    Responses:
+        200: Login successful. Returns user data and JWT tokens.
+        400: Missing or malformed fields.
+        401: Invalid credentials.
+        403: Bots are not allowed to log in.
+    """
+
+    permission_classes = [AllowAny]
+
+    def post(self, request) -&gt; Response:
+        """
+        Handles the user login request.
+
+        Args:
+            request (Request): The HTTP request object containing login credentials.
+
+        Returns:
+            Response: The HTTP response containing login results or errors.
+        """
+        serializer = LoginSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data: dict = serializer.validated_data  # type: ignore
+
+        auth_user = authenticate(
+            username=data['username'],
+            password=data['password'],
+        )
+        if auth_user is None:
+            return Response(
+                {'error': 'bad credentials'},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        assert isinstance(auth_user, CustomUser) ### can't be bot
+
+
+
+
+        tokens = get_tokens_for_user(auth_user)
+        return Response({
+            'message': 'succesful login',
+            'user':    UserProfileSerializer(auth_user).data,
+            'tokens':  tokens,
+        }, status=status.HTTP_200_OK)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.LoginView.post">
+<code class="highlight language-python">post(request)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the user login request.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object containing login credentials.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing login results or errors.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def post(self, request) -&gt; Response:
+    """
+    Handles the user login request.
+
+    Args:
+        request (Request): The HTTP request object containing login credentials.
+
+    Returns:
+        Response: The HTTP response containing login results or errors.
+    """
+    serializer = LoginSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data: dict = serializer.validated_data  # type: ignore
+
+    auth_user = authenticate(
+        username=data['username'],
+        password=data['password'],
+    )
+    if auth_user is None:
+        return Response(
+            {'error': 'bad credentials'},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    assert isinstance(auth_user, CustomUser) ### can't be bot
+
+
+
+
+    tokens = get_tokens_for_user(auth_user)
+    return Response({
+        'message': 'succesful login',
+        'user':    UserProfileSerializer(auth_user).data,
+        'tokens':  tokens,
+    }, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h2 id="user-information">User Information</h2>
+<h3 id="profile">Profile</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.ProfileView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Endpoint for retrieving the authenticated user's profile.</p>
+<p>GET /user/info/</p>
+<details class="headers" open="">
+<summary>Headers</summary>
+<p>Authorization: Bearer <access_token></access_token></p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: Returns the user's profile data.
+401: Missing or invalid access token.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class ProfileView(APIView):
+    """
+    Endpoint for retrieving the authenticated user's profile.
+
+    GET /user/info/
+
+    Headers:
+        Authorization: Bearer &lt;access_token&gt;
+
+    Responses:
+        200: Returns the user's profile data.
+        401: Missing or invalid access token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request) -&gt; Response:
+        """
+        Handles the request to retrieve user profile data.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the user profile data.
+        """
+        return Response(UserProfileSerializer(request.user).data)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.ProfileView.get">
+<code class="highlight language-python">get(request)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to retrieve user profile data.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing the user profile data.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def get(self, request) -&gt; Response:
+    """
+    Handles the request to retrieve user profile data.
+
+    Args:
+        request (Request): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response containing the user profile data.
+    """
+    return Response(UserProfileSerializer(request.user).data)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h3 id="user-played-games">User Played Games</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.GetGamesPlayedView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Returns a list of IDs for all games played by the authenticated user.</p>
+<p>GET /user/games-played/</p>
+<details class="headers" open="">
+<summary>Headers</summary>
+<p>Authorization: Bearer <access_token></access_token></p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: Returns a list of game IDs (e.g., {"games": [1, 5, 12]}).
+401: Missing or invalid token.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class GetGamesPlayedView(APIView):
+    """
+    Returns a list of IDs for all games played by the authenticated user.
+
+    GET /user/games-played/
+
+    Headers:
+        Authorization: Bearer &lt;access_token&gt;
+
+    Responses:
+        200: Returns a list of game IDs (e.g., {"games": [1, 5, 12]}).
+        401: Missing or invalid token.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request) -&gt; Response:
+        """
+        Handles the request to list all games played by the authenticated user.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the list of game IDs.
+        """
+        game_ids = list(request.user.played_games.values_list('id', flat=True))
+
+        return Response({'games': game_ids}, status=status.HTTP_200_OK)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.GetGamesPlayedView.get">
+<code class="highlight language-python">get(request)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to list all games played by the authenticated user.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing the list of game IDs.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def get(self, request) -&gt; Response:
+    """
+    Handles the request to list all games played by the authenticated user.
+
+    Args:
+        request (Request): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response containing the list of game IDs.
+    """
+    game_ids = list(request.user.played_games.values_list('id', flat=True))
+
+    return Response({'games': game_ids}, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h3 id="user-name-and-piece">User Name and Piece</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.UserNamePieceView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Returns the username and active piece of the requested user.</p>
+<p>GET /info/user-name-piece/<pk>/</pk></p>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: Returns username and piece.
+404: User not found.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class UserNamePieceView(APIView):
+    """
+    Returns the username and active piece of the requested user.
+
+    GET /info/user-name-piece/&lt;pk&gt;/
+
+    Responses:
+        200: Returns username and piece.
+        404: User not found.
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request, pk) -&gt; Response:
+        """
+        Handles the request to get a specific user's username and piece.
+
+        Args:
+            request (Request): The HTTP request object.
+            pk (int): The primary key of the user.
+
+        Returns:
+            Response: The HTTP response containing the user's name and piece.
+        """
+        user = get_object_or_404(CustomUser, pk=pk)
+        return Response({
+            'username': user.username,
+            'piece':    user.user_piece,
+        }, status=status.HTTP_200_OK)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.UserNamePieceView.get">
+<code class="highlight language-python">get(request, pk)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to get a specific user's username and piece.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>pk</code>
+</td>
+<td>
+<code><span title="int">int</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The primary key of the user.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing the user's name and piece.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def get(self, request, pk) -&gt; Response:
+    """
+    Handles the request to get a specific user's username and piece.
+
+    Args:
+        request (Request): The HTTP request object.
+        pk (int): The primary key of the user.
+
+    Returns:
+        Response: The HTTP response containing the user's name and piece.
+    """
+    user = get_object_or_404(CustomUser, pk=pk)
+    return Response({
+        'username': user.username,
+        'piece':    user.user_piece,
+    }, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h2 id="shop-customization">Shop &amp; Customization</h2>
+<h3 id="shop-items">Shop Items</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.ShopItemListView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Returns the full list of available shop items.
+Each item includes an 'owned' flag for the requesting user.</p>
+<p>GET /shop/items/</p>
+<details class="headers" open="">
+<summary>Headers</summary>
+<p>Authorization: Bearer <access_token></access_token></p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: List of all items with id, itemType, price and owned flag.
+401: Missing or invalid token.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class ShopItemListView(APIView):
+    """
+    Returns the full list of available shop items.
+    Each item includes an 'owned' flag for the requesting user.
+
+    GET /shop/items/
+
+    Headers:
+        Authorization: Bearer &lt;access_token&gt;
+
+    Responses:
+        200: List of all items with id, itemType, price and owned flag.
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request) -&gt; Response:
+        """
+        Handles the request to list available shop items.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the list of items.
+        """
+        items = Item.objects.all()
+        serializer = ItemSerializer(items, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.ShopItemListView.get">
+<code class="highlight language-python">get(request)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to list available shop items.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing the list of items.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def get(self, request) -&gt; Response:
+    """
+    Handles the request to list available shop items.
+
+    Args:
+        request (Request): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response containing the list of items.
+    """
+    items = Item.objects.all()
+    serializer = ItemSerializer(items, many=True, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h3 id="buy-item">Buy Item</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.BuyItemView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Purchases an item for the authenticated user.
+Deducts the item price from the user's points and adds it to owned_items.</p>
+<p>POST /shop/buy/</p>
+<details class="headers" open="">
+<summary>Headers</summary>
+<p>Authorization: Bearer <access_token></access_token></p>
+</details>
+<details class="request-body" open="">
+<summary>Request body</summary>
+<p>{ "item_id": 1 }</p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: Purchase successful. Returns updated points and item data.
+400: Item not found, already owned, or insufficient points.
+401: Missing or invalid token.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class BuyItemView(APIView):
+    """
+    Purchases an item for the authenticated user.
+    Deducts the item price from the user's points and adds it to owned_items.
+
+    POST /shop/buy/
+
+    Headers:
+        Authorization: Bearer &lt;access_token&gt;
+
+    Request body:
+        { "item_id": 1 }
+
+    Responses:
+        200: Purchase successful. Returns updated points and item data.
+        400: Item not found, already owned, or insufficient points.
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request) -&gt; Response:
+        """
+        Handles the request to purchase a shop item.
+
+        Args:
+            request (Request): The HTTP request object containing the item identifier.
+
+        Returns:
+            Response: The HTTP response indicating purchase success or failure.
+        """
+        serializer = PurchaseSerializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data: dict = serializer.validated_data  # type: ignore
+        item = Item.objects.get(id=data['custom_id'])
+
+        user: CustomUser = request.user  # type: ignore
+        user.points -= item.price # money check already done in serializer
+        user.save()
+        user.owned_items.add(item)
+
+        return Response({
+            'message': 'Purchase successful.',
+            'item':    ItemSerializer(item, context={'request': request}).data,
+            'points_remaining': user.points,
+        }, status=status.HTTP_200_OK)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.BuyItemView.post">
+<code class="highlight language-python">post(request)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to purchase a shop item.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object containing the item identifier.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response indicating purchase success or failure.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def post(self, request) -&gt; Response:
+    """
+    Handles the request to purchase a shop item.
+
+    Args:
+        request (Request): The HTTP request object containing the item identifier.
+
+    Returns:
+        Response: The HTTP response indicating purchase success or failure.
+    """
+    serializer = PurchaseSerializer(data=request.data, context={'request': request})
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data: dict = serializer.validated_data  # type: ignore
+    item = Item.objects.get(id=data['custom_id'])
+
+    user: CustomUser = request.user  # type: ignore
+    user.points -= item.price # money check already done in serializer
+    user.save()
+    user.owned_items.add(item)
+
+    return Response({
+        'message': 'Purchase successful.',
+        'item':    ItemSerializer(item, context={'request': request}).data,
+        'points_remaining': user.points,
+    }, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h3 id="user-owned-pieces">User Owned Pieces</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.UserPiecesView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Returns the list of pieces owned by the authenticated user.</p>
+<p>GET /shop/user-pieces/</p>
+<details class="headers" open="">
+<summary>Headers</summary>
+<p>Authorization: Bearer <access_token></access_token></p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: List of owned pieces with id, itemType, price and owned flag (always true).
+401: Missing or invalid token.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class UserPiecesView(APIView):
+    """
+    Returns the list of pieces owned by the authenticated user.
+
+    GET /shop/user-pieces/
+
+    Headers:
+        Authorization: Bearer &lt;access_token&gt;
+
+    Responses:
+        200: List of owned pieces with id, itemType, price and owned flag (always true).
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request) -&gt; Response:
+        """
+        Handles the request to list pieces owned by the user.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the list of owned pieces.
+        """
+        user: CustomUser = request.user  # type: ignore
+        pieces = user.owned_items.filter(itemType='piece')
+        serializer = ItemSerializer(pieces, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.UserPiecesView.get">
+<code class="highlight language-python">get(request)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to list pieces owned by the user.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing the list of owned pieces.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def get(self, request) -&gt; Response:
+    """
+    Handles the request to list pieces owned by the user.
+
+    Args:
+        request (Request): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response containing the list of owned pieces.
+    """
+    user: CustomUser = request.user  # type: ignore
+    pieces = user.owned_items.filter(itemType='piece')
+    serializer = ItemSerializer(pieces, many=True, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h3 id="user-owned-emojis">User Owned Emojis</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.UserEmojisView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Returns the list of emojis owned by the authenticated user.</p>
+<p>GET /shop/user-emojis/</p>
+<details class="headers" open="">
+<summary>Headers</summary>
+<p>Authorization: Bearer <access_token></access_token></p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: List of owned emojis with id, itemType, price and owned flag (always true).
+401: Missing or invalid token.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class UserEmojisView(APIView):
+    """
+    Returns the list of emojis owned by the authenticated user.
+
+    GET /shop/user-emojis/
+
+    Headers:
+        Authorization: Bearer &lt;access_token&gt;
+
+    Responses:
+        200: List of owned emojis with id, itemType, price and owned flag (always true).
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request) -&gt; Response:
+        """
+        Handles the request to list emojis owned by the user.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the list of owned emojis.
+        """
+        user: CustomUser = request.user  # type: ignore
+        emojis = user.owned_items.filter(itemType='emoji')
+        serializer = ItemSerializer(emojis, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.UserEmojisView.get">
+<code class="highlight language-python">get(request)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to list emojis owned by the user.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing the list of owned emojis.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def get(self, request) -&gt; Response:
+    """
+    Handles the request to list emojis owned by the user.
+
+    Args:
+        request (Request): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response containing the list of owned emojis.
+    """
+    user: CustomUser = request.user  # type: ignore
+    emojis = user.owned_items.filter(itemType='emoji')
+    serializer = ItemSerializer(emojis, many=True, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h3 id="change-active-piece">Change Active Piece</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.ChangeUserPieceView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Changes the user's active piece to one they own.</p>
+<p>POST /user/change-piece/</p>
+<details class="headers" open="">
+<summary>Headers</summary>
+<p>Authorization: Bearer <access_token></access_token></p>
+</details>
+<details class="request-body" open="">
+<summary>Request body</summary>
+<p>{ "custom_id": 1 }</p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: Piece changed successfully. Returns the new user_piece value.
+400: Validation error (item not found, not owned, not a piece).
+401: Missing or invalid token.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class ChangeUserPieceView(APIView):
+    """
+    Changes the user's active piece to one they own.
+
+    POST /user/change-piece/
+
+    Headers:
+        Authorization: Bearer &lt;access_token&gt;
+
+    Request body:
+        { "custom_id": 1 }
+
+    Responses:
+        200: Piece changed successfully. Returns the new user_piece value.
+        400: Validation error (item not found, not owned, not a piece).
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request) -&gt; Response:
+        """
+        Handles the request to change the user's active piece.
+
+        Args:
+            request (Request): The HTTP request object containing the piece identifier.
+
+        Returns:
+            Response: The HTTP response indicating success or failure.
+        """
+        serializer = ChangePieceSerializer(data=request.data, context={'request': request})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data: dict = serializer.validated_data  # type: ignore
+        user: CustomUser = request.user  # type: ignore
+        user.user_piece = data['custom_id']
+        user.save()
+
+        return Response({
+            'message': 'Piece changed successfully.',
+            'user_piece': user.user_piece,
+        }, status=status.HTTP_200_OK)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.ChangeUserPieceView.post">
+<code class="highlight language-python">post(request)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to change the user's active piece.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object containing the piece identifier.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response indicating success or failure.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def post(self, request) -&gt; Response:
+    """
+    Handles the request to change the user's active piece.
+
+    Args:
+        request (Request): The HTTP request object containing the piece identifier.
+
+    Returns:
+        Response: The HTTP response indicating success or failure.
+    """
+    serializer = ChangePieceSerializer(data=request.data, context={'request': request})
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    data: dict = serializer.validated_data  # type: ignore
+    user: CustomUser = request.user  # type: ignore
+    user.user_piece = data['custom_id']
+    user.save()
+
+    return Response({
+        'message': 'Piece changed successfully.',
+        'user_piece': user.user_piece,
+    }, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h2 id="lobby-matchmaking">Lobby &amp; Matchmaking</h2>
+<h3 id="get-private-code">Get Private Code</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.GetPrivateCodeView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Generates a unique 6-character alphanumeric private room code.</p>
+<p>GET /lobby/get-private-code</p>
+<details class="headers" open="">
+<summary>Headers</summary>
+<p>Authorization: Bearer <access_token></access_token></p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: Returns a unique private room code.
+401: Missing or invalid token.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class GetPrivateCodeView(APIView):
+    """
+    Generates a unique 6-character alphanumeric private room code.
+
+    GET /lobby/get-private-code
+
+    Headers:
+        Authorization: Bearer &lt;access_token&gt;
+
+    Responses:
+        200: Returns a unique private room code.
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request) -&gt; Response:
+        """
+        Handles the request to generate a unique private room code.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the generated code.
+        """
+        code = self._generate_unique_code()
+        return Response({
+            'code': code,
+            'message': 'Private room code generated successfully.'
+        }, status=status.HTTP_200_OK)
+
+    #Existe una pequeña y despreciable posibilidad de que lleguen
+    #2 peticiones muy seguidas y por mala suerte les dé el mismo número
+    #aleatorio. En fin, srand() es mi pastor nada me falta.
+    @staticmethod
+    def _generate_unique_code() -&gt; str:
+        """
+        Generates a unique 6-character alphanumeric code in uppercase.
+        Ensures no existing PrivateRoom is currently using this code in the database.
+
+        Args:
+            None
+
+        Returns:
+            str: The generated 6-character unique code.
+        """
+        characters = string.ascii_uppercase + string.digits
+        while True:
+            code = ''.join(random.choices(characters, k=6))
+            if not PrivateRoom.objects.filter(room_code=code).exists():
+                return code</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.GetPrivateCodeView.get">
+<code class="highlight language-python">get(request)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to generate a unique private room code.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing the generated code.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def get(self, request) -&gt; Response:
+    """
+    Handles the request to generate a unique private room code.
+
+    Args:
+        request (Request): The HTTP request object.
+
+    Returns:
+        Response: The HTTP response containing the generated code.
+    """
+    code = self._generate_unique_code()
+    return Response({
+        'code': code,
+        'message': 'Private room code generated successfully.'
+    }, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h3 id="check-room-code">Check Room Code</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.CheckPrivateRoomView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Checks if a private room with the given code exists.</p>
+<p>GET /lobby/check-code/<room_code>/</room_code></p>
+<details class="headers" open="">
+<summary>Headers</summary>
+<p>Authorization: Bearer <access_token></access_token></p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: Returns a boolean indicating if the room exists ({'exists': true/false}).
+401: Missing or invalid token.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class CheckPrivateRoomView(APIView):
+    """
+    Checks if a private room with the given code exists.
+
+    GET /lobby/check-code/&lt;room_code&gt;/
+
+    Headers:
+        Authorization: Bearer &lt;access_token&gt;
+
+    Responses:
+        200: Returns a boolean indicating if the room exists ({'exists': true/false}).
+        401: Missing or invalid token.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, room_code) -&gt; Response:
+        """
+        Handles the request to check if a private room exists.
+
+        Args:
+            request (Request): The HTTP request object.
+            room_code (str): The code of the room to check.
+
+        Returns:
+            Response: The HTTP response containing the existence check result.
+        """
+        exists = PrivateRoom.objects.filter(room_code=room_code).exists()
+        return Response({'exists': exists}, status=status.HTTP_200_OK)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.CheckPrivateRoomView.get">
+<code class="highlight language-python">get(request, room_code)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to check if a private room exists.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>room_code</code>
+</td>
+<td>
+<code><span title="str">str</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The code of the room to check.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing the existence check result.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def get(self, request, room_code) -&gt; Response:
+    """
+    Handles the request to check if a private room exists.
+
+    Args:
+        request (Request): The HTTP request object.
+        room_code (str): The code of the room to check.
+
+    Returns:
+        Response: The HTTP response containing the existence check result.
+    """
+    exists = PrivateRoom.objects.filter(room_code=room_code).exists()
+    return Response({'exists': exists}, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div><h2 id="game-summary">Game Summary</h2>
+<h3 id="game-summary_1">Game Summary</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.views.GetGameSummaryView"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.views.APIView">APIView</span></code></p>
+<p>Returns a summary of a completed game, including start/end times and final money for each player.</p>
+<p>GET /game/summary/<game_id>/</game_id></p>
+<details class="headers" open="">
+<summary>Headers</summary>
+<p>Authorization: Bearer <access_token></access_token></p>
+</details>
+<details class="responses" open="">
+<summary>Responses</summary>
+<p>200: Returns game summary with start_date, end_date, and final_money dict.
+401: Missing or invalid token.
+403: User did not participate in this game.
+404: Game summary not found.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">class GetGameSummaryView(APIView):
+    """
+    Returns a summary of a completed game, including start/end times and final money for each player.
+
+    GET /game/summary/&lt;game_id&gt;/
+
+    Headers:
+        Authorization: Bearer &lt;access_token&gt;
+
+    Responses:
+        200: Returns game summary with start_date, end_date, and final_money dict.
+        401: Missing or invalid token.
+        403: User did not participate in this game.
+        404: Game summary not found.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, game_id) -&gt; Response:
+        """
+        Handles the request to retrieve a summary for a specific game.
+
+        Args:
+            request (Request): The HTTP request object.
+            game_id (int): The identifier of the game.
+
+        Returns:
+            Response: The HTTP response containing the game summary or an error.
+        """
+        summary = get_object_or_404(GameSummary, game_id=game_id)
+
+        if not request.user.played_games.filter(id=game_id).exists():
+             return Response(
+                 {'error': 'No tienes permiso para ver el resumen de una partida en la que no participaste.'}, 
+                 status=status.HTTP_403_FORBIDDEN
+             )
+
+        serializer = GameSummarySerializer(summary)
+        return Response(serializer.data, status=status.HTTP_200_OK)</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-function">
+<h2 class="doc doc-heading" id="magnate.views.GetGameSummaryView.get">
+<code class="highlight language-python">get(request, game_id)</code>
+</h2>
+<div class="doc doc-contents">
+<p>Handles the request to retrieve a summary for a specific game.</p>
+<p><span class="doc-section-title">Parameters:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+<code>request</code>
+</td>
+<td>
+<code><span title="Request">Request</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP request object.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td>
+<code>game_id</code>
+</td>
+<td>
+<code><span title="int">int</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The identifier of the game.</p>
+</div>
+</td>
+<td>
+<em>required</em>
+</td>
+</tr>
+</tbody>
+</table>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>Response</code></td> <td>
+<code><span title="rest_framework.response.Response">Response</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The HTTP response containing the game summary or an error.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/views.py</code></summary>
+<pre class="highlight"><code class="language-python">def get(self, request, game_id) -&gt; Response:
+    """
+    Handles the request to retrieve a summary for a specific game.
+
+    Args:
+        request (Request): The HTTP request object.
+        game_id (int): The identifier of the game.
+
+    Returns:
+        Response: The HTTP response containing the game summary or an error.
+    """
+    summary = get_object_or_404(GameSummary, game_id=game_id)
+
+    if not request.user.played_games.filter(id=game_id).exists():
+         return Response(
+             {'error': 'No tienes permiso para ver el resumen de una partida en la que no participaste.'}, 
+             status=status.HTTP_403_FORBIDDEN
+         )
+
+    serializer = GameSummarySerializer(summary)
+    return Response(serializer.data, status=status.HTTP_200_OK)</code></pre>
+</details>
+</div>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script src="../js/base.js"></script>
+<script src="../search/main.js"></script>
+<div aria-hidden="true" aria-labelledby="searchModalLabel" class="modal" id="mkdocs_search_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="searchModalLabel">Search</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p>From here you can search these documents. Enter your search terms below.</p>
+<form>
+<div class="form-group">
+<input class="form-control" id="mkdocs-search-query" placeholder="Search..." title="Type search term here" type="search"/>
+</div>
+</form>
+<div data-no-results-text="No results found" id="mkdocs-search-results"></div>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div><div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+
+<html data-bs-theme="light" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="../img/favicon.ico" rel="shortcut icon"/>
+<title>Responses - Magnate Backend API Documentation</title>
+<link href="../css/bootstrap.min.css" rel="stylesheet"/>
+<link href="../css/fontawesome.min.css" rel="stylesheet"/>
+<link href="../css/brands.min.css" rel="stylesheet"/>
+<link href="../css/solid.min.css" rel="stylesheet"/>
+<link href="../css/v4-font-face.min.css" rel="stylesheet"/>
+<link href="../css/base.css" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github.min.css" id="hljs-light" rel="stylesheet"/>
+<link disabled="" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/github-dark.min.css" id="hljs-dark" rel="stylesheet"/>
+<link href="../assets/_mkdocstrings.css" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+<script>hljs.highlightAll();</script>
+<link href="../docs/doc_api.pdf" rel="alternate" title="PDF" type="application/pdf"/></head>
+<body>
+<div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+<div class="container">
+<a class="navbar-brand" href="..">Magnate Backend API Documentation</a>
+<!-- Expander button -->
+<button aria-controls="navbar-collapse" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler" data-bs-target="#navbar-collapse" data-bs-toggle="collapse" type="button">
+<span class="navbar-toggler-icon"></span>
+</button>
+<!-- Expanded navigation -->
+<div class="navbar-collapse collapse" id="navbar-collapse">
+<!-- Main navigation -->
+<ul class="nav navbar-nav">
+<li class="nav-item">
+<a class="nav-link" href="..">Home</a>
+</li>
+<li class="nav-item dropdown">
+<a aria-current="page" aria-expanded="false" class="nav-link dropdown-toggle active" data-bs-toggle="dropdown" href="#" role="button">Integration</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../api/">REST API</a>
+</li>
+<li>
+<a class="dropdown-item" href="../websockets/">WebSockets</a>
+</li>
+<li>
+<a class="dropdown-item" href="../game/">Game</a>
+</li>
+<li>
+<a class="dropdown-item" href="../actions/">Actions</a>
+</li>
+<li>
+<a aria-current="page" class="dropdown-item active" href="./">Responses</a>
+</li>
+<li>
+<a class="dropdown-item" href="../fantasy_events/">Fantasy events</a>
+</li>
+</ul>
+</li>
+<li class="nav-item dropdown">
+<a aria-expanded="false" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">Technical reference</a>
+<ul class="dropdown-menu">
+<li>
+<a class="dropdown-item" href="../games/">Game logic</a>
+</li>
+<li>
+<a class="dropdown-item" href="../exceptions/">Exceptions</a>
+</li>
+<li>
+<a class="dropdown-item" href="../agent_heuristics/">Agent heuristics</a>
+</li>
+</ul>
+</li>
+</ul>
+<ul class="nav navbar-nav ms-md-auto">
+<li class="nav-item">
+<a class="nav-link" data-bs-target="#mkdocs_search_modal" data-bs-toggle="modal" href="#">
+<i class="fa fa-search"></i> Search
+                            </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../actions/" rel="prev">
+<i class="fa fa-arrow-left"></i> Previous
+                                </a>
+</li>
+<li class="nav-item">
+<a class="nav-link" href="../fantasy_events/" rel="next">
+                                    Next <i class="fa fa-arrow-right"></i>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="container">
+<div class="row">
+<div class="col-md-3"><div class="navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+<div class="navbar-header">
+<button class="navbar-toggler collapsed" data-bs-target="#toc-collapse" data-bs-toggle="collapse" title="Table of Contents" type="button">
+<span class="fa fa-angle-down"></span>
+</button>
+</div>
+<div class="navbar-collapse collapse card bg-body-tertiary" id="toc-collapse">
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="1"><a class="nav-link" href="#responses">Responses</a>
+<ul class="nav flex-column">
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#response">Response</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.Response">Response</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ResponseSerializer">ResponseSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#responsemovement">ResponseMovement</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseMovement">ResponseMovement</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ResponseMovementSerializer">ResponseMovementSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#responsethrowdices">ResponseThrowDices</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseThrowDices">ResponseThrowDices</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ResponseThrowDicesSerializer">ResponseThrowDicesSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#responsechoosesquare">ResponseChooseSquare</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseChooseSquare">ResponseChooseSquare</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ResponseChooseSquareSerializer">ResponseChooseSquareSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#responsechoosefantasy">ResponseChooseFantasy</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseChooseFantasy">ResponseChooseFantasy</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ResponseChooseFantasySerializer">ResponseChooseFantasySerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#responseauction">ResponseAuction</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseAuction">ResponseAuction</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseAuction.bids">bids</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseAuction.final_amount">final_amount</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseAuction.is_tie">is_tie</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseAuction.winner">winner</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ResponseAuctionSerializer">ResponseAuctionSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#responseskipphase">ResponseSkipPhase</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseSkipPhase">ResponseSkipPhase</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ResponseSkipPhaseSerializer">ResponseSkipPhaseSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#responsebonus">ResponseBonus</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.models.ResponseBonus">ResponseBonus</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+<li class="nav-item" data-bs-level="2"><a class="nav-link" href="#magnate.serializers.ResponseBonusSerializer">ResponseBonusSerializer</a>
+<ul class="nav flex-column">
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div></div>
+<div class="col-md-9" role="main">
+<h1 id="responses">Responses</h1>
+<h2 id="response">Response</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.Response"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="django.db.models.Model">Model</span></code></p>
+<p>Base model for game state snapshots broadcasted to all connected clients.</p>
+<p>Each concrete <code>Response</code> subclass corresponds to a specific game event and
+carries enough state for the frontend to render the updated board without
+needing to re-fetch the full <code>Game</code> object.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Response.money">money</span></code></td>
+<td>
+<code><span title="JSONField">JSONField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Current balances for all players, mapping user ID (str)
+to amount (int).</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Response.active_phase_player">active_phase_player</span></code></td>
+<td>
+<code>ForeignKey -&gt; CustomUser | None</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user expected to
+act next in the current micro-phase.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Response.active_turn_player">active_turn_player</span></code></td>
+<td>
+<code>ForeignKey -&gt; CustomUser | None</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The user whose overall
+board turn it is.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Response.phase">phase</span></code></td>
+<td>
+<code><span title="CharField">CharField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The <code>GamePhase</code> the game has transitioned to after this event.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.Response.positions">positions</span></code></td>
+<td>
+<code><span title="JSONField">JSONField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Current board positions for all players, mapping user ID
+(str) to square <code>custom_id</code> (int).</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class Response(models.Model):
+    """
+    Base model for game state snapshots broadcasted to all connected clients.
+
+    Each concrete ``Response`` subclass corresponds to a specific game event and
+    carries enough state for the frontend to render the updated board without
+    needing to re-fetch the full ``Game`` object.
+
+    Attributes:
+        money (JSONField): Current balances for all players, mapping user ID (str)
+            to amount (int).
+        active_phase_player (ForeignKey -&gt; CustomUser | None): The user expected to
+            act next in the current micro-phase.
+        active_turn_player (ForeignKey -&gt; CustomUser | None): The user whose overall
+            board turn it is.
+        phase (CharField): The ``GamePhase`` the game has transitioned to after this event.
+        positions (JSONField): Current board positions for all players, mapping user ID
+            (str) to square ``custom_id`` (int).
+    """
+    money = models.JSONField(default=dict, blank=True)
+    active_phase_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_phase_to_play')
+    active_turn_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_turns_to_play')
+    phase = models.CharField(choices=Game.GamePhase, max_length=20)
+    positions = models.JSONField(default=dict, blank=True) # user -&gt; cumtom_id (int)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ResponseSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.serializers.ModelSerializer">ModelSerializer</span></code></p>
+<p>Frontend Response Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "Response",
+  "money": {"1": 1500, "2": 1200},
+  "active_phase_player": 2,
+  "active_turn_player": 2,
+  "phase": "management"
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseSerializer(serializers.ModelSerializer):
+    """
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "Response",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "management"
+    }
+    ```
+    """
+    class Meta:
+        model = Response
+        exclude = ['id']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="responsemovement">ResponseMovement</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ResponseMovement"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Response" title="magnate.models.Response">Response</a></code></p>
+<p>Base response for any event that involves a player moving across the board.</p>
+<p>Provides the ordered path of squares the player traversed so the frontend
+can animate the token movement step by step.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseMovement.path">path</span></code></td>
+<td>
+<code><span title="JSONField">JSONField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Ordered list of square <code>custom_id</code> values the player
+passed through, from their starting position to their final destination.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseMovement.fantasy_event">fantasy_event</span></code></td>
+<td>
+<code>ForeignKey -&gt; FantasyEvent | None</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Set if the player's
+movement ended on a <code>FantasySquare</code>, indicating which event was drawn.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseMovement(Response):
+    """
+    Base response for any event that involves a player moving across the board.
+
+    Provides the ordered path of squares the player traversed so the frontend
+    can animate the token movement step by step.
+
+    Attributes:
+        path (JSONField): Ordered list of square ``custom_id`` values the player
+            passed through, from their starting position to their final destination.
+        fantasy_event (ForeignKey -&gt; FantasyEvent | None): Set if the player's
+            movement ended on a ``FantasySquare``, indicating which event was drawn.
+    """
+    path = models.JSONField(default=list, blank=True)
+    fantasy_event = models.ForeignKey('FantasyEvent', on_delete=models.CASCADE, null=True, blank=True)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_1">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ResponseMovementSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.serializers.ModelSerializer">ModelSerializer</span></code></p>
+<p>Frontend Response Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ResponseMovement",
+  "money": {"1": 1500, "2": 1200},
+  "active_phase_player": 2,
+  "active_turn_player": 2,
+  "phase": "moving",
+  "path": [10, 11, 12, 13, 14, 15],
+  "fantasy_event": null
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseMovementSerializer(serializers.ModelSerializer):
+    """
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "ResponseMovement",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "moving",
+      "path": [10, 11, 12, 13, 14, 15],
+      "fantasy_event": null
+    }
+    ```
+    """
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseMovement</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="responsethrowdices">ResponseThrowDices</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ResponseThrowDices"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.ResponseMovement" title="magnate.models.ResponseMovement">ResponseMovement</a></code></p>
+<p>Response delivering the result of a dice roll and valid movement destinations.</p>
+<p>Extends <code>ResponseMovement</code> with dice values and routing information so the
+frontend can display the roll result and highlight reachable squares.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseThrowDices.dice1">dice1</span></code></td>
+<td>
+<code><span title="PositiveIntegerField">PositiveIntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Value of the first standard die (1–6).</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseThrowDices.dice2">dice2</span></code></td>
+<td>
+<code><span title="PositiveIntegerField">PositiveIntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Value of the second standard die (1–6).</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseThrowDices.dice_bus">dice_bus</span></code></td>
+<td>
+<code><span title="PositiveIntegerField">PositiveIntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Value of the special bus/wildcard die, used
+for tram or alternative routing mechanics.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseThrowDices.destinations">destinations</span></code></td>
+<td>
+<code><span title="JSONField">JSONField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>List of possible destination squares the player can
+move to given the dice result. Each entry maps a square <code>custom_id</code> to
+the dice combination needed to reach it.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseThrowDices.triple">triple</span></code></td>
+<td>
+<code><span title="BooleanField">BooleanField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p><code>True</code> if all three dice showed the same value,
+triggering a special triple-dice effect.</p>
+</div>
+</td>
+</tr>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseThrowDices.streak">streak</span></code></td>
+<td>
+<code><span title="IntegerField">IntegerField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Updated consecutive-doubles count after this roll.
+Reaching 3 sends the player to jail.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseThrowDices(ResponseMovement):
+    """
+    Response delivering the result of a dice roll and valid movement destinations.
+
+    Extends ``ResponseMovement`` with dice values and routing information so the
+    frontend can display the roll result and highlight reachable squares.
+
+    Attributes:
+        dice1 (PositiveIntegerField): Value of the first standard die (1–6).
+        dice2 (PositiveIntegerField): Value of the second standard die (1–6).
+        dice_bus (PositiveIntegerField): Value of the special bus/wildcard die, used
+            for tram or alternative routing mechanics.
+        destinations (JSONField): List of possible destination squares the player can
+            move to given the dice result. Each entry maps a square ``custom_id`` to
+            the dice combination needed to reach it.
+        triple (BooleanField): ``True`` if all three dice showed the same value,
+            triggering a special triple-dice effect.
+        streak (IntegerField): Updated consecutive-doubles count after this roll.
+            Reaching 3 sends the player to jail.
+    """
+    dice1 = models.PositiveIntegerField(default=0)
+    dice2 = models.PositiveIntegerField(default=0)
+    dice_bus = models.PositiveIntegerField(default=0)
+    destinations = models.JSONField(default=list, blank=True)
+    triple = models.BooleanField(default=False)
+    streak = models.IntegerField(default=0)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_2">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ResponseThrowDicesSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.serializers.ModelSerializer">ModelSerializer</span></code></p>
+<p>Frontend Response Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ResponseThrowDices",
+  "money": {"1": 1500, "2": 1200},
+  "active_phase_player": 2,
+  "active_turn_player": 2,
+  "phase": "moving",
+  "path": [10, 11, 12],
+  "fantasy_event": null,
+  "dice1": 4,
+  "dice2": 3,
+  "dice_bus": 1,
+  "destinations": [17],
+  "triple": false,
+  "streak": 0
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseThrowDicesSerializer(serializers.ModelSerializer):
+    """
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "ResponseThrowDices",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "moving",
+      "path": [10, 11, 12],
+      "fantasy_event": null,
+      "dice1": 4,
+      "dice2": 3,
+      "dice_bus": 1,
+      "destinations": [17],
+      "triple": false,
+      "streak": 0
+    }
+    ```
+    """
+    fantasy_event = FantasyEventSerializer(read_only=True)
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseThrowDices</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="responsechoosesquare">ResponseChooseSquare</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ResponseChooseSquare"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.ResponseMovement" title="magnate.models.ResponseMovement">ResponseMovement</a></code></p>
+<p>Response confirming a player's movement to a specifically chosen square.</p>
+<p>Used after the player selects their destination during the <code>GamePhase.choose_square</code>
+phase (e.g. after deciding to take the tram). Inherits path animation data from
+<code>ResponseMovement</code>.</p>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseChooseSquare(ResponseMovement):
+    """
+    Response confirming a player's movement to a specifically chosen square.
+
+    Used after the player selects their destination during the ``GamePhase.choose_square``
+    phase (e.g. after deciding to take the tram). Inherits path animation data from
+    ``ResponseMovement``.
+    """
+    pass</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_3">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ResponseChooseSquareSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.serializers.ModelSerializer">ModelSerializer</span></code></p>
+<p>Frontend Response Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ResponseChooseSquare",
+  "money": {"1": 1500, "2": 1200},
+  "active_phase_player": 2,
+  "active_turn_player": 2,
+  "phase": "moving",
+  "path": [10, 25],
+  "fantasy_event": null
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseChooseSquareSerializer(serializers.ModelSerializer):
+    """
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "ResponseChooseSquare",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "moving",
+      "path": [10, 25],
+      "fantasy_event": null
+    }
+    ```
+    """
+    fantasy_event = FantasyEventSerializer(read_only=True)
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseChooseSquare</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="responsechoosefantasy">ResponseChooseFantasy</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ResponseChooseFantasy"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Response" title="magnate.models.Response">Response</a></code></p>
+<p>Response delivering the resolved outcome of a drawn fantasy card.</p>
+<p>Sent after the server resolves the <code>FantasyEvent</code> the player triggered by
+landing on a <code>FantasySquare</code>.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseChooseFantasy.fantasy_result">fantasy_result</span></code></td>
+<td>
+<code>ForeignKey -&gt; FantasyResult</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The concrete result of the
+fantasy event, including the effect type and any numeric outcomes.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseChooseFantasy(Response):
+    """
+    Response delivering the resolved outcome of a drawn fantasy card.
+
+    Sent after the server resolves the ``FantasyEvent`` the player triggered by
+    landing on a ``FantasySquare``.
+
+    Attributes:
+        fantasy_result (ForeignKey -&gt; FantasyResult): The concrete result of the
+            fantasy event, including the effect type and any numeric outcomes.
+    """
+    fantasy_result = models.ForeignKey('FantasyResult', on_delete=models.CASCADE)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_4">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ResponseChooseFantasySerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.serializers.ModelSerializer">ModelSerializer</span></code></p>
+<p>Frontend Response Payload Example:</p>
+<pre><code class="language-json">{'type': 'ResponseChooseFantasy',
+ 'fantasy_result': {'fantasy_event': {'fantasy_type': 'freeHouse', 'value': None, 'card_cost': 80}, 'result': None},
+ 'money': {'1': 1440, '2': 1500},
+ 'phase': 'business',
+ 'positions': {'1': '10', '2': '17'},
+ 'active_phase_player': 2,
+ 'active_turn_player': 2
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseChooseFantasySerializer(serializers.ModelSerializer):
+    """
+    Frontend Response Payload Example:
+    ```json
+    {'type': 'ResponseChooseFantasy',
+     'fantasy_result': {'fantasy_event': {'fantasy_type': 'freeHouse', 'value': None, 'card_cost': 80}, 'result': None},
+     'money': {'1': 1440, '2': 1500},
+     'phase': 'business',
+     'positions': {'1': '10', '2': '17'},
+     'active_phase_player': 2,
+     'active_turn_player': 2
+    }
+    ```
+    """
+    fantasy_result = FantasyResultSerializer(read_only=True)
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseChooseFantasy</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="responseauction">ResponseAuction</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ResponseAuction"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Response" title="magnate.models.Response">Response</a></code></p>
+<p>Response updating all clients with the current or final state of an auction.</p>
+<p>Sent after every bid and upon auction conclusion. Exposes auction data as
+properties delegated to the linked <code>Auction</code> record.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseAuction.auction">auction</span></code></td>
+<td>
+<code>OneToOneField -&gt; Auction</code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The auction whose state is being broadcast.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="properties" open="">
+<summary>Properties</summary>
+<p>winner: Delegates to <code>Auction.winner</code>.
+final_amount: Delegates to <code>Auction.final_amount</code>.
+is_tie: Delegates to <code>Auction.is_tie</code>.
+bids: Delegates to <code>Auction.bids</code>.</p>
+</details>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseAuction(Response):
+    """
+    Response updating all clients with the current or final state of an auction.
+
+    Sent after every bid and upon auction conclusion. Exposes auction data as
+    properties delegated to the linked ``Auction`` record.
+
+    Attributes:
+        auction (OneToOneField -&gt; Auction): The auction whose state is being broadcast.
+
+    Properties:
+        winner: Delegates to ``Auction.winner``.
+        final_amount: Delegates to ``Auction.final_amount``.
+        is_tie: Delegates to ``Auction.is_tie``.
+        bids: Delegates to ``Auction.bids``.
+    """
+    auction = models.OneToOneField('Auction', on_delete=models.CASCADE, related_name='response')
+
+    @property
+    def winner(self):
+        """
+        Retrieves the winner of the auction.
+
+        Returns:
+            CustomUser | None: The winning user.
+        """
+        return self.auction.winner
+
+    @property
+    def final_amount(self):
+        """
+        Retrieves the final bid amount of the auction.
+
+        Returns:
+            int: The winning bid amount.
+        """
+        return self.auction.final_amount
+
+    @property
+    def is_tie(self):
+        """
+        Indicates if the auction ended in a tie.
+
+        Returns:
+            bool: True if tied, False otherwise.
+        """
+        return self.auction.is_tie
+
+    @property
+    def bids(self):
+        """
+        Retrieves all bids placed during the auction.
+
+        Returns:
+            dict: Mapping of user IDs to bid amounts.
+        """
+        return self.auction.bids</code></pre>
+</details>
+<div class="doc doc-children">
+<div class="doc doc-object doc-attribute">
+<h2 class="doc doc-heading" id="magnate.models.ResponseAuction.bids">
+<code class="highlight language-python">bids</code>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-property"><code>property</code></small>
+</span>
+</h2>
+<div class="doc doc-contents">
+<p>Retrieves all bids placed during the auction.</p>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>dict</code></td> <td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Mapping of user IDs to bid amounts.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="doc doc-object doc-attribute">
+<h2 class="doc doc-heading" id="magnate.models.ResponseAuction.final_amount">
+<code class="highlight language-python">final_amount</code>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-property"><code>property</code></small>
+</span>
+</h2>
+<div class="doc doc-contents">
+<p>Retrieves the final bid amount of the auction.</p>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>int</code></td> <td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>The winning bid amount.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="doc doc-object doc-attribute">
+<h2 class="doc doc-heading" id="magnate.models.ResponseAuction.is_tie">
+<code class="highlight language-python">is_tie</code>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-property"><code>property</code></small>
+</span>
+</h2>
+<div class="doc doc-contents">
+<p>Indicates if the auction ended in a tie.</p>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th> <th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code>bool</code></td> <td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>True if tied, False otherwise.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="doc doc-object doc-attribute">
+<h2 class="doc doc-heading" id="magnate.models.ResponseAuction.winner">
+<code class="highlight language-python">winner</code>
+<span class="doc doc-labels">
+<small class="doc doc-label doc-label-property"><code>property</code></small>
+</span>
+</h2>
+<div class="doc doc-contents">
+<p>Retrieves the winner of the auction.</p>
+<p><span class="doc-section-title">Returns:</span></p>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td>
+</td>
+<td>
+<div class="doc-md-description">
+<p>CustomUser | None: The winning user.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div><h3 id="serializer_5">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ResponseAuctionSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.serializers.ResponseSerializer" title="magnate.serializers.ResponseSerializer">ResponseSerializer</a></code></p>
+<p>Frontend Response Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "ResponseAuction",
+  "money": {"1": 1150, "2": 1200},
+  "active_phase_player": 1,
+  "active_turn_player": 2,
+  "phase": "management",
+  "winner": 1,
+  "final_amount": 350,
+  "is_tie": false,
+  "bids": {1: 100, 2: 200}
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseAuctionSerializer(ResponseSerializer):
+    """
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "ResponseAuction",
+      "money": {"1": 1150, "2": 1200},
+      "active_phase_player": 1,
+      "active_turn_player": 2,
+      "phase": "management",
+      "winner": 1,
+      "final_amount": 350,
+      "is_tie": false,
+      "bids": {1: 100, 2: 200}
+    }
+    ```
+    """
+    auction = AuctionSerializer()
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseAuction
+        exclude = ['auction']</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="responseskipphase">ResponseSkipPhase</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ResponseSkipPhase"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Response" title="magnate.models.Response">Response</a></code></p>
+<p>Response broadcast when a game phase is skipped without any board movement.</p>
+<p>Inherits all fields from <code>Response</code>. Used for phase transitions where no
+positional or balance changes occur (e.g. skipping straight from one phase
+to another due to game logic).</p>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseSkipPhase(Response):
+    """
+    Response broadcast when a game phase is skipped without any board movement.
+
+    Inherits all fields from ``Response``. Used for phase transitions where no
+    positional or balance changes occur (e.g. skipping straight from one phase
+    to another due to game logic).
+    """
+    pass</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_6">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ResponseSkipPhaseSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.serializers.ModelSerializer">ModelSerializer</span></code></p>
+<p>Frontend Response Payload Example:</p>
+<pre><code class="language-json">{
+  "type": "Response",
+  "money": {"1": 1500, "2": 1200},
+  "active_phase_player": 2,
+  "active_turn_player": 2,
+  "phase": "management"
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseSkipPhaseSerializer(serializers.ModelSerializer):
+    """
+    Frontend Response Payload Example:
+    ```json
+    {
+      "type": "Response",
+      "money": {"1": 1500, "2": 1200},
+      "active_phase_player": 2,
+      "active_turn_player": 2,
+      "phase": "management"
+    }
+    ```
+    """
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseSkipPhase</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h2 id="responsebonus">ResponseBonus</h2>
+<div class="doc doc-object doc-class">
+<a id="magnate.models.ResponseBonus"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" href="#magnate.models.Response" title="magnate.models.Response">Response</a></code></p>
+<p>Response delivering bonus or penalty modifiers applied to a player at a specific game moment.</p>
+<p>Used to broadcast end-of-game or milestone achievement bonuses (see <code>BonusCategory</code>)
+that affect player balances or scores.</p>
+<p><span class="doc-section-title">Attributes:</span></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="doc-section-item">
+<td><code><span title="magnate.models.ResponseBonus.bonuses">bonuses</span></code></td>
+<td>
+<code><span title="JSONField">JSONField</span></code>
+</td>
+<td>
+<div class="doc-md-description">
+<p>Dict mapping user ID (str) to a bonus amount (int) or a
+nested structure describing multiple bonus categories awarded.</p>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/models.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseBonus(Response):
+    """
+    Response delivering bonus or penalty modifiers applied to a player at a specific game moment.
+
+    Used to broadcast end-of-game or milestone achievement bonuses (see ``BonusCategory``)
+    that affect player balances or scores.
+
+    Attributes:
+        bonuses (JSONField): Dict mapping user ID (str) to a bonus amount (int) or a
+            nested structure describing multiple bonus categories awarded.
+    """
+    bonuses = models.JSONField(default=dict, blank=True)</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div><h3 id="serializer_7">Serializer</h3>
+<div class="doc doc-object doc-class">
+<a id="magnate.serializers.ResponseBonusSerializer"></a>
+<div class="doc doc-contents first">
+<p class="doc doc-class-bases">
+              Bases: <code><span title="rest_framework.serializers.ModelSerializer">ModelSerializer</span></code></p>
+<p>Frontend Response Payload Example:</p>
+<pre><code class="language-json">{
+"type": "ResponseBonus",
+"money": {"1": 1600, "2": 1200},
+"active_phase_player": 2,
+"active_turn_player": 2,
+"phase": "management",
+"bonuses": {
+    "walked_squares": {"display_name": "El más viajero", "bonus_amount": 200, "winners": [1, 3]},
+    "built_houses":   {"display_name": "El más constructor", "bonus_amount": 200, "winners": [2]},
+    "num_trades":     {"display_name": "El más trader", "bonus_amount": 200, "winners": []}}
+    }
+}
+</code></pre>
+<details class="mkdocstrings-source">
+<summary>Source code in <code>magnate/serializers.py</code></summary>
+<pre class="highlight"><code class="language-python">class ResponseBonusSerializer(serializers.ModelSerializer):
+    """
+    Frontend Response Payload Example:
+    ```json
+    {
+    "type": "ResponseBonus",
+    "money": {"1": 1600, "2": 1200},
+    "active_phase_player": 2,
+    "active_turn_player": 2,
+    "phase": "management",
+    "bonuses": {
+        "walked_squares": {"display_name": "El más viajero", "bonus_amount": 200, "winners": [1, 3]},
+        "built_houses":   {"display_name": "El más constructor", "bonus_amount": 200, "winners": [2]},
+        "num_trades":     {"display_name": "El más trader", "bonus_amount": 200, "winners": []}}
+        }
+    }
+    ```
+    """
+    class Meta(ResponseSerializer.Meta):
+        model = ResponseBonus</code></pre>
+</details>
+<div class="doc doc-children">
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<footer class="col-md-12">
+<hr/>
+<p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+</footer>
+<script src="../js/bootstrap.bundle.min.js"></script>
+<script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+<script src="../js/base.js"></script>
+<script src="../search/main.js"></script>
+<div aria-hidden="true" aria-labelledby="searchModalLabel" class="modal" id="mkdocs_search_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog modal-lg">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="searchModalLabel">Search</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<p>From here you can search these documents. Enter your search terms below.</p>
+<form>
+<div class="form-group">
+<input class="form-control" id="mkdocs-search-query" placeholder="Search..." title="Type search term here" type="search"/>
+</div>
+</form>
+<div data-no-results-text="No results found" id="mkdocs-search-results"></div>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div><div aria-hidden="true" aria-labelledby="keyboardModalLabel" class="modal" id="mkdocs_keyboard_modal" role="dialog" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content">
+<div class="modal-header">
+<h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+<button aria-label="Close" class="btn-close" data-bs-dismiss="modal" type="button"></button>
+</div>
+<div class="modal-body">
+<table class="table">
+<thead>
+<tr>
+<th style="width: 20%;">Keys</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="help shortcut"><kbd>?</kbd></td>
+<td>Open this help</td>
+</tr>
+<tr>
+<td class="next shortcut"><kbd>n</kbd></td>
+<td>Next page</td>
+</tr>
+<tr>
+<td class="prev shortcut"><kbd>p</kbd></td>
+<td>Previous page</td>
+</tr>
+<tr>
+<td class="search shortcut"><kbd>s</kbd></td>
+<td>Search</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="modal-footer">
+</div>
+</div>
+</div>
+</div>
+</body>
+</html>

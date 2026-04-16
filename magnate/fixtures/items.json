@@ -1,8 +1,8 @@
 [
-    {"model": "magnate.item", "pk": 1, "fields": {"custom_id": 1, "itemType": "piece",  "price": 100}},
-    {"model": "magnate.item", "pk": 2, "fields": {"custom_id": 2, "itemType": "piece",  "price": 200}},
-    {"model": "magnate.item", "pk": 3, "fields": {"custom_id": 3, "itemType": "piece",  "price": 500}},
-    {"model": "magnate.item", "pk": 4, "fields": {"custom_id": 4, "itemType": "piece", "price": 1000}},
-    {"model": "magnate.item", "pk": 5, "fields": {"custom_id": 5, "itemType": "emoji", "price": 250}},
-    {"model": "magnate.item", "pk": 6, "fields": {"custom_id": 6, "itemType": "emoji", "price": 500}}
+    {"model": "magnate.Item", "pk": 1, "fields": {"custom_id": 1, "itemType": "piece",  "price": 100}},
+    {"model": "magnate.Item", "pk": 2, "fields": {"custom_id": 2, "itemType": "piece",  "price": 200}},
+    {"model": "magnate.Item", "pk": 3, "fields": {"custom_id": 3, "itemType": "piece",  "price": 500}},
+    {"model": "magnate.Item", "pk": 4, "fields": {"custom_id": 4, "itemType": "piece", "price": 1000}},
+    {"model": "magnate.Item", "pk": 5, "fields": {"custom_id": 5, "itemType": "emoji", "price": 250}},
+    {"model": "magnate.Item", "pk": 6, "fields": {"custom_id": 6, "itemType": "emoji", "price": 500}}
 ]

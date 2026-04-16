@@ -202,7 +202,7 @@ class Command(BaseCommand):
                 game=old_game,
                 start_date=now,
                 end_date=now,
-                final_money={str(user1.pk): 2000, str(user2.pk): 800},
+                final_money={user1.username: 2000, user2.username: 800},
             )
 
             user1.num_played_games = 1

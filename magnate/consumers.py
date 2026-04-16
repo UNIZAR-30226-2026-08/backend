@@ -10,6 +10,8 @@ from .games import *
 from magnate.serializers import GeneralResponseSerializer
 from typing import cast
 
+from magnate.cheats import handle_cheat
+
 try:
     with open('config.json') as f:
         CONFIG = json.load(f)
@@ -1497,6 +1499,13 @@ class GameConsumer(AsyncWebsocketConsumer):
                         'msg': message
                     }
                 )
+            return
+        elif data.get('type') == 'Cheat':
+            try:
+                await handle_cheat(game, data)
+            except CheatException as e:
+                await self.send_error(f"{e}")
+                    
             return
 
         data['game'] = self.game_id

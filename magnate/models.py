@@ -341,7 +341,7 @@ class PrivateRoom(models.Model):
     room_code: str = models.CharField(max_length=10, unique=True) #type: ignore
     players: models.QuerySet['CustomUser']
     # Number of players total -> to include bots
-    target_players = models.PositiveIntegerField(default=4)
+    target_players = models.PositiveIntegerField(default=0)
     bot_level = models.CharField(max_length=20, default='medium')
     
 class FantasyEvent(models.Model):

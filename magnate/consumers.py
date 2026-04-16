@@ -1022,6 +1022,11 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         current_user.ready_to_play = False
         current_user.save()
 
+
+        if room.target_players < MAX_PRIVATE_GAME_PLAYERS:
+            room.target_players += 1
+            room.save()
+
         return {
             'players': list(room.players.values('username', 'ready_to_play')),
             'owner': room.owner.username if room.owner else None,
@@ -1058,6 +1063,8 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             return None
 
         room.owner = new_owner
+        if room.target_players > MIN_PRIVATE_GAME_PLAYERS:
+            room.target_players -= 1
         room.save()
 
         return {

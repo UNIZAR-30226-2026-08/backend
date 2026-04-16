@@ -1212,9 +1212,9 @@ class GameManager:
                 participant = stat.user
                 if participant in active_players:
                     # not eliminated
-                    final_money_dict[str(participant.pk)] = _calculate_net_worth(game, participant)
+                    final_money_dict[str(participant.username)] = _calculate_net_worth(game, participant)
                 else:
-                    final_money_dict[str(participant.pk)] = 0
+                    final_money_dict[str(participant.username)] = 0
             
             GameSummary.objects.create(
                 game=game,

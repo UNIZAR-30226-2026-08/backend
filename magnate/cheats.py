@@ -30,11 +30,7 @@ async def handle_cheat(game: Game, data: dict) -> None:
         Delete a PropertyRelationship — strip ownership of a square from whoever holds it.
         { "cheat": "DeleteProperty", "square_id": 15 }
     """
-    try:
-        response_data = await self._apply_cheat(game, data)
-    except CheatException as e:
-        await self.send_error(f"[CHEAT ERROR] {e}")
-        return
+    response_data = await self._apply_cheat(game, data)
 
 @database_sync_to_async
 def _apply_cheat(game: Game, data: dict) -> dict:

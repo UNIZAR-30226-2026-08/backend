@@ -1295,6 +1295,23 @@ class GameConsumer(AsyncWebsocketConsumer):
         "data": { "type": "SomeActionType", "game": 42, "player": 7, "...": "..." }
     }
     ```
+
+    ---
+    ## Cheats Documentation (DEBUG mode only)
+    
+    When `DEBUG=True` in Django settings, players can send `cheat` commands to
+    forcefully alter the state of the active game.
+
+    **Base Message Structure:**
+    ```json
+    {
+        "action": "cheat",
+        "data": {
+            "cheat": "<CheatName>",
+            ...cheat_specific_args
+        }
+    }
+    ```
  
     ### Game Response
     Broadcast to all players immediately after ``game_action``. Contains the

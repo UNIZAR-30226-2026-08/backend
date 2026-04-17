@@ -1,5 +1,6 @@
 from magnate.models import *
 from magnate.exceptions import *
+from channels.db import database_sync_to_async
 
 async def handle_cheat(game: Game, data: dict) -> None:
     """

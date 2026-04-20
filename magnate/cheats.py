@@ -75,6 +75,7 @@ def _cheat_mock_dice(game: Game, data: dict) -> dict:
         '__mock_dice__': [dice1, dice2, dice_bus]
     }
     game.save()
+    return {}
 
 def _cheat_teleport(game: Game, data: dict) -> dict:
     """
@@ -92,6 +93,7 @@ def _cheat_teleport(game: Game, data: dict) -> dict:
 
     game.positions[str(player_id)] = square_id
     game.save()
+    return {}
 
 def _cheat_set_money(game: Game, data: dict) -> dict:
     """
@@ -107,6 +109,7 @@ def _cheat_set_money(game: Game, data: dict) -> dict:
 
     game.money[str(player_id)] = amount
     game.save()
+    return {}
 
 def _cheat_create_property(game: Game, data: dict) -> dict:
     """
@@ -148,6 +151,7 @@ def _cheat_create_property(game: Game, data: dict) -> dict:
         houses=houses,
         mortgage=mortgage,
     )
+    return {}
 
 def _cheat_delete_property(game: Game, data: dict) -> dict:
     """
@@ -164,4 +168,5 @@ def _cheat_delete_property(game: Game, data: dict) -> dict:
     deleted, _ = PropertyRelationship.objects.filter(game=game, square=square).delete()
     if deleted == 0:
         raise CheatException(f"Square {square_id} has no owner in this game.")
+    return {}
 

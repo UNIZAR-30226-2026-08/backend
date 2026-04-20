@@ -352,12 +352,13 @@ class ChangeUserPieceView(APIView):
 
         data: dict = serializer.validated_data  # type: ignore
         user: CustomUser = request.user  # type: ignore
-        user.user_piece = data['custom_id']
+        item = Item.objects.get(custom_id=data['custom_id'])
+        user.user_piece = item
         user.save()
 
         return Response({
             'message': 'Piece changed successfully.',
-            'user_piece': user.user_piece,
+            'user_piece': user.user_piece.custom_id, 
         }, status=status.HTTP_200_OK)
 
 

@@ -956,6 +956,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     """
     Serializer for user profile information.
     """
+    user_piece = serializers.SlugRelatedField(slug_field='custom_id', read_only=True)
     class Meta:
         model  = CustomUser
         fields = (

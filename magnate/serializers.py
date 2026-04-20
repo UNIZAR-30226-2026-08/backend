@@ -835,7 +835,6 @@ class ResponseAuctionSerializer(ResponseSerializer):
     auction = AuctionSerializer()
     class Meta(ResponseSerializer.Meta):
         model = ResponseAuction
-        exclude = ['auction']
 
 class ResponseBonusSerializer(serializers.ModelSerializer):
     """

@@ -202,9 +202,19 @@ class GameManager:
 
         response: ResponseThrowDices = ResponseThrowDices()
 
-        d1 = random.randint(1,6)
-        d2 = random.randint(1,6)
-        d3 = random.randint(1,6) # 4-6 are the bus faces
+        # FIXME (not this way pls)
+        mock = None
+        if (isinstance(game.possible_destinations, dict)
+                and '__mock_dice__' in game.possible_destinations):
+            mock = game.possible_destinations['__mock_dice__']
+            game.possible_destinations = {}
+
+        if mock:
+            d1, d2, d3 = mock[0], mock[1], mock[2]
+        else:
+            d1 = random.randint(1, 6)
+            d2 = random.randint(1, 6)
+            d3 = random.randint(1, 6)
 
         response.dice1, response.dice2, response.dice_bus = d1, d2, d3
 

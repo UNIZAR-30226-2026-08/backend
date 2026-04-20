@@ -10,6 +10,8 @@ from .games import *
 from magnate.serializers import GeneralResponseSerializer
 from typing import cast
 
+from magnate.cheats import handle_cheat
+
 try:
     with open('config.json') as f:
         CONFIG = json.load(f)
@@ -1293,6 +1295,23 @@ class GameConsumer(AsyncWebsocketConsumer):
         "data": { "type": "SomeActionType", "game": 42, "player": 7, "...": "..." }
     }
     ```
+
+    ---
+    ## Cheats Documentation (DEBUG mode only)
+    
+    When `DEBUG=True` in Django settings, players can send `cheat` commands to
+    forcefully alter the state of the active game.
+
+    **Base Message Structure:**
+    ```json
+    {
+        "action": "cheat",
+        "data": {
+            "cheat": "<CheatName>",
+            ...cheat_specific_args
+        }
+    }
+    ```
  
     ### Game Response
     Broadcast to all players immediately after ``game_action``. Contains the
@@ -1497,6 +1516,13 @@ class GameConsumer(AsyncWebsocketConsumer):
                         'msg': message
                     }
                 )
+            return
+        elif data.get('type') == 'Cheat':
+            try:
+                await handle_cheat(game, data)
+            except CheatException as e:
+                await self.send_error(f"{e}")
+                    
             return
 
         data['game'] = self.game_id

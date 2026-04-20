@@ -123,3 +123,7 @@ class InvalidBotLevel(Exception):
         """
         self.message = f"invalid bot level {level} in game {game.pk}"
         super().__init__(self.message)
+
+class CheatException(Exception):
+    """Raised when a cheat command is invalid or used outside DEBUG mode."""
+    pass

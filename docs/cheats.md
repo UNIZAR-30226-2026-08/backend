@@ -1,0 +1,3 @@
+# Cheats
+
+::: magnate.cheats

@@ -1,3 +1,3 @@
 # Cheats
 
-::: magnate.cheats
+::: magnate.cheats.handle_cheat

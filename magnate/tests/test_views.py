@@ -7,6 +7,7 @@ import string
 import re
 
 from magnate.models import CustomUser, Item, PrivateRoom
+from django.core.management import call_command
 
 
 class AuthTestCase(TestCase):
@@ -37,8 +38,9 @@ class AuthTestCase(TestCase):
         self.user.save()
 
         # create test items
-        self.piece = Item.objects.create(custom_id=1, itemType='piece',  price=100)
-        self.emoji = Item.objects.create(custom_id=2, itemType='emoji', price=200)
+        call_command('loaddata', 'items.json')
+        self.piece = Item.objects.get(custom_id=1) 
+        self.emoji = Item.objects.get(custom_id=5) 
 
     def get_token(self, username='testuser', password='Segura123!') -> str:
         """
@@ -248,7 +250,7 @@ class ShopItemListViewTest(AuthTestCase):
         response: DRFResponse = client.get(reverse('shop_items'))  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data is not None
-        self.assertEqual(len(response.data), 2)
+        self.assertEqual(len(response.data), 6)
 
     def test_list_items_owned_flag(self):
         """
@@ -445,7 +447,7 @@ class UsernamePieceViewTest(AuthTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data is not None
         self.assertEqual(response.data['username'], 'testuser')
-        self.assertEqual(response.data['piece'], self.user.user_piece)
+        self.assertEqual(response.data['piece'], self.user.user_piece.custom_id)
 
     def test_get_username_piece_not_found(self):
         """
@@ -483,7 +485,7 @@ class ChangeUserPieceViewTest(AuthTestCase):
         assert response.data is not None
         self.assertEqual(response.data['user_piece'], 1)
         self.user.refresh_from_db()
-        self.assertEqual(self.user.user_piece, 1)
+        self.assertEqual(self.user.user_piece.custom_id, 1)
 
     def test_change_piece_not_owned(self):
         """
@@ -568,7 +570,7 @@ class UserEmojisViewTest(AuthTestCase):
         assert response.data is not None
         self.assertEqual(len(response.data), 1)  # Only the emoji
         emoji = response.data[0]
-        self.assertEqual(emoji['custom_id'], 2)
+        self.assertEqual(emoji['custom_id'], 5)
         self.assertEqual(emoji['itemType'], 'emoji')
         self.assertTrue(emoji['owned'])
 

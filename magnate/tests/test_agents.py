@@ -31,6 +31,7 @@ class AgentsTest(TestCase):
             None
         """
         call_command('init_boards')
+        call_command('loaddata', 'items.json')
 
     def setUp(self):
         """

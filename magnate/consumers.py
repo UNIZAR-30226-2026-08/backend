@@ -1013,7 +1013,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             user (CustomUser): The user joining.
 
         Returns:
-            dict: A dictionary containing 'players' (list of dicts), 
+            dict: A dictionary containing 'players' (list of dicts -> username, ready_to_play, user_piece), 
                   'owner' (str or None), 'bot_level' (str), and 
                   'target_players' (int).
         """
@@ -1029,8 +1029,10 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             room.target_players += 1
             room.save()
 
+        players_data = list(room.players.values('username', 'ready_to_play', piece=models.F('user_piece__custom_id')))
+
         return {
-            'players': list(room.players.values('username', 'ready_to_play')),
+            'players': [{'username': p['username'], 'ready_to_play': p['ready_to_play'], 'user_piece': p['piece']} for p in players_data],
             'owner': room.owner.username if room.owner else None,
             'bot_level': room.bot_level,
             'target_players': room.target_players
@@ -1047,7 +1049,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             user (CustomUser): The user leaving.
 
         Returns:
-            dict | None: A dictionary with the new owner and player list, or None if the room was deleted.
+            dict | None: A dictionary with the new owner and player list (username, ready_to_play, user_piece), or None if the room was deleted.
         """
         room = PrivateRoom.objects.filter(room_code=room_code).first()
         if not room:
@@ -1069,9 +1071,11 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             room.target_players -= 1
         room.save()
 
+        players_data = list(room.players.values('username', 'ready_to_play', piece=models.F('user_piece__custom_id')))
+
         return {
             'owner': room.owner.username,
-            'players': list(room.players.values('username', 'ready_to_play'))
+            'players': [{'username': p['username'], 'ready_to_play': p['ready_to_play'], 'user_piece': p['piece']} for p in players_data]
         }
 
     @database_sync_to_async

@@ -312,7 +312,7 @@ class UserNamePieceView(APIView):
         user = get_object_or_404(CustomUser, pk=pk)
         return Response({
             'username': user.username,
-            'piece':    user.user_piece,
+            'piece':    user.user_piece.custom_id,
         }, status=status.HTTP_200_OK)
 
 

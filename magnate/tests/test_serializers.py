@@ -39,6 +39,7 @@ class SerializerTest(TestCase):
             None
         """
         call_command('init_boards')
+        call_command('loaddata', 'items.json')
 
         ############################# actions
         cls.player = CustomUser.objects.create(username="aaa",email="aaa@gmail.com")

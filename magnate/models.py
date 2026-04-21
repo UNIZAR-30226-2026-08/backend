@@ -62,7 +62,7 @@ class CustomUser(AbstractUser):
     points = models.PositiveIntegerField(default=0)
     exp = models.PositiveIntegerField(default=0)
     elo = models.PositiveIntegerField(default=0)
-    user_piece = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, blank=True, related_name='equipped_by')
+    user_piece = models.ForeignKey('Item', on_delete=models.SET_NULL, null=True, blank=True, related_name='equipped_by', default=1) # type: ignore
     num_played_games = models.PositiveIntegerField(default=0) #TODO: ir aumentando este dato
     num_won_games = models.PositiveIntegerField(default=0) #TODO: ir aumentando este dato
     

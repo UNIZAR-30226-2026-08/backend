@@ -50,6 +50,8 @@ class ConsumersTest(TransactionTestCase):
         os.environ['DJANGO_TESTING'] = '1'
         call_command('init_boards')
 
+        call_command('loaddata', 'items.json')
+
     ############################
     ##### PUBLIC MATCHMAKING ####
     ############################
@@ -69,7 +71,7 @@ class ConsumersTest(TransactionTestCase):
         # connect all
         for i in range(NUM_PUBLIC_GAME_PLAYERS):
             user = await database_sync_to_async(CustomUser.objects.create)(
-                username=f"pub_user_{i}", email=f"pub_{i}@example.com"
+                username=f"pub_user_{i}"
             )
             users.append(user)
             
@@ -108,7 +110,7 @@ class ConsumersTest(TransactionTestCase):
         users = []
         for i in range(MIN_PRIVATE_GAME_PLAYERS):
             u = await database_sync_to_async(CustomUser.objects.create)(
-                username=f"priv_user_{i}", email=f"priv_{i}@example.com"
+                username=f"priv_user_{i}"
             )
             users.append(u)
             
@@ -194,7 +196,7 @@ class ConsumersTest(TransactionTestCase):
         Accept conexion if in the game
         """
         user = await database_sync_to_async(CustomUser.objects.create)(
-            username="p1", email="p1@gmail.com"
+            username="p1"
         )
         
         # create game

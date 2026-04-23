@@ -42,8 +42,8 @@ class SerializerTest(TestCase):
         call_command('loaddata', 'items.json')
 
         ############################# actions
-        cls.player = CustomUser.objects.create(username="aaa",email="aaa@gmail.com")
-        cls.player2 = CustomUser.objects.create(username="bbb",email="bbb@gmail.com")
+        cls.player = CustomUser.objects.create(username="aaa")
+        cls.player2 = CustomUser.objects.create(username="bbb")
         cls.game = Game.objects.create(datetime=timezone.now())
         cls.game.players.set([cls.player])
 

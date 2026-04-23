@@ -43,8 +43,8 @@ class AgentsTest(TestCase):
         Returns:
             None
         """
-        self.agent1 = Bot.objects.create(username="a1", email="a1@gmail.com")
-        self.agent2 = Bot.objects.create(username="a2", email="a2@gmail.com")
+        self.agent1 = Bot.objects.create(username="a1")
+        self.agent2 = Bot.objects.create(username="a2")
         
         self.game = Game.objects.create(
             datetime=timezone.now(),

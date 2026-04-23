@@ -41,9 +41,9 @@ class GamesTest(TestCase):
         Returns:
             None
         """
-        self.player1 = CustomUser.objects.create(username="p1", email="p1@gmail.com")
-        self.player2 = CustomUser.objects.create(username="p2", email="p2@gmail.com")
-        self.player3 = CustomUser.objects.create(username="p3", email="p3@gmail.com")
+        self.player1 = CustomUser.objects.create(username="p1")
+        self.player2 = CustomUser.objects.create(username="p2")
+        self.player3 = CustomUser.objects.create(username="p3")
         
         self.game = Game.objects.create(
             datetime=timezone.now(),

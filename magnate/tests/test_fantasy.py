@@ -36,10 +36,10 @@ class FantasyTest(TestCase):
             None
         """
         ################################# set up players
-        self.player1 = CustomUser.objects.create(username="aaa",email="aaa@gmail.com")
-        self.player2 = CustomUser.objects.create(username="bbb",email="bbb@gmail.com")
-        self.player3 = CustomUser.objects.create(username="ccc",email="ccc@gmail.com")
-        self.player4 = CustomUser.objects.create(username="ddd",email="ddd@gmail.com")
+        self.player1 = CustomUser.objects.create(username="aaa")
+        self.player2 = CustomUser.objects.create(username="bbb")
+        self.player3 = CustomUser.objects.create(username="ccc")
+        self.player4 = CustomUser.objects.create(username="ddd")
 
         self.players = [self.player1,self.player2,self.player3,self.player4]
 

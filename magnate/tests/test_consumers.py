@@ -239,7 +239,7 @@ class ConsumersTest(TransactionTestCase):
                 None
             """
             user = await database_sync_to_async(CustomUser.objects.create)(
-                username="p_broadcast", email="p_b@gmail.com"
+                username="p_broadcast"
             )
             game = await database_sync_to_async(Game.objects.create)(
                 datetime=timezone.now(),

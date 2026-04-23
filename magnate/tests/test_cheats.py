@@ -2,6 +2,7 @@ from django.test import TestCase, override_settings
 from django.conf import settings
 
 from django.utils import timezone
+from django.core.management import call_command
 
 from magnate.models import (
     Game, CustomUser, BaseSquare, PropertySquare, 
@@ -17,6 +18,10 @@ from magnate.games import GameManager
 from magnate.serializers import ActionMoveTo, ActionThrowDices, ActionPayBail
 
 class GameCheatTests(TestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        call_command('init_boards')
+        call_command('loaddata', 'items.json')
     def setUp(self):
         self.user = CustomUser.objects.create(username="test_player_1")
         
@@ -30,16 +35,10 @@ class GameCheatTests(TestCase):
             datetime=timezone.now()
         )
 
-        from magnate.models import Board
-        Board.objects.create(id=1)
 
-        self.square_start = BaseSquare.objects.create(custom_id=1, board_id=1)
-        self.property_square = PropertySquare.objects.create(
-            custom_id=2, board_id=1, buy_price=200, group=1
-        )
-        self.jail_square = JailSquare.objects.create(
-            custom_id=10, board_id=1, bail_price=50
-        )
+        self.square_start = BaseSquare.objects.first()
+        self.property_square = PropertySquare.objects.filter(buy_price__gt=0).first()
+        self.jail_square = JailSquare.objects.first()
 
     @override_settings(DEBUG=False)
     def test_apply_cheat_fails_when_not_in_debug(self):
@@ -89,16 +88,16 @@ class GameCheatTests(TestCase):
     def test_create_and_delete_property(self):
         """Test granting and stripping property ownership via cheats."""
         # Create Property
-        create_data = {"player_id": self.user.pk, "square_id": 2, "houses": 2, "mortgage": True}
+        create_data = {"player_id": self.user.pk, "square_id": 3, "houses": 2, "mortgage": True}
         _cheat_create_property(self.game, create_data)
         
-        rel = PropertyRelationship.objects.get(game=self.game, square__custom_id=2)
+        rel = PropertyRelationship.objects.get(game=self.game, square__custom_id=3)
         self.assertEqual(rel.owner, self.user)
         self.assertEqual(rel.houses, 2)
         self.assertTrue(rel.mortgage)
 
         # Delete Property
-        delete_data = {"square_id": 2}
+        delete_data = {"square_id": 3}
         _cheat_delete_property(self.game, delete_data)
         
         self.assertFalse(PropertyRelationship.objects.filter(game=self.game, square__custom_id=2).exists())

@@ -5,8 +5,10 @@ from rest_framework import status
 from rest_framework.response import Response as DRFResponse
 import string
 import re
+from django.utils import timezone
+from datetime import timedelta
 
-from magnate.models import CustomUser, Item, PrivateRoom
+from magnate.models import CustomUser, Item, PrivateRoom, Game, GameSummary
 from django.core.management import call_command
 
 
@@ -16,6 +18,20 @@ class AuthTestCase(TestCase):
     """
 
     client: APIClient
+
+    @classmethod
+    def setUpTestData(cls) -> None:
+        """
+        Initializes board data before tests.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        call_command('init_boards')
+        call_command('loaddata', 'items.json')
 
     def setUp(self):
         """
@@ -38,7 +54,6 @@ class AuthTestCase(TestCase):
         self.user.save()
 
         # create test items
-        call_command('loaddata', 'items.json')
         self.piece = Item.objects.get(custom_id=1) 
         self.emoji = Item.objects.get(custom_id=5) 
 
@@ -737,3 +752,115 @@ class GetPrivateCodeViewTest(AuthTestCase):
         self.assertEqual(set(response.data.keys()), {'code', 'message'})
         self.assertIsInstance(response.data['code'], str)
         self.assertIsInstance(response.data['message'], str)
+
+class GetRecentGameSummariesViewTests(AuthTestCase):
+    """
+    Test suite for retrieving recent game summaries for the authenticated user.
+    """
+
+    def _create_game_with_summary(self, user, end_date):
+        game = Game.objects.create(datetime=end_date, finished=True)
+        game.players.add(user)
+        user.played_games.add(game)
+        GameSummary.objects.create(
+            game=game,
+            start_date=end_date - timedelta(hours=1),
+            end_date=end_date,
+            final_money={str(user.id): 1500}
+        )
+        return game
+
+    def test_returns_correct_number_of_summaries(self):
+        """
+        Tests that the view returns exactly <limit> summaries when more are available.
+        """
+        for i in range(5):
+            self._create_game_with_summary(self.user, timezone.now() - timedelta(days=i))
+
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('recent-game-summaries', args=[3]))  # type: ignore
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertEqual(len(response.data), 3)
+
+    def test_returns_summaries_ordered_by_most_recent(self):
+        """
+        Tests that summaries are returned ordered from most recent to oldest.
+        """
+        for i in range(3):
+            self._create_game_with_summary(self.user, timezone.now() - timedelta(days=i))
+
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('recent-game-summaries', args=[3]))  # type: ignore
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        end_dates = [entry['end_date'] for entry in response.data]
+        self.assertEqual(end_dates, sorted(end_dates, reverse=True))
+
+    def test_returns_only_user_summaries(self):
+        """
+        Tests that summaries from other users are not returned.
+        """
+        other_user = CustomUser.objects.create_user(username='otheruser', password='pass')
+        self._create_game_with_summary(self.user, timezone.now())
+        self._create_game_with_summary(other_user, timezone.now())
+
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('recent-game-summaries', args=[5]))  # type: ignore
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertEqual(len(response.data), 1)
+
+    def test_limit_greater_than_available_returns_all(self):
+        """
+        Tests that requesting more summaries than available returns all of them.
+        """
+        for i in range(2):
+            self._create_game_with_summary(self.user, timezone.now() - timedelta(days=i))
+
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('recent-game-summaries', args=[10]))  # type: ignore
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertEqual(len(response.data), 2)
+
+    def test_invalid_limit_zero_returns_400(self):
+        """
+        Tests that a limit of 0 returns a 400 error.
+        """
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('recent-game-summaries', args=[0]))  # type: ignore
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_negative_limit_returns_404(self):
+        """
+        Tests that a negative limit returns 404 since Django does not route negative integers.
+        """
+        client = self.auth_client()
+        response: DRFResponse = client.get('/user/recent-game-summaries/-1/')  # type: ignore
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_unauthenticated_returns_401(self):
+        """
+        Tests that unauthenticated requests are rejected.
+        """
+        response: DRFResponse = self.client.get(reverse('recent-game-summaries', args=[5]))  # type: ignore
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_user_with_no_games_returns_empty_list(self):
+        """
+        Tests that a user with no games gets an empty list.
+        """
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('recent-game-summaries', args=[5]))  # type: ignore
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertEqual(response.data, [])

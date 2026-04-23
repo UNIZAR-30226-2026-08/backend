@@ -81,8 +81,8 @@ WSGI_APPLICATION = 'magnate.wsgi.application'
 ASGI_APPLICATION = 'magnate.asgi.application'
 
 # Ports
-POSTGRES_PORT = int(os.environ.get('POSTGRES_PORT', 6379))
-REDIS_PORT = int(os.environ.get('REDIS_PORT', 5432))
+POSTGRES_PORT = int(os.environ.get('POSTGRES_PORT', 5432))
+REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
 
 if 'test' in sys.argv:
     CHANNEL_LAYERS = {

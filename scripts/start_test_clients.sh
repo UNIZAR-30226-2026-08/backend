@@ -1,7 +1,6 @@
 #!/bin/sh
 
-export SECRET_KEY="insecure"
-export DEBUG="True"
+DEBUG="True"
 
 . venv/bin/activate
 

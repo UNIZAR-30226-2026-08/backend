@@ -41,6 +41,7 @@ urlpatterns = [
     path('lobby/check-code/<str:room_code>/', CheckPrivateRoomView.as_view(), name='check-room-code'),
     path('lobby/get-private-code', GetPrivateCodeView.as_view(), name='get_private_code'), 
 
-    path('game/summary/<int:game_id>/', GetGameSummaryView.as_view(), name='game-summary')
+    path('game/summary/<int:game_id>/', GetGameSummaryView.as_view(), name='game-summary'),
+    path('user/recent-game-summaries/<int:limit>/', GetRecentGameSummariesView.as_view(), name='recent-game-summaries'),
     
 ]

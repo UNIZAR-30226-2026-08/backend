@@ -66,11 +66,25 @@ class AgentsTest(TestCase):
             str(self.agent2.pk): 1500,
         }
         self.game.positions = {
-            str(self.agent1.pk): "000",
-            str(self.agent2.pk): "000",
+            str(self.agent1.pk): 0,
+            str(self.agent2.pk): 0,
         }
 
         self.game.save()
+
+    def _validate_no_strings_in_positions(self):
+
+        for player_id, square_id in self.game.positions.items():
+            if isinstance(square_id, str):
+                raise TypeError(f"CRITICAL: Square ID for player {player_id} is a string: '{square_id}'")
+
+
+        if isinstance(self.game.possible_destinations, dict):
+            for dest_id, dice_val in self.game.possible_destinations.items():
+                if isinstance(dice_val, str):
+                    raise TypeError(f"CRITICAL: Dice value for destination {dest_id} is a string: '{dice_val}'")
+                if not dest_id.isdigit():
+                    raise ValueError(f"CRITICAL: Destination key is not a numeric string: '{dest_id}'")
 
     def test_simulate_game(self, mock_next_phase, mock_kick_out, mock_auction_task):
         """
@@ -116,14 +130,24 @@ class AgentsTest(TestCase):
                 raise GameLogicError("Wrong type")
             
             response = async_to_sync(GameManager.process_action)(self.game, active_player, action)
+            self.game.refresh_from_db()
+            s_response = GeneralResponseSerializer(response).data
+            print(f" └─ Response: {s_response}")
+            self._validate_no_strings_in_positions() # <--- Llamada a la validación
+
+            # También validar el objeto Response antes de seguir
+            if hasattr(response, 'positions'):
+                for pid, sid in response.positions.items():
+                    if isinstance(sid, str):
+                        raise TypeError(f"CRITICAL: Response contains string position: {sid}")
 
             if self.game.phase == GameManager.AUCTION:
                 GameManager._end_auction(self.game)
                 self.game.refresh_from_db()
                 continue
             
-            s_response = GeneralResponseSerializer(response).data
-            print(f" └─ Response: {s_response}")
+            
+
             
             # 5. Refresh game state from the database for the next iteration
             # This is crucial so active_phase_player actually changes in the loop

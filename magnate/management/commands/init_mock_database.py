@@ -85,7 +85,7 @@ class Command(BaseCommand):
             emojis = [i for i in items if i.itemType == 'emoji']
             if pieces:
                 user1.owned_items.add(pieces[0])
-                user1.user_piece = pieces[0].custom_id
+                user1.user_piece = pieces[0]
             if emojis:
                 user1.owned_items.add(emojis[0])
             user1.points = 500

@@ -1,5 +1,7 @@
 #!/bin/sh
 
+export DEBUG="True"
+
 . venv/bin/activate
 
 rm -rf db.sqlite3

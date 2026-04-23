@@ -18,22 +18,19 @@ from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+import os
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
+if 'test' in sys.argv:
+    DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+else:
+    DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
-# SECURITY WARNING: don't run with debug turned on in production!
+if not DEBUG:
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+else:
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'insecure')
 
-#Move mode and secret key to .env file
-
-# Source - https://stackoverflow.com/a/69816330
-# Posted by Johnny Pereira
-# Retrieved 2026-02-02, License - CC BY-SA 4.0
-DEBUG = config('DEBUG', default=False, cast=bool)
-SECRET_KEY = config('SECRET_KEY')
-
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 
 # Application definition
 
@@ -83,9 +80,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'magnate.wsgi.application'
 ASGI_APPLICATION = 'magnate.asgi.application'
 
-
-# REDIS_PORT = 6379
-REDIS_PORT = 26379
+# Ports
+POSTGRES_PORT = int(os.environ.get('POSTGRES_PORT', 6379))
+REDIS_PORT = int(os.environ.get('REDIS_PORT', 5432))
 
 if 'test' in sys.argv:
     CHANNEL_LAYERS = {
@@ -111,12 +108,24 @@ else:
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DEBUG is True:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('POSTGRES_DB'),
+            'USER': os.environ.get('POSTGRES_USER'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),
+            'HOST': os.environ.get('DB_HOST'),
+            'PORT': os.environ.get('DB_PORT'),
+        }
+    }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -157,8 +166,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
-
-
 
 # REST API
 REST_FRAMEWORK = {

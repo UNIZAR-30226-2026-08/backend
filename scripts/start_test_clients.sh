@@ -1,5 +1,7 @@
 #!/bin/sh
 
+DEBUG="True"
+
 . venv/bin/activate
 
 sh scripts/reset_db.sh

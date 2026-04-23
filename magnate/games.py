@@ -77,8 +77,9 @@ class GameManager:
        
 
         if isinstance(action, ActionSurrender):
-            # TODO
             cls._bankrupt_player(game, user)
+            if game.phase == cls.END_GAME:
+                return cls._end_game_logic(game, user, action)
             response = Response()
             return _add_basic_response_data(game, response)
 
@@ -267,7 +268,7 @@ class GameManager:
             possible_destinations = [s.custom_id for s in all_squares]
             possible_destinations.remove(_get_jail_square().custom_id)
             game.possible_destinations = {c_id: 0 for c_id in possible_destinations}
-            response.destinations = possible_destinations
+            response.destinations = [int(k) for k in game.possible_destinations.keys()]
             game.phase = GameManager.CHOOSE_SQUARE
             response.path = [current_pos_id]
             game.save()
@@ -281,7 +282,7 @@ class GameManager:
                 game.streak = 0
                 response.streak = game.streak
                 
-                game.positions[str(user.pk)] = jail_square.custom_id
+                game.positions[str(user.pk)] = int(jail_square.custom_id)
                 game.jail_remaining_turns[str(user.pk)] = 3
                 response.path = [current_pos_id, jail_square.custom_id]
 
@@ -305,7 +306,7 @@ class GameManager:
         dice_combinations = _compute_dice_combinations(d1, d2, d3)
         game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
 
-        response.destinations = list(game.possible_destinations.keys())
+        response.destinations = [int(k) for k in game.possible_destinations.keys()]
         if len(game.possible_destinations) > 1:
             # path in square chosen logic
             game.phase = GameManager.CHOOSE_SQUARE
@@ -327,14 +328,14 @@ class GameManager:
                 if jail is None:
                     raise GameDesignError('no jail in game')
                 
-                game.positions[str(user.pk)] = jail.custom_id
+                game.positions[str(user.pk)] = int(jail.custom_id)
                 game.jail_remaining_turns[str(user.pk)] = 3
                 game.phase = GameManager.LIQUIDATION
                 stats = PlayerGameStatistic.objects.get(user=user, game=game)
                 stats.times_in_jail += 1
                 stats.save()
             else:
-                game.positions[str(user.pk)] = dest_square_id
+                game.positions[str(user.pk)] = int(dest_square_id)
                 square = _get_square_by_custom_id(dest_square_id)
                 _apply_square_arrival(game, user, response, square, move_result["passed_go"])
                 
@@ -380,7 +381,14 @@ class GameManager:
 
         steps = game.possible_destinations.get(str(square.custom_id))
         
-        move_result = _move_player_logic(current_pos_square, steps)
+        if steps == 0: #triples
+            move_result = {
+                "jailed": isinstance(square.get_real_instance(), GoToJailSquare), 
+                "passed_go": False, 
+                "path": [current_pos_id, square.custom_id]
+            }
+        else:
+            move_result = _move_player_logic(current_pos_square, steps)
         
         response.path = move_result["path"]
 
@@ -390,14 +398,14 @@ class GameManager:
             if jail is None:
                 raise GameDesignError('no jail in game')
             
-            game.positions[str(user.pk)] = jail.custom_id
+            game.positions[str(user.pk)] = int(jail.custom_id)
             game.jail_remaining_turns[str(user.pk)] = 3
             game.phase = GameManager.LIQUIDATION
             stats = PlayerGameStatistic.objects.get(user=user, game=game)
             stats.times_in_jail += 1
             stats.save()
         else:
-            game.positions[str(user.pk)] = square.custom_id
+            game.positions[str(user.pk)] = int(square.custom_id)
             square = _get_square_by_custom_id(square.custom_id)
             _apply_square_arrival(game, user, response, square, move_result["passed_go"])
 
@@ -544,7 +552,7 @@ class GameManager:
                     stats = PlayerGameStatistic.objects.get(user=user,game=game)
                     stats.lost_money += square.buy_price
                     stats.save()
-                    game.positions[str(user.pk)] = square.custom_id
+                    game.positions[str(user.pk)] = int(square.custom_id)
                 else:
                     raise MaliciousUserInput(user, "tried to take a tram to a non tram square")
             else:
@@ -1130,7 +1138,7 @@ class GameManager:
                 game.current_auction = None
 
             game.save()   
-            return #TODO: endgame logic
+            return #endgame logic called afterwards
 
         if game.active_turn_player.pk == user.pk and next_player:
             game.active_turn_player = next_player
@@ -1226,6 +1234,25 @@ class GameManager:
                 else:
                     final_money_dict[str(participant.username)] = 0
             
+            winner = None
+            max_money = -1
+
+            for stat in all_participants:
+                participant = stat.user
+                
+                participant.num_played_games += 1
+                
+                p_money = final_money_dict.get(str(participant.username), 0)
+                if p_money > max_money:
+                    max_money = p_money
+                    winner = participant
+                    
+                participant.save()
+
+            if winner:
+                winner.num_won_games += 1
+                winner.save()
+                
             GameSummary.objects.create(
                 game=game,
                 start_date=game.datetime,

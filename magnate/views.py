@@ -510,7 +510,7 @@ class GetGamesPlayedView(APIView):
         Returns:
             Response: The HTTP response containing the list of game IDs.
         """
-        game_ids = list(request.user.played_games.values_list('id', flat=True))
+        game_ids = list(request.user.played_games.filter(finished = True).values_list('id', flat=True))
         
         return Response({'games': game_ids}, status=status.HTTP_200_OK)
     

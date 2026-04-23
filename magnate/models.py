@@ -1090,7 +1090,6 @@ class BonusCategory(models.Model):
         num_paid_rents    = 'num_paid_rents'
         num_trades        = 'num_trades'
         num_mortgages     = 'num_mortgages'
-        end_game = 'end_game'
 
     stat_field = models.CharField(choices=StatField, max_length=30, unique=True)
     bonus_amount = models.PositiveIntegerField(default=200)

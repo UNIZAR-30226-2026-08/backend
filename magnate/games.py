@@ -1066,7 +1066,7 @@ class GameManager:
         ).count()
 
         if offered_count != offered_properties_list.count():
-            raise MaliciousUserInput(user, "offer does not have enough properties")
+            raise MaliciousUserInput(user, f"offer does not have enough properties: player owns {offered_count} but tried to trade {offered_properties_list.count()}")
 
         all_trade_properties = list(asked_properties_list) + list(offered_properties_list)
         for rel in all_trade_properties:

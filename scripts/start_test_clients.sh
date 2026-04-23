@@ -1,5 +1,8 @@
 #!/bin/sh
 
+export SECRET_KEY="insecure"
+export DEBUG="True"
+
 . venv/bin/activate
 
 sh scripts/reset_db.sh

@@ -711,7 +711,8 @@ class ResponseSerializer(serializers.ModelSerializer):
       "money": {"1": 1500, "2": 1200},
       "active_phase_player": 2,
       "active_turn_player": 2,
-      "phase": "management"
+      "phase": "management",
+      "positions": {"1": 10, "2": 20}
     }
     ```
     """

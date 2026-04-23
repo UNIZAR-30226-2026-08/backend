@@ -408,7 +408,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         for player in game.players.all():
             if game.positions[str(player.pk)] != id_jail:
                 rand_square_id = random.choice([n for n in ids if n != game.positions[str(player.pk)]])
-                game.positions[str(player.pk)] = rand_square_id
+                game.positions[str(player.pk)] = int(rand_square_id)
 
         game.save()
 
@@ -423,7 +423,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
             ids.remove(id_jail)
             rand_square_id = random.choice([n for n in ids if n != game.positions[str(user.pk)]])
-            game.positions[str(user.pk)] = rand_square_id
+            game.positions[str(user.pk)] = int(rand_square_id)
             game.save()
 
         return FantasyResult(
@@ -442,7 +442,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             ids = list(BaseSquare.objects.values_list('custom_id', flat=True))
             ids.remove(id_jail)
             rand_square_id = random.choice([n for n in ids if n != game.positions[str(target_player.pk)]])
-            game.positions[str(target_player.pk)] = rand_square_id
+            game.positions[str(target_player.pk)] = int(rand_square_id)
             game.save()
 
         return FantasyResult(
@@ -520,7 +520,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     
     elif fantasy_event.fantasy_type == 'goToJail':
         jail_id = _get_jail_square().custom_id
-        game.positions[str(user.pk)] = jail_id
+        game.positions[str(user.pk)] = int(jail_id)
         game.jail_remaining_turns[str(user.pk)] = 3
         game.save()
 
@@ -536,7 +536,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     elif fantasy_event.fantasy_type == 'sendToJail':
         target_player = random.choice(game.players.exclude(pk=user.pk))
         jail_id = _get_jail_square().custom_id
-        game.positions[str(target_player.pk)] = jail_id
+        game.positions[str(target_player.pk)] = int(jail_id)
         game.jail_remaining_turns[str(target_player.pk)] = 3
         game.save()
 
@@ -552,7 +552,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     elif fantasy_event.fantasy_type == 'everybodyToJail':
         jail_id = _get_jail_square().custom_id
         for player in game.players.all():
-            game.positions[str(player.pk)] = jail_id
+            game.positions[str(player.pk)] = int(jail_id)
             game.jail_remaining_turns[str(player.pk)] = 3
             stats = PlayerGameStatistic.objects.get(user=player,game=game)
             stats.times_in_jail += 1
@@ -676,7 +676,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         target_id = game.positions[str(user.pk)]
         for player in game.players.all(): #no caso especial para el que lanza, se moverá al mismo sitio
             if(game.positions[str(player.pk)] != id_jail):
-                game.positions[str(player.pk)] = target_id
+                game.positions[str(player.pk)] = int(target_id)
 
         game.save()
 
@@ -692,7 +692,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             raise Exception('No encuentra casilla de salida')
         
         if(game.positions[str(user.pk)] != id_jail):
-            game.positions[str(user.pk)] = start_square.custom_id
+            game.positions[str(user.pk)] = int(start_square.custom_id)
             game.money[str(user.pk)] += start_square.init_money
             stats = PlayerGameStatistic.objects.get(user=user,game=game)
             stats.won_money += start_square.init_money

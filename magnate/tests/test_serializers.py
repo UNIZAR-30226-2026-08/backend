@@ -491,8 +491,8 @@ class SerializerTest(TestCase):
         self.assertEqual(data["destination_user"],self.player2.pk)
         self.assertEqual(data["offered_money"],100)
         self.assertEqual(data["asked_money"],200)
-        self.assertEqual(data["offered_properties"],[self.property_relationship1.pk])
-        self.assertEqual(data["asked_properties"],[self.property_relationship2.pk])
+        self.assertEqual(data["offered_properties"],[self.property_relationship1.square.custom_id])
+        self.assertEqual(data["asked_properties"],[self.property_relationship2.square.custom_id])
         
         json_in = {"type": "ActionTradeProposal",
                    "game":self.game.pk,
@@ -500,8 +500,8 @@ class SerializerTest(TestCase):
                    "destination_user":self.player2.pk,
                    "offered_money":300,
                    "asked_money":400,
-                   "offered_properties":[self.property_relationship1.pk],
-                   "asked_properties":[self.property_relationship2.pk]}
+                   "offered_properties":[self.property_relationship1.square.custom_id],
+                   "asked_properties":[self.property_relationship2.square.custom_id]}
         instance = action_from_json(json_in)
         assert isinstance(instance,ActionTradeProposal)
         self.assertEqual(instance.player,self.player)

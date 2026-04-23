@@ -421,19 +421,27 @@ class ActionTradeProposalSerializer(ActionSerializer):
     }
     ```
     """
-    offered_properties = serializers.PrimaryKeyRelatedField(
-        many=True, 
-        queryset=PropertyRelationship.objects.all(),
-        required=False
+    offered_properties = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        default=list, 
+        write_only=True
     )
-    asked_properties = serializers.PrimaryKeyRelatedField(
-        many=True, 
-        queryset=PropertyRelationship.objects.all(),
-        required=False
+    asked_properties = serializers.ListField(
+        child=serializers.IntegerField(),
+        required=False,
+        default=list, 
+        write_only=True
     )
     class Meta(ActionSerializer.Meta):
         model = ActionTradeProposal
         fields = ActionSerializer.Meta.fields + ['destination_user','offered_money','asked_money','offered_properties','asked_properties']
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        # convert prop rel to custom id for frontend compatibility
+        ret['offered_properties'] = [rel.square.custom_id for rel in instance.offered_properties.all()]
+        ret['asked_properties'] = [rel.square.custom_id for rel in instance.asked_properties.all()]
+        return ret
     def create(self, validated_data) -> ActionTradeProposal:
         """
         Creates an ActionTradeProposal instance and sets Many-to-Many properties.
@@ -444,13 +452,50 @@ class ActionTradeProposalSerializer(ActionSerializer):
         Returns:
             ActionTradeProposal: The created instance.
         """
-        offered_ids = validated_data.pop('offered_properties', [])
-        asked_ids = validated_data.pop('asked_properties', [])
+        offered_custom_ids = validated_data.pop('offered_properties', [])
+        asked_custom_ids = validated_data.pop('asked_properties', [])
+        
+        game = validated_data.get('game')
+        player = validated_data.get('player')
+        destination_user = validated_data.get('destination_user')
+
+        # validate
+        if offered_custom_ids:
+            offered_rels = PropertyRelationship.objects.filter(
+                game=game, 
+                owner=player, 
+                square__custom_id__in=offered_custom_ids
+            )
+
+            if offered_rels.count() != len(offered_custom_ids):
+                raise serializers.ValidationError({
+                    "offered_properties": "Has incluido propiedades que no posees o no existen."
+                })
+        else:
+            offered_rels = []
+
+        if asked_custom_ids:
+            asked_rels = PropertyRelationship.objects.filter(
+                game=game, 
+                owner=destination_user, 
+                square__custom_id__in=asked_custom_ids
+            )
+            if asked_rels.count() != len(asked_custom_ids):
+                raise serializers.ValidationError({
+                    "asked_properties": "Has pedido propiedades que el destinatario no posee o no existen."
+                })
+        else:
+            asked_rels = []
+
+        # instance
         instance = ActionTradeProposal.objects.create(**validated_data)
-        if offered_ids:
-            instance.offered_properties.set(offered_ids)
-        if asked_ids:
-            instance.asked_properties.set(asked_ids)
+        
+        # convert custom id to prop rel
+        if offered_rels:
+            instance.offered_properties.set(offered_rels)
+        if asked_rels:
+            instance.asked_properties.set(asked_rels)
+            
         return instance
 
 class ActionTradeAnswerSerializer(ActionSerializer):

@@ -394,6 +394,10 @@ class UserEmojisView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+############################################################################
+########################### private rooms ###########################################
+############################################################################
+
 class GetPrivateCodeView(APIView):
     """
     Generates a unique 6-character alphanumeric private room code.
@@ -476,6 +480,10 @@ class CheckPrivateRoomView(APIView):
         """
         exists = PrivateRoom.objects.filter(room_code=room_code).exists()
         return Response({'exists': exists}, status=status.HTTP_200_OK)
+    
+############################################################################
+########################### summary and more ###########################################
+############################################################################
       
 class GetGamesPlayedView(APIView):
     """
@@ -545,4 +553,39 @@ class GetGameSummaryView(APIView):
              )
 
         serializer = GameSummarySerializer(summary)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class GetRecentGameSummariesView(APIView):
+    """
+    Returns a list of the most recent game summaries for the authenticated user.
+    GET /user/recent-game-summaries/<limit>/
+    Headers:
+        Authorization: Bearer <access_token>
+    Path Params:
+        limit (int): Number of recent summaries to return.
+    Responses:
+        200: Returns a list of game summaries ordered by most recent first.
+        400: Invalid limit parameter.
+        401: Missing or invalid token.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, limit) -> Response:
+        if limit <= 0:
+            return Response(
+                {'error': 'limit must be positive integer'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        played_game_ids = request.user.played_games.values_list('id', flat=True)
+
+        summaries = (
+            GameSummary.objects
+            .filter(game_id__in=played_game_ids)
+            .order_by('-end_date')
+            [:limit]
+        )
+
+        serializer = GameSummarySerializer(summaries, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1189,7 +1189,7 @@ class GameManager:
             for pk in winners:
                 game.money[str(pk)] = game.money.get(str(pk), 0) + category.bonus_amount
 
-            bonuses[category] = {
+            bonuses[field] = {
                 'bonus_amount': category.bonus_amount,
                 'winners': winners
             }

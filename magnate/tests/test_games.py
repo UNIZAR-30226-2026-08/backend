@@ -1623,7 +1623,9 @@ class GamesTest(TestCase):
         stats_p1.save()
 
         action = ActionNextPhase(game=self.game, player=self.player1)
-        with patch('magnate.games.random.sample', return_value=[BonusCategory.objects.get(stat_field='walked_squares')]):
+        
+        mocked_category = BonusCategory.objects.get(stat_field='walked_squares')
+        with patch('magnate.games.random.sample', return_value=[(mocked_category, 15)]):
             GameManager._end_game_logic(self.game, self.player1, action)
 
         self.game.refresh_from_db()

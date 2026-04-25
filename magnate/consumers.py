@@ -1524,6 +1524,15 @@ class GameConsumer(AsyncWebsocketConsumer):
         elif data.get('type') == 'Cheat':
             try:
                 await handle_cheat(game, data)
+                game_state = await database_sync_to_async(
+                        lambda: GameStatusSerializer(game).data)()
+                await self.channel_layer.send(
+                    self.channel_name,
+                    {
+                        'type': 'game_state',
+                        'game_state': game_state
+                    }
+                )
             except CheatException as e:
                 await self.send_error(f"{e}")
                     

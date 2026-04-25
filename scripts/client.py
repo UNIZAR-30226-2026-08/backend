@@ -319,7 +319,6 @@ class GameClient:
                 turn_status = "YOUR TURN " if is_my_turn else "⌛ Waiting for opponent..."
                 print(f"\n{turn_status}")
 
-                # --- NUEVO: COMPROBACIÓN DE FIN DE PARTIDA O BANCARROTA ---
                 # FIXME: handle better
                 phase = self.game_state.get("phase")
                 money_dict = self.game_state.get("money", {})
@@ -349,7 +348,6 @@ class GameClient:
                 print("\n--- Game Response Received ---")
                 print(json.dumps(data["data"], indent=2))
 
-                # --- NUEVO: COMPROBACIÓN DE FIN DE PARTIDA O BANCARROTA ---
                 # Las acciones (rendirse) y tareas de celery envían el estado en 'data'
                 game_data = data.get("data", {})
                 phase = game_data.get("phase")
@@ -391,7 +389,16 @@ class GameClient:
             return
         
         while True:
-            print("\nAvailable commands: throw, move, buy, build, demolish, next, mortgage, unmortgage, drop, take_tram, skip_tram, choose_card, bid, trade, trade_answer, bail, surrender, exit")
+            print("\n==============================================")
+            print("Available commands:")
+            print("  [Game]: throw, move, buy, build, demolish, next, mortgage, unmortgage, drop, take_tram, skip_tram, choose_card, bid, trade, trade_answer, bail, surrender, exit")
+            print("  [Cheats]:")
+            print("    cheat_dice <dice1> <dice2> <dice_bus>")
+            print("    cheat_tp <square_id> [player_id]")
+            print("    cheat_money <amount> [player_id]")
+            print("    cheat_create_prop <square_id> [houses (-1..5)] [mortgage (true/false)] [player_id]")
+            print("    cheat_delete_prop <square_id>")
+            print("==============================================")
             cmd = await self.get_input("Enter command: ")
             cmd = cmd.strip().lower()
 
@@ -419,6 +426,11 @@ class GameClient:
         """
         if not self.player_id:
             self.player_id = await self.get_input("Enter your Player ID (integer): ")
+
+        parts = cmd.split()
+        if not parts:
+            return None
+        base_cmd = parts[0].lower()
         
         if cmd == "throw":
             return {"type": "ActionThrowDices"}
@@ -486,6 +498,77 @@ class GameClient:
             return {"type": "ActionPayBail"}
         elif cmd == "surrender": # TODO: surrender has to be done in games.py but i have it here still
             return {"type": "ActionSurrender"}
+        #### Cheats ####
+        if base_cmd == "cheat_dice":
+            if len(parts) == 4:
+                return {
+                    "type": "Cheat", 
+                    "cheat": "MockDice",
+                    "dice1": int(parts[1]), 
+                    "dice2": int(parts[2]), 
+                    "dice_bus": int(parts[3])
+                }
+            else:
+                print("Usage: cheat_dice <dice1> <dice2> <dice_bus>")
+                return None
+                
+        elif base_cmd == "cheat_tp":
+            if len(parts) >= 2:
+                sq_id = int(parts[1])
+                target_player = int(parts[2]) if len(parts) > 2 else self.player_id
+                return {
+                    "type": "Cheat", 
+                    "cheat": "Teleport",
+                    "player_id": target_player, 
+                    "square_id": sq_id
+                }
+            else:
+                print("Usage: cheat_tp <square_id> [player_id]")
+                return None
+                
+        elif base_cmd == "cheat_money":
+            if len(parts) >= 2:
+                amount = int(parts[1])
+                target_player = int(parts[2]) if len(parts) > 2 else self.player_id
+                return {
+                    "type": "Cheat", 
+                    "cheat": "SetMoney",
+                    "player_id": target_player, 
+                    "amount": amount
+                }
+            else:
+                print("Usage: cheat_money <amount> [player_id]")
+                return None
+                
+        elif base_cmd == "cheat_create_prop":
+            if len(parts) >= 2:
+                sq_id = int(parts[1])
+                houses = int(parts[2]) if len(parts) > 2 else -1
+                mortgage = parts[3].lower() == 'true' if len(parts) > 3 else False
+                target_player = int(parts[4]) if len(parts) > 4 else self.player_id
+                return {
+                    "type": "Cheat", 
+                    "cheat": "CreateProperty",
+                    "player_id": target_player, 
+                    "square_id": sq_id,
+                    "houses": houses, 
+                    "mortgage": mortgage
+                }
+            else:
+                print("Usage: cheat_create_prop <square_id> [houses] [mortgage (true/false)] [player_id]")
+                return None
+                
+        elif base_cmd == "cheat_delete_prop":
+            if len(parts) == 2:
+                return {
+                    "type": "Cheat", 
+                    "cheat": "DeleteProperty",
+                    "square_id": int(parts[1])
+                }
+            else:
+                print("Usage: cheat_delete_prop <square_id>")
+                return None
+        #### Unknown command ####
         else:
             print(f"Unknown command: {cmd}")
             return None

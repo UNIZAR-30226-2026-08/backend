@@ -1,12 +1,13 @@
 #!/bin/sh
 
-DEBUG="True"
+export DEBUG="True"
+export REDIS_PORT=26379
 
 . venv/bin/activate
 
 sh scripts/reset_db.sh
 
-redis-server --port 26379 &
+redis-server --port $REDIS_PORT &
 sleep 1
 
 celery -A magnate purge -f

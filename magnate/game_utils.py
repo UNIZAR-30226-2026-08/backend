@@ -657,7 +657,7 @@ def _apply_square_arrival(
         stats.won_money += game.parking_money
         stats.save()
         game.parking_money = 0
-        game.phase = Game.GamePhase.business
+        game.phase = Game.GamePhase.roll_the_dices if game.streak > 0 else Game.GamePhase.business 
 
     # 4. Fantasy
     elif isinstance(real_square, FantasySquare):
@@ -674,7 +674,7 @@ def _apply_square_arrival(
             game.phase = Game.GamePhase.liquidation
         # Phase transition (next turn) is handled by the caller
     else:
-        game.phase = Game.GamePhase.management
+        game.phase = Game.GamePhase.roll_the_dices if game.streak > 0 else Game.GamePhase.management
 
     return response
 

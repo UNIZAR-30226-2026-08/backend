@@ -34,6 +34,7 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
 # Application definition
 
 INSTALLED_APPS = [
+    'magnate',
     'daphne',
     'channels',
     'django.contrib.admin',
@@ -43,7 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles', 
     'polymorphic',
-    'magnate',
     'rest_framework',
     'corsheaders',
 ]

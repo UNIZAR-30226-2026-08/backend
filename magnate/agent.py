@@ -148,15 +148,17 @@ class Agent:
             list[Action]: Valid dice rolling or jail-exit actions.
         """
         actions = []
-        remaining = self.game.jail_remaining_turns.get(str(self.user.pk), 0)
-    
-        if remaining > 0:
+
+        # We are in pay bail phase
+        if len(self.game.possible_destinations) > 0:
             jail_sq = _get_user_square(self.game, self.user).get_real_instance()
             money = self.game.money[str(self.user.pk)]
-            if isinstance(jail_sq, JailSquare) and money >= jail_sq.bail_price:
-                actions.append(ActionPayBail(game=self.game, player=self.user))
-    
-        actions.append(ActionThrowDices(game=self.game, player=self.user))
+            if money >= jail_sq.bail_price:
+                actions.append(ActionPayBail(game=self.game, player=self.user, to_pay=True))
+            actions.append(ActionPayBail(game=self.game, player=self.user, to_pay=False))
+        else:
+            actions.append(ActionThrowDices(game=self.game, player=self.user))
+
         return actions
 
     def _get_possible_actions_choose_square(self) -> list[Action]:

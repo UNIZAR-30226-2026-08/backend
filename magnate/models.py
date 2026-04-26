@@ -518,7 +518,7 @@ class Game(models.Model):
     ordered_players = models.JSONField(default=list)
     streak = models.IntegerField(default=0)
     #dict[string,int], key=square_id, value=dice_combination to get there
-    possible_destinations = models.JSONField(default=list, blank=True)
+    possible_destinations = models.JSONField(default=list, null=True, blank=True)
     parking_money = models.PositiveIntegerField(default=0)
     # Maps user_id -> uint
     jail_remaining_turns = models.JSONField(default=dict, blank=True)
@@ -786,8 +786,10 @@ class ActionPayBail(Action):
     The player's balance is reduced by ``JailSquare.bail_price`` and they are
     released to resume normal turns. No additional data is needed beyond the
     inherited ``Action`` fields.
+    Attributes:
+        to_pay (BooleanField): Whether to pay the bill or not
     """
-    pass
+    to_pay = models.BooleanField(default=False)
 
 class ActionNextPhase(Action):
     """

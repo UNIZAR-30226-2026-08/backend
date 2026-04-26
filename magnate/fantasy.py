@@ -591,6 +591,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         
     
     elif fantasy_event.fantasy_type == 'getParkingMoney':
+        parking_money = game.parking_money
         game.money[str(user.pk)] += game.parking_money
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
         stats.won_money += game.parking_money
@@ -600,7 +601,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         return FantasyResult(
             fantasy_event = fantasy_event,
-            result = None
+            result = parking_money
         )
     
     elif fantasy_event.fantasy_type == 'reviveProperty':

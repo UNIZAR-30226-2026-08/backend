@@ -497,6 +497,7 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.money[str(self.player2.pk)],200+30)
         self.assertEqual(self.game.money[str(self.player3.pk)],300+30)
         self.assertEqual(self.game.money[str(self.player4.pk)],400+30)
+        self.assertEqual(self.game.parking_money, 1500)
         
     def test_free_house1(self):
         """
@@ -728,6 +729,7 @@ class FantasyTest(TestCase):
         event = FantasyEvent(fantasy_type='doubleOrNothing',
                              value=None,
                              card_cost=1)
+        previous_parking = self.game.parking_money
         result : FantasyResult = apply_fantasy_event(self.game,
                                                     self.player1,
                                                     event)
@@ -738,11 +740,11 @@ class FantasyTest(TestCase):
             return
         
         if result.result['doubled']:
-            #print('doubled')
             self.assertEqual(self.game.money[str(self.player1.pk)],200)
+            self.assertEqual(self.game.parking_money, previous_parking)
         else:
-            #print('not doubled')
             self.assertEqual(self.game.money[str(self.player1.pk)],0)
+            self.assertEqual(self.game.parking_money, previous_parking + 100)
 
     def test_get_parking_money(self):
         """
@@ -765,6 +767,7 @@ class FantasyTest(TestCase):
                                                     event)
         self.assertEqual(result.fantasy_event.fantasy_type,'getParkingMoney')
         self.assertEqual(self.game.money[str(self.player1.pk)],1600)
+        self.assertEqual(self.game.parking_money, 0)
 
     def test_revive_property1(self):
         """
@@ -922,6 +925,7 @@ class FantasyTest(TestCase):
         self.assertEqual(self.game.money[str(self.player2.pk)],200-30)
         self.assertEqual(self.game.money[str(self.player3.pk)],300-30)
         self.assertEqual(self.game.money[str(self.player4.pk)],400-30)
+        self.assertEqual(self.game.parking_money, 1500)
 
     def test_magnetism(self):
         """

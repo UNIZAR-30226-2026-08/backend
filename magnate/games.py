@@ -164,6 +164,7 @@ class GameManager:
             raise GameLogicError("not enough money to pay bail")
 
         game.money[str(user.pk)] -= bail_price
+        game.parking_money += bail_price
         game.jail_remaining_turns[str(user.pk)] = 0
         game.save()
 
@@ -442,6 +443,16 @@ class GameManager:
         new_fantasy = None
 
         if not generate:
+            card_cost = fantasy_event.card_cost
+            if game.money[str(user.pk)] < card_cost:
+                raise MaliciousUserInput(user, "not enough money to pay for the revealed card")
+            
+            game.money[str(user.pk)] -= card_cost
+            game.parking_money += card_cost
+            stats = PlayerGameStatistic.objects.get(user=user, game=game)
+            stats.lost_money += card_cost
+            stats.save()
+            
             fantasy_result = apply_fantasy_event(game, user, fantasy_event)
             fantasy_result.save()
             response.fantasy_result = fantasy_result

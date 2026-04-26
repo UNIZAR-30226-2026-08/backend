@@ -227,7 +227,7 @@ class GamesTest(TestCase):
 
     def test_jail_manual_bail_payment(self,  mock_next_phase, mock_kick_out, mock_auction):
         """
-        Tests that a player can manually pay bail to exit jail immediately.
+        Tests that a player can manually pay bail to exit jail immediately, and bail is added to parking_money.
 
         Args:
             mock_next_phase (Mock): Mocked next phase callback.
@@ -246,6 +246,7 @@ class GamesTest(TestCase):
         self.game.jail_remaining_turns[str(self.player1.pk)] = 2
         self.game.phase = GameManager.ROLL_THE_DICES
         initial_money = self.game.money[str(self.player1.pk)]
+        initial_parking = self.game.parking_money
         self.game.save()
 
         action = ActionPayBail(game=self.game, player=self.player1)
@@ -253,6 +254,7 @@ class GamesTest(TestCase):
 
         self.game.refresh_from_db()
         self.assertEqual(self.game.money[str(self.player1.pk)], initial_money - jail_sq.bail_price)
+        self.assertEqual(self.game.parking_money, initial_parking + jail_sq.bail_price)
         self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 0)
         self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES) # Ready to roll free
 
@@ -1105,7 +1107,7 @@ class GamesTest(TestCase):
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)
         
         self.game.refresh_from_db()
-        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money + 100)
+        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money + 100 - 50)
         self.assertEqual(self.game.phase, GameManager.BUSINESS)
         self.assertIsNone(self.game.fantasy_event)
 

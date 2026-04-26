@@ -641,7 +641,7 @@ def _apply_square_arrival(
             raise GameLogicError("no user owns this square")
         game.money[str(user.pk)] -= pay_price
         game.money[str(rel.owner.pk)] += pay_price
-        game.phase = Game.GamePhase.business
+        game.phase = Game.GamePhase.roll_the_dices if game.streak > 0 else Game.GamePhase.business
         stats = PlayerGameStatistic.objects.get(user=user, game=game)
         stats.lost_money += pay_price
         stats.num_paid_rents += 1

@@ -36,6 +36,7 @@ class PropertyRelationshipSerializer(serializers.ModelSerializer):
         }
         ```
     """
+    square = SquareCustomIdField()
     class Meta:
         model = PropertyRelationship
         # Does not serialize game

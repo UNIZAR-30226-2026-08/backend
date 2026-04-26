@@ -80,8 +80,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'magnate.wsgi.application'
 ASGI_APPLICATION = 'magnate.asgi.application'
 
-# Ports
-POSTGRES_PORT = int(os.environ.get('POSTGRES_PORT', 5432))
+# REDIS
+if DEBUG:
+    REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
+else:
+    REDIS_HOST = os.environ.get('REDIS_HOST')
+
 REDIS_PORT = int(os.environ.get('REDIS_PORT', 6379))
 
 if 'test' in sys.argv:
@@ -98,12 +102,12 @@ else:
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
             "CONFIG": {
-                "hosts": [("127.0.0.1", REDIS_PORT)],
+                "hosts": [(REDIS_HOST, REDIS_PORT)],
             },
         },
     }
-    CELERY_BROKER_URL = f"redis://127.0.0.1:{REDIS_PORT}/0"
-    CELERY_RESULT_BACKEND = f"redis://127.0.0.1:{REDIS_PORT}/0"
+    CELERY_BROKER_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+    CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases

@@ -163,13 +163,15 @@ class GameManager:
         if len(game.possible_destinations) < 1:
             raise MaliciousUserInput(user, "cannot pay bail now")
 
-        if not ActionPayBail.to_pay:
+        if not action.to_pay:
             stats = PlayerGameStatistic.objects.get(user=user,game=game)
             stats.turns_in_jail += 1
             stats.save()
             game.phase = GameManager.MANAGEMENT
+            game.possible_destinations = dict()
             game.save()
-            return
+            GameManager._set_next_phase_timer(game, user) #TODO: revisar este timer
+            return response
 
         # The player paid the bail
 
@@ -177,13 +179,16 @@ class GameManager:
 
         if game.money[str(user.pk)] < bail_price:
             raise GameLogicError("not enough money to pay bail")
+        
+        dest_square_id = next(iter(game.possible_destinations))
 
         game.money[str(user.pk)] -= bail_price
         game.parking_money += bail_price
         game.jail_remaining_turns[str(user.pk)] = 0
         game.possible_destinations = dict()
 
-        square = _get_square_by_custom_id(next(iter(game.possible_destinations)))
+        game.positions[str(user.pk)] = int(dest_square_id)
+        square = _get_square_by_custom_id(dest_square_id)
         _apply_square_arrival(game, user, response, square, False)
 
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
@@ -312,14 +317,14 @@ class GameManager:
 
         response.streak = game.streak
 
-        dice_combinations = _compute_dice_combinations(d1, d2, d3)
+        dice_combinations = _compute_dice_combinations(d1, d2, d3) #ya con el bus cancelado si se está en la cárcel
         game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
 
         response.destinations = [int(k) for k in game.possible_destinations.keys()]
 
         if is_jailed:
             # Now it should decide whether to pay bail or not
-            dest_square_id = next(iter(game.possible_destinations))
+            dest_square_id = next(iter(game.possible_destinations)) #solamente hay un posible destino en este caso, no hay bus
             steps = game.possible_destinations[dest_square_id]
             move_result = _move_player_logic(current_pos_square, steps)
             response.path = move_result["path"]

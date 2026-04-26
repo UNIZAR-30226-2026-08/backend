@@ -231,7 +231,8 @@ class GameManager:
         # jail logic
         remaining_jail_turns = game.jail_remaining_turns.get(str(user.pk), 0)
         is_jailed = remaining_jail_turns > 0
-        
+        was_jailed = is_jailed
+
         if is_jailed:
             jail_sq = current_pos_square
             if isinstance(jail_sq, JailSquare):
@@ -304,7 +305,11 @@ class GameManager:
         response.streak = game.streak
 
         # Hasn't gone to jail
-        dice_combinations = _compute_dice_combinations(d1, d2, d3)
+        if was_jailed:
+            dice_combinations = _compute_dice_combinations(d1, d2, 0)
+        else:
+            dice_combinations = _compute_dice_combinations(d1, d2, d3)
+
         game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
 
         response.destinations = [int(k) for k in game.possible_destinations.keys()]

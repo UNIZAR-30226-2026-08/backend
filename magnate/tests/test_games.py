@@ -150,7 +150,7 @@ class GamesTest(TestCase):
         self.game.refresh_from_db()
         self.assertEqual(self.game.jail_remaining_turns.get(str(self.player1.pk)), 0)
         self.assertEqual(self.game.streak, 0) 
-        self.assertEqual(self.game.phase, GameManager.CHOOSE_SQUARE)
+        self.assertEqual(self.game.phase, GameManager.CHOOSE_FANTASY)
 
     @patch('magnate.games.random.randint')
     def test_jail_stay_on_no_doubles(self, mock_randint,  mock_next_phase, mock_kick_out, mock_auction):

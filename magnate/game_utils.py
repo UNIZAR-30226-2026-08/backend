@@ -635,8 +635,9 @@ def _apply_square_arrival(
 
     # 2. Rent
     pay_price = _calculate_rent_price(game, user, square)
+    rel = _get_relationship(game, square)
     if pay_price > 0:
-        rel = _get_relationship(game, square)
+        
         if rel is None:
             raise GameLogicError("no user owns this square")
         game.money[str(user.pk)] -= pay_price
@@ -673,7 +674,8 @@ def _apply_square_arrival(
         if game.money[str(user.pk)] < 0:
             game.phase = Game.GamePhase.liquidation
         # Phase transition (next turn) is handled by the caller
-    elif isinstance(real_square, TramSquare) or isinstance(real_square, PropertySquare) or isinstance(real_square, BridgeSquare) or isinstance(real_square, ServerSquare):
+    elif isinstance(real_square, TramSquare) or (
+        isinstance(real_square, (PropertySquare, BridgeSquare, ServerSquare)) and not rel):
         game.phase = Game.GamePhase.management
     else:
         game.phase = Game.GamePhase.roll_the_dices if streak > 0 else Game.GamePhase.business

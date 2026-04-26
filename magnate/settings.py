@@ -11,7 +11,6 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-from decouple import config
 import sys
 from datetime import timedelta
 
@@ -170,6 +169,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # REST API
 REST_FRAMEWORK = {
@@ -191,8 +191,12 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-]
+# CORS Origins
+
+cors_origins = os.environ.get(
+    'CORS_ALLOWED_ORIGINS', 
+    'http://localhost:5173,http://127.0.0.1:5173'
+)
+
+CORS_ALLOWED_ORIGINS = [origin.strip() for origin in cors_origins.split(',') if origin.strip()]
 

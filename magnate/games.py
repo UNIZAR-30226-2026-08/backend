@@ -1178,25 +1178,29 @@ class GameManager:
         Returns:
             ResponseBonus: An object mapping the chosen bonus categories and their winners.
         """
-        all_categories = list(BonusCategory.objects.all())
-        chosen = random.sample(all_categories, min(num_bonuses, len(all_categories)))
+
+        stats = PlayerGameStatistic.objects.filter(game=game)
+
+        valid_categories_data = []
+        for category in BonusCategory.objects.all():
+            field = category.stat_field
+            max_value = stats.aggregate(Max(field)).get(f'{field}__max')
+            if max_value and max_value > 0:
+                valid_categories_data.append((category, max_value))
+
+        chosen_data = random.sample(valid_categories_data, min(num_bonuses, len(valid_categories_data)))
 
         response = ResponseBonus()
         bonuses = {}
 
-        for category in chosen:
+        for category, max_value in chosen_data:
             field = category.stat_field
-            stats = PlayerGameStatistic.objects.filter(game=game)
+            winners = list(stats.filter(**{field: max_value}).values_list('user__pk', flat=True))
+            
+            for pk in winners:
+                game.money[str(pk)] = game.money.get(str(pk), 0) + category.bonus_amount
 
-            max_value = stats.aggregate(Max(field))[f'{field}__max']
-            if max_value and max_value > 0:
-                winners = list(stats.filter(**{field: max_value}).values_list('user__pk', flat=True))
-                for pk in winners:
-                    game.money[str(pk)] = game.money.get(str(pk), 0) + category.bonus_amount
-            else:
-                winners = []
-
-            bonuses[str(category.pk)] = {
+            bonuses[field] = {
                 'bonus_amount': category.bonus_amount,
                 'winners': winners
             }

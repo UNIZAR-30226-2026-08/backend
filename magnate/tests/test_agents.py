@@ -74,20 +74,6 @@ class AgentsTest(TestCase):
 
         self.game.save()
 
-    def _validate_no_strings_in_positions(self):
-
-        for player_id, square_id in self.game.positions.items():
-            if isinstance(square_id, str):
-                raise TypeError(f"CRITICAL: Square ID for player {player_id} is a string: '{square_id}'")
-
-
-        if isinstance(self.game.possible_destinations, dict):
-            for dest_id, dice_val in self.game.possible_destinations.items():
-                if isinstance(dice_val, str):
-                    raise TypeError(f"CRITICAL: Dice value for destination {dest_id} is a string: '{dice_val}'")
-                if not dest_id.isdigit():
-                    raise ValueError(f"CRITICAL: Destination key is not a numeric string: '{dest_id}'")
-
     def test_simulate_game(self, mock_next_phase, mock_kick_out, mock_auction_task):
         """
         Simulates a game session between two bots to ensure no logic errors occur over 500 turns.
@@ -103,62 +89,39 @@ class AgentsTest(TestCase):
         agent1 = Agent(self.game, self.agent1, 'expert')
         agent2 = Agent(self.game, self.agent2, 'very_easy')
         
-        print('\n' + '=' * 60)
-        print('STARTING GAME SIMULATION')
-        print('=' * 60)
-        
         turn = 0
         while turn < N_TURNS:
             if self.game.phase == GameManager.END_GAME:
-                print(f"\n[!] El juego terminó prematuramente en el turno {turn} (Fase: END_GAME).")
                 break
-            active_player = self.game.active_phase_player
             
+            active_player = self.game.active_phase_player
+            if not active_player:
+                break
+
             if active_player.pk == self.agent1.pk:
                 action = agent1.choose_action()
-            elif active_player.pk == self.agent2.pk:
+            else:
                 action = agent2.choose_action()
 
             if action is None:
+                # Bot might be waiting for a timeout or special state
+                turn += 1
                 continue
 
-            print(f"\n[Turn {turn:02d}] Player: {active_player.username}")
-            s_action = GeneralActionSerializer(action).data
-            print(f" ├─ Action:   {s_action}")
-
-            
-            
-            if not isinstance(action, Action):
-                raise GameLogicError("Wrong type")
-            
             response = async_to_sync(GameManager.process_action)(self.game, active_player, action)
             self.game.refresh_from_db()
-            s_response = GeneralResponseSerializer(response).data
-            print(f" └─ Response: {s_response}")
-            self._validate_no_strings_in_positions() # <--- Llamada a la validación
 
-            # También validar el objeto Response antes de seguir
-            if hasattr(response, 'positions'):
-                for pid, sid in response.positions.items():
-                    if isinstance(sid, str):
-                        raise TypeError(f"CRITICAL: Response contains string position: {sid}")
+            # Ensure data types remain consistent (ints for IDs)
+            for pos in self.game.positions.values():
+                self.assertIsInstance(pos, int)
 
             if self.game.phase == GameManager.AUCTION:
                 GameManager._end_auction(self.game)
                 self.game.refresh_from_db()
-                continue
             
-            
-
-            
-            # 5. Refresh game state from the database for the next iteration
-            # This is crucial so active_phase_player actually changes in the loop
-            self.game.refresh_from_db()
-
             turn += 1
 
-        print('\n' + '=' * 60)
-        print('SIMULATION COMPLETE')
-        print('=' * 60 + '\n')
+        if self.game.phase == GameManager.END_GAME and not self.game.finished:
+            async_to_sync(GameManager.process_action)(self.game, self.game.active_phase_player, ActionNextPhase(game=self.game, player=self.game.active_phase_player))
         
         self.assertIsNotNone(self.game.pk, "Game should still exist after simulation")

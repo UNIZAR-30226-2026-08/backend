@@ -1105,7 +1105,7 @@ class GamesTest(TestCase):
         async_to_sync(GameManager.process_action)(self.game, self.player1, action)
         
         self.game.refresh_from_db()
-        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money + 100)
+        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money + 100 - 50)
         self.assertEqual(self.game.phase, GameManager.BUSINESS)
         self.assertIsNone(self.game.fantasy_event)
 

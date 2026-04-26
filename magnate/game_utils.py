@@ -738,5 +738,6 @@ def _add_basic_response_data(game: Game, response: Response) -> Response:
     response.active_turn_player = game.active_turn_player
     response.phase = game.phase
     response.positions = game.positions
+    response.parking_money = game.parking_money
 
     return response

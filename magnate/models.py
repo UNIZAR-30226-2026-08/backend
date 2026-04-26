@@ -222,14 +222,11 @@ class ParkingSquare(BaseSquare):
     """
     A "Free Parking" style square that accumulates a money jackpot.
 
-    Fines and fees paid during the game are added to ``money``; the player who
+    Fines and fees paid during the game are added to ``game.parking_money``; the player who
     lands on this square collects the full pot.
-
-    Attributes:
-        money (PositiveIntegerField): Current jackpot amount held by this square.
-            Mirrored by ``Game.parking_money`` for active game state tracking.
     """
-    money = models.PositiveIntegerField(default=0)
+    #money = models.PositiveIntegerField(default=0)
+    pass
 
 class ServerSquare(BaseSquare):
     """
@@ -362,7 +359,7 @@ class FantasyEvent(models.Model):
             - ``shufflePositions``: Randomly redistribute all players' board positions.
             - ``moveAnywhereRandom``: Teleport the drawing player to a random square.
             - ``moveOpponentAnywhereRandom``: Teleport a random opponent to a random square.
-            - ``shareMoneyAll``: Divide the drawing player's money equally among all players.
+            - ``shareMoneyAll``: The drawing player gives an amount of money to each player.
             - ``freeHouse``: Grant the drawing player a free house on one of their properties.
             - ``goToJail``: Send the drawing player directly to jail.
             - ``sendToJail``: Send a randomly chosen opponent to jail.
@@ -370,9 +367,9 @@ class FantasyEvent(models.Model):
             - ``doubleOrNothing``: Double the player's money or reduce it to zero (50/50 chance).
             - ``getParkingMoney``: Award the player the current ``ParkingSquare`` jackpot.
             - ``reviveProperty``: Lift the mortgage on one of the player's mortgaged properties.
-            - ``earthquake``: Destroy all houses on a randomly selected colour group.
+            - ``earthquake``: Destroy one house from each square.
             - ``everybodySendsYouMoney``: Every other player pays the drawing player ``value``.
-            - ``magnetism``: Move the drawing player to the nearest purchasable property.
+            - ``magnetism``: Move all the players to the drawing player position.
             - ``goToStart``: Move the drawing player back to the ``ExitSquare`` (GO).
 
         value (IntegerField | None): Numeric parameter for the event, e.g. a fixed
@@ -840,6 +837,7 @@ class Response(models.Model):
     active_turn_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='response_turns_to_play')
     phase = models.CharField(choices=Game.GamePhase, max_length=20)
     positions = models.JSONField(default=dict, blank=True) # user -> cumtom_id (int)
+    parking_money = models.PositiveIntegerField(default=0)
 
 class ResponseSkipPhase(Response):
     """

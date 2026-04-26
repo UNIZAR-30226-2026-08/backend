@@ -145,7 +145,7 @@ class ParkingSquareSerializer(BaseSquareSerializer):
     """
     class Meta(BaseSquareSerializer.Meta):
         model = ParkingSquare
-        fields = BaseSquareSerializer.Meta.fields + ['money']
+        fields = BaseSquareSerializer.Meta.fields
 
 class ServerSquareSerializer(BaseSquareSerializer):
     """

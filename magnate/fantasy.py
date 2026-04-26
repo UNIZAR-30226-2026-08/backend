@@ -26,12 +26,12 @@ class FantasyEventFactory:
         | Type                          | Cost | Value options             |
         | ----------------------------- | ---- | ------------------------- |
         | winPlainMoney                 | 130  | 20, 60, 120, 150, 200     |
-        | winRatioMoney                 | 500  | 1, 2, 5, 10 (%)           |
+        | winRatioMoney                 | 200  | 5, 10, 25, 50 (%)         |
         | losePlainMoney                | 80   | 40, 80, 120, 150, 200     |
-        | loseRatioMoney                | 30   | 1, 2, 5, 10 (%)           |
+        | loseRatioMoney                | 30   | 5, 10, 25, 50 (%)         |
         | shareMoneyAll                 | 5    | 20, 30, 50                |
         | everybodySendsYouMoney        | 120  | 20, 30, 50                |
-        | doubleOrNothing               | 50   | —                         |
+        | doubleOrNothing               | 50   | doubled (bool)            |
         | getParkingMoney               | 500  | —                         |
         | goToJail                      | 25   | —                         |
         | sendToJail                    | 80   | —                         |
@@ -44,8 +44,8 @@ class FantasyEventFactory:
         | breakOpponentHouse            | 150  | —                         |
         | breakOwnHouse                 | 30   | —                         |
         | freeHouse                     | 80   | —                         |
-        | reviveProperty                | 100  | —                         |
-        | earthquake                    | 200  | —                         |
+        | reviveProperty                | 100  | revived property          |
+        | earthquake                    | 200  | {affected squares}        |
 
         Args:
             None
@@ -75,16 +75,16 @@ class FantasyEventFactory:
                 
             
         elif fantasy_type == 'winRatioMoney':
-            card_cost = 500
+            card_cost = 200
             rand = random.randrange(4)
             if(rand == 0):
-                value = 1
-            elif(rand == 1):
-                value = 2
-            elif(rand == 2):
                 value = 5
-            elif(rand == 3):
+            elif(rand == 1):
                 value = 10
+            elif(rand == 2):
+                value = 25
+            elif(rand == 3):
+                value = 50
 
 
         elif fantasy_type == 'losePlainMoney':
@@ -106,13 +106,13 @@ class FantasyEventFactory:
             card_cost = 30
             rand = random.randrange(4)
             if(rand == 0):
-                value = 1
-            elif(rand == 1):
-                value = 2
-            elif(rand == 2):
                 value = 5
-            elif(rand == 3):
+            elif(rand == 1):
                 value = 10
+            elif(rand == 2):
+                value = 25
+            elif(rand == 3):
+                value = 50
 
         elif fantasy_type == 'breakOpponentHouse':
             card_cost = 150
@@ -288,6 +288,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         
         money_to_sub = fantasy_event.value
         game.money[str(user.pk)] -= money_to_sub
+        game.parking_money += money_to_sub
         game.save()
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
         stats.lost_money += money_to_sub
@@ -304,7 +305,9 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         ratio_to_sub = fantasy_event.value
         previous_money = game.money[str(user.pk)]
-        game.money[str(user.pk)] = game.money[str(user.pk)] * (1 - ratio_to_sub/100)
+        end_money = game.money[str(user.pk)] * (1 - ratio_to_sub/100)
+        game.parking_money += game.money[str(user.pk)] - end_money
+        game.money[str(user.pk)] = end_money        
         game.save()
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
         stats.lost_money += previous_money - game.money[str(user.pk)]
@@ -573,8 +576,10 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             stats.save()
             game.money[str(user.pk)] *= 2
         else:
+            previous_money = game.money[str(user.pk)]
+            game.parking_money += previous_money
             stats = PlayerGameStatistic.objects.get(user=user,game=game)
-            stats.lost_money += game.money[str(user.pk)]
+            stats.lost_money += previous_money
             stats.save()
             game.money[str(user.pk)] = 0
         game.save()

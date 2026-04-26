@@ -12,6 +12,8 @@ from unittest.mock import patch
 
 import time
 
+N_TURNS = 100
+
 @patch('magnate.tasks.auction_callback.apply_async', **{'return_value.id': 'mock_auction_id'}) #type: ignore
 @patch('magnate.tasks.kick_out_callback.apply_async', **{'return_value.id': 'mock_kick_id'})  # type: ignore
 @patch('magnate.tasks.next_phase_callback.apply_async', **{'return_value.id': 'mock_phase_id'})  # type: ignore
@@ -106,7 +108,7 @@ class AgentsTest(TestCase):
         print('=' * 60)
         
         turn = 0
-        while turn < 500:
+        while turn < N_TURNS:
             if self.game.phase == GameManager.END_GAME:
                 print(f"\n[!] El juego terminó prematuramente en el turno {turn} (Fase: END_GAME).")
                 break

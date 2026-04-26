@@ -678,7 +678,7 @@ def _apply_square_arrival(
         isinstance(real_square, (PropertySquare, BridgeSquare, ServerSquare)) and not rel):
         game.phase = Game.GamePhase.management
     else:
-        game.phase = Game.GamePhase.roll_the_dices if streak > 0 else Game.GamePhase.business
+        game.phase = Game.GamePhase.roll_the_dices if game.streak > 0 else Game.GamePhase.business
         
 
     return response

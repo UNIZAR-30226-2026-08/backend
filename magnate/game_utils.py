@@ -673,10 +673,11 @@ def _apply_square_arrival(
         if game.money[str(user.pk)] < 0:
             game.phase = Game.GamePhase.liquidation
         # Phase transition (next turn) is handled by the caller
-    elif isinstance(real_square, TramSquare):
+    elif isinstance(real_square, TramSquare) or isinstance(real_square, PropertySquare) or isinstance(real_square, BridgeSquare) or isinstance(real_square, ServerSquare):
         game.phase = Game.GamePhase.management
     else:
-        game.phase = Game.GamePhase.roll_the_dices if game.streak > 0 else Game.GamePhase.business
+        game.phase = Game.GamePhase.roll_the_dices if streak > 0 else Game.GamePhase.business
+        
 
     return response
 

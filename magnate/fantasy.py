@@ -32,7 +32,7 @@ class FantasyEventFactory:
         | shareMoneyAll                 | 5    | 20, 30, 50                |
         | everybodySendsYouMoney        | 120  | 20, 30, 50                |
         | doubleOrNothing               | 50   | doubled (bool)            |
-        | getParkingMoney               | 500  | —                         |
+        | getParkingMoney               | 500  | money                     |
         | goToJail                      | 25   | —                         |
         | sendToJail                    | 80   | —                         |
         | everybodyToJail               | 50   | —                         |

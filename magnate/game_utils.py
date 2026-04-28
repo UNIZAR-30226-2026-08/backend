@@ -64,12 +64,12 @@ def _build_square(game: Game,
         raise MaliciousUserInput(user, "does not own the group")
 
     for rel in group_relationships:
-        print(rel.square.custom_id, rel.houses, actual_houses, building_square.custom_id, number_built)
         if rel.mortgage: # none of the group should be mortgaged
             raise MaliciousUserInput(user, "cannot build while any property in the group is mortgaged")
         if rel.houses < 0: 
             raise GameLogicError(f"negative house value")
         elif actual_houses + number_built - 1 > rel.houses and rel.square != building_square: 
+            print(actual_houses + number_built - 1, rel.houses, rel.square.custom_id, building_square.custom_id)
             raise MaliciousUserInput(user, "already owns more than other")
 
     if actual_houses == 5:

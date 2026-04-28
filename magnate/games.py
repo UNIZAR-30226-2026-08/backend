@@ -7,7 +7,9 @@ building/demolishing rules, and provides a GameManager class that acts as
 a state machine for the different phases of a player's turn.
 """
 
-import random 
+from os import waitstatus_to_exitcode
+import random
+from traceback import walk_stack 
 from django.db import transaction
 from django.db.models import Max
 from .serializers import *
@@ -149,6 +151,8 @@ class GameManager:
 
         GameManager._cancel_all_timers(game)
 
+        response: ResponseThrowDices = ResponseThrowDices()
+
         square = _get_user_square(game, user).get_real_instance()
 
         if not isinstance(square, JailSquare):
@@ -158,24 +162,53 @@ class GameManager:
         if remaining == 0:
             raise MaliciousUserInput(user, "is not in jail (no turns remaining)")
 
+        if len(game.possible_destinations) < 1:
+            raise MaliciousUserInput(user, "cannot pay bail now")
+
+        if not action.to_pay:
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.turns_in_jail += 1
+            stats.save()
+            game.phase = GameManager.BUSINESS
+            game.possible_destinations = dict()
+            game.save()
+            response.path = []
+            response.destinations = [int(square.custom_id)]
+            GameManager._set_next_phase_timer(game, user) #TODO: revisar este timer
+            return response
+
+        # The player paid the bail
+
         bail_price = square.bail_price
 
         if game.money[str(user.pk)] < bail_price:
             raise GameLogicError("not enough money to pay bail")
+        
+        dest_square_id = next(iter(game.possible_destinations))
+        steps = game.possible_destinations[dest_square_id] # pasos
+        
+        move_result = _move_player_logic(square, steps)
+        response.path = move_result["path"]
+
+        response.destinations = [int(dest_square_id)]
+
 
         game.money[str(user.pk)] -= bail_price
         game.parking_money += bail_price
         game.jail_remaining_turns[str(user.pk)] = 0
-        game.save()
+        game.possible_destinations = dict()
+
+        game.positions[str(user.pk)] = int(dest_square_id)
+        square = _get_square_by_custom_id(dest_square_id)
+        _apply_square_arrival(game, user, response, square, move_result["passed_go"])
 
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
         stats.lost_money += bail_price
-        stats.save()
-        # roll the dices -> continue normally
         GameManager._set_next_phase_timer(game, user)
 
+        stats.save()
         game.save()
-        return Response()
+        return response
 
     @staticmethod
     def _roll_dices_logic(game: Game, user: CustomUser, action: ActionThrowDices) -> Response: 
@@ -204,19 +237,23 @@ class GameManager:
 
         response: ResponseThrowDices = ResponseThrowDices()
 
-        # FIXME (not this way pls)
+        # jail logic
+        remaining_jail_turns = game.jail_remaining_turns.get(str(user.pk), 0)
+        is_jailed = remaining_jail_turns > 0
+        was_jailed = is_jailed
+
         mock = None
         if (isinstance(game.possible_destinations, dict)
                 and '__mock_dice__' in game.possible_destinations):
             mock = game.possible_destinations['__mock_dice__']
-            game.possible_destinations = {}
+            game.possible_destinations = dict()
 
         if mock:
             d1, d2, d3 = mock[0], mock[1], mock[2]
         else:
             d1 = random.randint(1, 6)
             d2 = random.randint(1, 6)
-            d3 = random.randint(1, 6)
+            d3 = random.randint(1, 6) if not is_jailed else 0
 
         response.dice1, response.dice2, response.dice_bus = d1, d2, d3
 
@@ -233,12 +270,14 @@ class GameManager:
         is_jailed = remaining_jail_turns > 0
         was_jailed = is_jailed
 
+        
         if is_jailed:
             jail_sq = current_pos_square
             if isinstance(jail_sq, JailSquare):
                 if remaining_jail_turns == 1: # Forced to leave jail (last turn)
                     game.money[str(user.pk)] -= jail_sq.bail_price
                     game.jail_remaining_turns[str(user.pk)] = 0
+                    is_jailed = False
                     stats = PlayerGameStatistic.objects.get(user=user,game=game)
                     stats.turns_in_jail += 1
                     stats.lost_money += jail_sq.bail_price
@@ -246,21 +285,15 @@ class GameManager:
                 elif doubles: # Leaves jail for free due to doubles
                     game.jail_remaining_turns[str(user.pk)] = 0
                     game.streak = 0
+                    is_jailed = False
                 else:
                     # stays in jail
                     game.jail_remaining_turns[str(user.pk)] -= 1
-                    game.phase = GameManager.BUSINESS
+                    game.phase = GameManager.ROLL_THE_DICES
                     game.save()
-                    stats = PlayerGameStatistic.objects.get(user=user,game=game)
-                    stats.turns_in_jail += 1
-                    stats.save()
-                    response.path = [current_pos_id]
-                    GameManager._set_next_phase_timer(game, user)
-                    return response
             else:
                 raise GameLogicError(f"Cannot be in jail status and not in jail square")
 
-        # Not jailed
         if triples:
             # path current -> decided in chosen
             response.triple = True
@@ -297,23 +330,24 @@ class GameManager:
                 game.save()
                 GameManager._set_next_phase_timer(game, user)
                 return response
-            elif not is_jailed:
+            elif not was_jailed:
                 game.streak = game.streak + 1
         else:
             game.streak = 0
 
         response.streak = game.streak
 
-        # Hasn't gone to jail
-        if was_jailed:
-            dice_combinations = _compute_dice_combinations(d1, d2, 0)
-        else:
-            dice_combinations = _compute_dice_combinations(d1, d2, d3)
-
+        dice_combinations = _compute_dice_combinations(d1, d2, d3) #ya con el bus cancelado si se está en la cárcel
         game.possible_destinations, passed_go_map = _get_possible_destinations_ids(game, user, dice_combinations)
 
         response.destinations = [int(k) for k in game.possible_destinations.keys()]
-        if len(game.possible_destinations) > 1:
+
+        if is_jailed:
+            # Now it should decide whether to pay bail or not
+            if int(current_pos_id) not in response.destinations:
+                response.destinations.append(int(current_pos_id))
+            response.path = []
+        elif len(game.possible_destinations) > 1:
             # path in square chosen logic
             game.phase = GameManager.CHOOSE_SQUARE
             response.path = [current_pos_id]
@@ -344,6 +378,7 @@ class GameManager:
                 game.positions[str(user.pk)] = int(dest_square_id)
                 square = _get_square_by_custom_id(dest_square_id)
                 _apply_square_arrival(game, user, response, square, move_result["passed_go"])
+            game.possible_destinations = dict()
                 
 
         game.save()

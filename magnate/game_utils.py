@@ -64,6 +64,7 @@ def _build_square(game: Game,
         raise MaliciousUserInput(user, "does not own the group")
 
     for rel in group_relationships:
+        print(rel.square.custom_id, rel.houses, actual_houses)
         if rel.mortgage: # none of the group should be mortgaged
             raise MaliciousUserInput(user, "cannot build while any property in the group is mortgaged")
         if rel.houses < 0: 

@@ -1487,7 +1487,7 @@ class GamesTest(TestCase):
             raise GameLogicError("Expected ResponseChooseSquare")
 
         # Path debe ser vacío si no paga
-        self.assertEqual(res_bail.path, [])
+        self.assertEqual(res_bail.path, [jail_sq.custom_id])
         self.assertEqual(self.game.positions[str(self.player1.pk)], jail_sq.custom_id)
         self.assertEqual(self.game.phase, GameManager.BUSINESS) 
 

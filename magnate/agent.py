@@ -149,13 +149,15 @@ class Agent:
         """
         actions = []
 
-        # We are in pay bail phase
-        if len(self.game.possible_destinations) > 0:
+        if self.game.possible_destinations and len(self.game.possible_destinations) > 0:
             jail_sq = _get_user_square(self.game, self.user).get_real_instance()
-            money = self.game.money[str(self.user.pk)]
-            if money >= jail_sq.bail_price:
-                actions.append(ActionPayBail(game=self.game, player=self.user, to_pay=True))
-            actions.append(ActionPayBail(game=self.game, player=self.user, to_pay=False))
+            if isinstance(jail_sq, JailSquare):
+                money = self.game.money[str(self.user.pk)]
+                if money >= jail_sq.bail_price:
+                    actions.append(ActionPayBail(game=self.game, player=self.user, to_pay=True))
+                actions.append(ActionPayBail(game=self.game, player=self.user, to_pay=False))
+            else:
+                actions.append(ActionThrowDices(game=self.game, player=self.user))
         else:
             actions.append(ActionThrowDices(game=self.game, player=self.user))
 
@@ -337,11 +339,24 @@ class Agent:
             square = rel.square.get_real_instance()
     
             if isinstance(square, PropertySquare) and rel.houses > 0:
-                actions.append(ActionDemolish(game=self.game, player=self.user, square=rel.square, houses=1))
+                group_max = (PropertyRelationship.objects
+                    .filter(game=self.game, owner=self.user, square__propertysquare__group=square.group)
+                    .exclude(square=rel.square).order_by('-houses').values_list('houses', flat=True).first())
+                if group_max is None or rel.houses >= group_max:
+                    actions.append(ActionDemolish(game=self.game, player=self.user, square=rel.square, houses=1))
     
-            if (not rel.mortgage and isinstance(square, (PropertySquare, BridgeSquare, ServerSquare))
-                and (not isinstance(square, PropertySquare) or rel.houses <= 0)):
-                actions.append(ActionMortgageSet(game=self.game, player=self.user, square=rel.square))
+            if not rel.mortgage and isinstance(square, (PropertySquare, BridgeSquare, ServerSquare)):
+                can_mortgage = True
+                if isinstance(square, PropertySquare):
+                    group_has_houses = PropertyRelationship.objects.filter(
+                        game=self.game, owner=self.user,
+                        square__propertysquare__group=square.group,
+                        houses__gt=0
+                    ).exists()
+                    if group_has_houses:
+                        can_mortgage = False
+                if can_mortgage:
+                    actions.append(ActionMortgageSet(game=self.game, player=self.user, square=rel.square))
     
         money = self.game.money[str(self.user.pk)]
     
@@ -527,9 +542,16 @@ class Agent:
         if isinstance(action, ActionThrowDices):
             return 0.0
         elif isinstance(action, ActionPayBail):
-            jail_sq = _get_user_square(self.game, self.user).get_real_instance()
-            coste = float(jail_sq.bail_price) if isinstance(jail_sq, JailSquare) and jail_sq.bail_price else 0.0
-            return self._ev_exit_jail() - coste
+            if action.to_pay:
+                jail_sq = _get_user_square(self.game, self.user).get_real_instance()
+                coste = float(jail_sq.bail_price) if isinstance(jail_sq, JailSquare) and jail_sq.bail_price else 0.0
+                
+                dest_id = next(iter(self.game.possible_destinations))
+                dest_sq = _get_square_by_custom_id(int(dest_id)).get_real_instance()
+                
+                return self._ev_square(dest_sq) - coste
+            else:
+                return self._ev_stay_in_jail()
         elif isinstance(action, ActionMoveTo):
             return self._ev_square(action.square.get_real_instance())
         elif isinstance(action, ActionChooseCard):

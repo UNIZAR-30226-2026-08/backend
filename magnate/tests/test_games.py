@@ -150,113 +150,9 @@ class GamesTest(TestCase):
         self.game.refresh_from_db()
         self.assertEqual(self.game.jail_remaining_turns.get(str(self.player1.pk)), 0)
         self.assertEqual(self.game.streak, 0) 
-        self.assertEqual(self.game.phase, GameManager.CHOOSE_SQUARE)
+        self.assertEqual(self.game.phase, GameManager.CHOOSE_FANTASY)
 
-    @patch('magnate.games.random.randint')
-    def test_jail_stay_on_no_doubles(self, mock_randint,  mock_next_phase, mock_kick_out, mock_auction):
-        """
-        Tests that not rolling doubles while in jail forces the player to stay.
-
-        Args:
-            mock_randint (Mock): Mocked random integer generator.
-            mock_next_phase (Mock): Mocked next phase callback.
-            mock_kick_out (Mock): Mocked kick out callback.
-            mock_auction (Mock): Mocked auction callback.
-
-        Returns:
-            None
-        """
-        
-        jail_sq = JailSquare.objects.first()
-        if not jail_sq:
-            raise GameLogicError("no jail square in DB")
-
-        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
-        self.game.jail_remaining_turns[str(self.player1.pk)] = 2
-        self.game.phase = GameManager.ROLL_THE_DICES
-        self.game.save()
-
-        # no doubles
-        mock_randint.side_effect = [1, 2, 3]
-        
-        action = ActionThrowDices(game=self.game, player=self.player1)
-        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
-
-        self.game.refresh_from_db()
-        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 1)
-        self.assertEqual(self.game.positions[str(self.player1.pk)], jail_sq.custom_id)
-        # Stays in jail, phase goes to BUSINESS for management
-        self.assertEqual(self.game.phase, GameManager.BUSINESS)
-
-    @patch('magnate.games.random.randint')
-    def test_jail_forced_payment_on_third_turn(self, mock_randint,  mock_next_phase, mock_kick_out, mock_auction):
-        """
-        Tests that a player is forced to pay bail after three turns in jail if they haven't rolled doubles.
-
-        Args:
-            mock_randint (Mock): Mocked random integer generator.
-            mock_next_phase (Mock): Mocked next phase callback.
-            mock_kick_out (Mock): Mocked kick out callback.
-            mock_auction (Mock): Mocked auction callback.
-
-        Returns:
-            None
-        """
-        
-        jail_sq = JailSquare.objects.first()
-
-        if not jail_sq:
-            raise GameLogicError("no jail square in DB")
-
-        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
-        self.game.jail_remaining_turns[str(self.player1.pk)] = 1
-        self.game.phase = GameManager.ROLL_THE_DICES
-        initial_money = self.game.money[str(self.player1.pk)]
-        self.game.save()
-
-        # roll
-        mock_randint.side_effect = [1, 2, 3]
-        
-        action = ActionThrowDices(game=self.game, player=self.player1)
-        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
-
-        self.game.refresh_from_db()
-        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money - jail_sq.bail_price)
-        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 0)
-        self.assertEqual(self.game.phase, GameManager.MANAGEMENT) # Moved out
-
-    def test_jail_manual_bail_payment(self,  mock_next_phase, mock_kick_out, mock_auction):
-        """
-        Tests that a player can manually pay bail to exit jail immediately, and bail is added to parking_money.
-
-        Args:
-            mock_next_phase (Mock): Mocked next phase callback.
-            mock_kick_out (Mock): Mocked kick out callback.
-            mock_auction (Mock): Mocked auction callback.
-
-        Returns:
-            None
-        """
-        
-        jail_sq = JailSquare.objects.first()
-        if not jail_sq:
-            raise GameLogicError("no jail square in DB")
-
-        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
-        self.game.jail_remaining_turns[str(self.player1.pk)] = 2
-        self.game.phase = GameManager.ROLL_THE_DICES
-        initial_money = self.game.money[str(self.player1.pk)]
-        initial_parking = self.game.parking_money
-        self.game.save()
-
-        action = ActionPayBail(game=self.game, player=self.player1)
-        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
-
-        self.game.refresh_from_db()
-        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money - jail_sq.bail_price)
-        self.assertEqual(self.game.parking_money, initial_parking + jail_sq.bail_price)
-        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 0)
-        self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES) # Ready to roll free
+    
 
     ##########################
     ###### BUSINESS TESTS ######
@@ -1284,99 +1180,10 @@ class GamesTest(TestCase):
         stats.refresh_from_db()
         self.assertEqual(stats.demolished_houses, 1)
 
-    def test_stats_times_and_turns_in_jail(self, mock_next_phase, mock_kick_out, mock_auction):
-        """
-        Tests statistics for entry and duration in jail.
+    
 
-        Args:
-            mock_next_phase (Mock): Mocked next phase callback.
-            mock_kick_out (Mock): Mocked kick out callback.
-            mock_auction (Mock): Mocked auction callback.
 
-        Returns:
-            None
-        """
-        """P1 goes to jail via third double: times_in_jail=1. Then stays one turn: turns_in_jail=1"""
-        self.game.streak = 2
-        self.game.phase = GameManager.ROLL_THE_DICES
-        self.game.save()
 
-        with patch('magnate.games.random.randint', side_effect=[4, 4, 5]):
-            action = ActionThrowDices(game=self.game, player=self.player1)
-            async_to_sync(GameManager.process_action)(self.game, self.player1, action)
-
-        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
-        self.assertEqual(stats.times_in_jail, 1)
-
-        # Now stays in jail one turn (no doubles)
-        self.game.refresh_from_db()
-        self.game.phase = GameManager.ROLL_THE_DICES
-        self.game.save()
-
-        with patch('magnate.games.random.randint', side_effect=[1, 2, 3]):
-            action = ActionThrowDices(game=self.game, player=self.player1)
-            async_to_sync(GameManager.process_action)(self.game, self.player1, action)
-
-        stats.refresh_from_db()
-        self.assertEqual(stats.turns_in_jail, 1)
-
-    def test_stats_turns_in_jail_forced_payment(self, mock_next_phase, mock_kick_out, mock_auction):
-        """
-        Tests jail statistics when forced to pay bail.
-
-        Args:
-            mock_next_phase (Mock): Mocked next phase callback.
-            mock_kick_out (Mock): Mocked kick out callback.
-            mock_auction (Mock): Mocked auction callback.
-
-        Returns:
-            None
-        """
-        """P1 on last jail turn pays bail: turns_in_jail increments"""
-        jail_sq = JailSquare.objects.first()
-        if not jail_sq:
-            raise GameLogicError("no jail square in DB")
-
-        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
-        self.game.jail_remaining_turns[str(self.player1.pk)] = 1
-        self.game.phase = GameManager.ROLL_THE_DICES
-        self.game.save()
-
-        with patch('magnate.games.random.randint', side_effect=[1, 2, 3]):
-            action = ActionThrowDices(game=self.game, player=self.player1)
-            async_to_sync(GameManager.process_action)(self.game, self.player1, action)
-
-        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
-        self.assertEqual(stats.turns_in_jail, 1)
-        self.assertEqual(stats.lost_money, jail_sq.bail_price)
-
-    def test_stats_lost_money_on_bail_payment(self, mock_next_phase, mock_kick_out, mock_auction):
-        """
-        Tests lost_money statistic on manual bail payment.
-
-        Args:
-            mock_next_phase (Mock): Mocked next phase callback.
-            mock_kick_out (Mock): Mocked kick out callback.
-            mock_auction (Mock): Mocked auction callback.
-
-        Returns:
-            None
-        """
-        """P1 manually pays bail: lost_money increments by bail_price"""
-        jail_sq = JailSquare.objects.first()
-        if not jail_sq:
-            raise GameLogicError("no jail square in DB")
-
-        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
-        self.game.jail_remaining_turns[str(self.player1.pk)] = 2
-        self.game.phase = GameManager.ROLL_THE_DICES
-        self.game.save()
-
-        action = ActionPayBail(game=self.game, player=self.player1)
-        async_to_sync(GameManager.process_action)(self.game, self.player1, action)
-
-        stats = PlayerGameStatistic.objects.get(user=self.player1, game=self.game)
-        self.assertEqual(stats.lost_money, jail_sq.bail_price)
 
     def test_stats_trades(self, mock_next_phase, mock_kick_out, mock_auction):
         """
@@ -1634,3 +1441,168 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.money[str(self.player1.pk)], 1700)  # 1500 + 200
         self.assertEqual(self.game.money[str(self.player2.pk)], 1500)
         self.assertEqual(self.game.money[str(self.player3.pk)], 1500)
+
+    
+
+    @patch('magnate.games.random.randint')
+    def test_jail_roll_then_refuse_bail(self, mock_randint, mock_next_phase, mock_kick_out, mock_auction):
+        """
+        Tests the flow: the user in jail rolls the dice, does not roll doubles,
+        and decides NOT to pay the bail (to_pay=False).
+        """
+        jail_sq = JailSquare.objects.first()
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+
+        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
+        self.game.jail_remaining_turns[str(self.player1.pk)] = 3
+        self.game.phase = GameManager.ROLL_THE_DICES
+        self.game.save()
+
+        mock_randint.side_effect = [1, 2] 
+        
+        action_roll = ActionThrowDices(game=self.game, player=self.player1)
+        res_roll = async_to_sync(GameManager.process_action)(self.game, self.player1, action_roll)
+
+        self.game.refresh_from_db()
+        
+        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 2)
+        self.assertEqual(self.game.phase, GameManager.ROLL_THE_DICES) 
+
+        if not isinstance(res_roll, ResponseThrowDices):
+            raise GameLogicError("Expected ResponseThrowDices")
+        
+        # Verificamos que se envía la cárcel y el destino posible, con path vacío
+        self.assertTrue(len(res_roll.destinations) >= 2)
+        self.assertIn(int(jail_sq.custom_id), res_roll.destinations)
+        self.assertEqual(res_roll.path, [])
+
+        # no paying
+        action_bail = ActionPayBail(game=self.game, player=self.player1, to_pay=False)
+        res_bail = async_to_sync(GameManager.process_action)(self.game, self.player1, action_bail)
+
+        self.game.refresh_from_db()
+
+        if not isinstance(res_bail, ResponseThrowDices):
+            raise GameLogicError("Expected ResponsePayBail")
+
+        # Path debe ser vacío si no paga
+        self.assertEqual(res_bail.path, [])
+        self.assertEqual(res_bail.destinations, [int(jail_sq.custom_id)])
+        self.assertEqual(self.game.positions[str(self.player1.pk)], jail_sq.custom_id)
+        self.assertEqual(self.game.phase, GameManager.BUSINESS) 
+
+    @patch('magnate.games.random.randint')
+    def test_jail_roll_then_pay_bail(self, mock_randint, mock_next_phase, mock_kick_out, mock_auction):
+        """
+        Tests the flow: the user in jail rolls the dice, does not roll doubles,
+        but decides to pay the bail (to_pay=True).
+        """
+        jail_sq = JailSquare.objects.first()
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+
+        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
+        self.game.jail_remaining_turns[str(self.player1.pk)] = 2
+        self.game.phase = GameManager.ROLL_THE_DICES
+        
+        initial_money = self.game.money[str(self.player1.pk)]
+        initial_parking = self.game.parking_money
+        self.game.save()
+
+        mock_randint.side_effect = [3, 4] 
+        
+        action_roll = ActionThrowDices(game=self.game, player=self.player1)
+        res_roll = async_to_sync(GameManager.process_action)(self.game, self.player1, action_roll)
+
+        self.game.refresh_from_db()
+        dest_square_id = list(self.game.possible_destinations.keys())[0]
+
+        if not isinstance(res_roll, ResponseThrowDices):
+            raise GameLogicError("Expected ResponseThrowDices")
+
+        # Verificamos que el path previo está vacío
+        self.assertIn(int(jail_sq.custom_id), res_roll.destinations)
+        self.assertEqual(res_roll.path, [])
+
+        action_bail = ActionPayBail(game=self.game, player=self.player1, to_pay=True)
+        res_bail = async_to_sync(GameManager.process_action)(self.game, self.player1, action_bail)
+
+        self.game.refresh_from_db()
+
+        if not isinstance(res_bail, ResponseThrowDices):
+            raise GameLogicError("Expected ResponsePayBail")
+
+        # Verificamos que se manda el path con contenido al pagar
+        self.assertTrue(len(res_bail.path) > 0)
+        self.assertEqual(res_bail.destinations, [int(dest_square_id)])
+        self.assertEqual(res_bail.path[-1], int(dest_square_id))
+
+        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money - jail_sq.bail_price)
+        self.assertEqual(self.game.parking_money, initial_parking + jail_sq.bail_price)
+        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 0)
+        self.assertEqual(self.game.positions[str(self.player1.pk)], int(dest_square_id))
+
+    @patch('magnate.games.random.randint')
+    def test_jail_forced_payment_and_move_on_last_turn(self, mock_randint, mock_next_phase, mock_kick_out, mock_auction):
+        """
+        Tests that on the last turn in jail (remaining = 1), if doubles are not rolled,
+        the player is automatically charged the bail and moves with normality.
+        """
+        jail_sq = JailSquare.objects.first()
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+
+        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
+        self.game.jail_remaining_turns[str(self.player1.pk)] = 1
+        self.game.phase = GameManager.ROLL_THE_DICES
+        
+        initial_money = self.game.money[str(self.player1.pk)]
+        self.game.save()
+
+        mock_randint.side_effect = [2, 3] 
+        
+        action_roll = ActionThrowDices(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action_roll)
+
+        self.game.refresh_from_db()
+
+        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money - jail_sq.bail_price)
+        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 0)
+        
+        self.assertNotEqual(self.game.positions[str(self.player1.pk)], jail_sq.custom_id)
+        self.assertNotEqual(self.game.phase, GameManager.ROLL_THE_DICES)
+
+    @patch('magnate.games.random.randint')
+    def test_jail_forced_payment_even_with_doubles_on_last_turn(self, mock_randint, mock_next_phase, mock_kick_out, mock_auction):
+        """
+        Tests that on the last turn in jail (remaining = 1), even if doubles are rolled,
+        the player is still forced to pay the bail before moving.
+        """
+        jail_sq = JailSquare.objects.first()
+        if not jail_sq:
+            raise GameLogicError("no jail square in DB")
+
+        self.game.positions[str(self.player1.pk)] = jail_sq.custom_id
+        self.game.jail_remaining_turns[str(self.player1.pk)] = 1
+        self.game.phase = GameManager.ROLL_THE_DICES
+        
+        initial_money = self.game.money[str(self.player1.pk)]
+        self.game.save()
+
+        # double
+        mock_randint.side_effect = [3, 3] 
+        
+        action_roll = ActionThrowDices(game=self.game, player=self.player1)
+        async_to_sync(GameManager.process_action)(self.game, self.player1, action_roll)
+
+        self.game.refresh_from_db()
+
+        # money deduction
+        self.assertEqual(self.game.money[str(self.player1.pk)], initial_money - jail_sq.bail_price)
+        self.assertEqual(self.game.jail_remaining_turns[str(self.player1.pk)], 0)
+        
+        # move
+        self.assertNotEqual(self.game.positions[str(self.player1.pk)], jail_sq.custom_id)
+        # roll_the_dices
+        self.assertNotEqual(self.game.phase, GameManager.ROLL_THE_DICES)

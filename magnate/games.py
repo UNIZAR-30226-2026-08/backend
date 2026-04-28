@@ -151,7 +151,7 @@ class GameManager:
 
         GameManager._cancel_all_timers(game)
 
-        response: ResponseThrowDices = ResponseThrowDices()
+        response: ResponseChooseSquare = ResponseChooseSquare()
 
         square = _get_user_square(game, user).get_real_instance()
 
@@ -172,8 +172,7 @@ class GameManager:
             game.phase = GameManager.BUSINESS
             game.possible_destinations = dict()
             game.save()
-            response.path = []
-            response.destinations = [int(square.custom_id)]
+            response.path = [int(square.custom_id)]
             GameManager._set_next_phase_timer(game, user) #TODO: revisar este timer
             return response
 
@@ -190,7 +189,6 @@ class GameManager:
         move_result = _move_player_logic(square, steps)
         response.path = move_result["path"]
 
-        response.destinations = [int(dest_square_id)]
 
 
         game.money[str(user.pk)] -= bail_price

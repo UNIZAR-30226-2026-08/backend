@@ -68,7 +68,8 @@ def _build_square(game: Game,
             raise MaliciousUserInput(user, "cannot build while any property in the group is mortgaged")
         if rel.houses < 0: 
             raise GameLogicError(f"negative house value")
-        elif actual_houses + number_built - 1 > rel.houses:
+        elif actual_houses + number_built - 1 > rel.houses and rel.square.get_real_instance() != building_square: 
+            print(actual_houses + number_built - 1, rel.houses, rel.square.custom_id, building_square.custom_id)
             raise MaliciousUserInput(user, "already owns more than other")
 
     if actual_houses == 5:
@@ -146,7 +147,7 @@ def _demolish_square(game: Game,
 
     # Check if we can demolish -> respect rule 
     for rel in group_relationships:
-        if (actual_houses - number_demolished) < (rel.houses - 1):
+        if (actual_houses - number_demolished) < (rel.houses - 1) and rel.square.get_real_instance() != demolition_square:
             raise MaliciousUserInput(user, "unable to demolish so many houses: violates the uniform building rule")
 
     # demolish

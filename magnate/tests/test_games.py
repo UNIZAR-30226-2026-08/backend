@@ -1483,12 +1483,11 @@ class GamesTest(TestCase):
 
         self.game.refresh_from_db()
 
-        if not isinstance(res_bail, ResponseThrowDices):
-            raise GameLogicError("Expected ResponsePayBail")
+        if not isinstance(res_bail, ResponseChooseSquare):
+            raise GameLogicError("Expected ResponseChooseSquare")
 
         # Path debe ser vacío si no paga
-        self.assertEqual(res_bail.path, [])
-        self.assertEqual(res_bail.destinations, [int(jail_sq.custom_id)])
+        self.assertEqual(res_bail.path, [jail_sq.custom_id])
         self.assertEqual(self.game.positions[str(self.player1.pk)], jail_sq.custom_id)
         self.assertEqual(self.game.phase, GameManager.BUSINESS) 
 
@@ -1530,12 +1529,11 @@ class GamesTest(TestCase):
 
         self.game.refresh_from_db()
 
-        if not isinstance(res_bail, ResponseThrowDices):
-            raise GameLogicError("Expected ResponsePayBail")
+        if not isinstance(res_bail, ResponseChooseSquare):
+            raise GameLogicError("Expected ResponseChooseSquare")
 
         # Verificamos que se manda el path con contenido al pagar
         self.assertTrue(len(res_bail.path) > 0)
-        self.assertEqual(res_bail.destinations, [int(dest_square_id)])
         self.assertEqual(res_bail.path[-1], int(dest_square_id))
 
         self.assertEqual(self.game.money[str(self.player1.pk)], initial_money - jail_sq.bail_price)

@@ -167,6 +167,8 @@ class GameManager:
         if len(game.possible_destinations) < 1:
             raise MaliciousUserInput(user, "cannot pay bail now")
 
+        print(action.to_pay)
+        print(action)
         if not action.to_pay:
             print("LLGEA")
             stats = PlayerGameStatistic.objects.get(user=user,game=game)

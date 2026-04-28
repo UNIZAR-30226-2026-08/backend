@@ -162,15 +162,10 @@ class GameManager:
         if remaining == 0:
             raise MaliciousUserInput(user, "is not in jail (no turns remaining)")
 
-        print(game.possible_destinations)
-
         if len(game.possible_destinations) < 1:
             raise MaliciousUserInput(user, "cannot pay bail now")
 
-        print(action.to_pay)
-        print(action)
         if not action.to_pay:
-            print("LLGEA")
             stats = PlayerGameStatistic.objects.get(user=user,game=game)
             stats.turns_in_jail += 1
             stats.save()
@@ -189,7 +184,7 @@ class GameManager:
         if game.money[str(user.pk)] < bail_price:
             raise GameLogicError("not enough money to pay bail")
         
-        dest_square_id = list(game.possible_destinations.keys())[0]
+        dest_square_id = next(iter(game.possible_destinations))
         steps = game.possible_destinations[dest_square_id] # pasos
         
         move_result = _move_player_logic(square, steps)
@@ -386,7 +381,6 @@ class GameManager:
             game.possible_destinations = dict()
                 
 
-        print(game.possible_destinations)
         game.save()
         GameManager._set_next_phase_timer(game, user)
         return response

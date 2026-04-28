@@ -562,7 +562,7 @@ class ActionPayBailSerializer(ActionSerializer):
     """
     class Meta(ActionSerializer.Meta):
         model = ActionPayBail
-        fields = ActionSerializer.Meta.fields
+        fields = ActionSerializer.Meta.fields + ['to_pay']
 
 class ActionNextPhaseSerializer(ActionSerializer):
     """

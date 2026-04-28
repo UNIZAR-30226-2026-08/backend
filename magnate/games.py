@@ -172,7 +172,7 @@ class GameManager:
             game.phase = GameManager.BUSINESS
             game.possible_destinations = dict()
             game.save()
-            response.path = []
+            response.path = [int(square.custom_id)]
             GameManager._set_next_phase_timer(game, user) #TODO: revisar este timer
             return response
 

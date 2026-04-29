@@ -864,3 +864,62 @@ class GetRecentGameSummariesViewTests(AuthTestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data is not None
         self.assertEqual(response.data, [])
+
+class ActiveGameViewTest(AuthTestCase):
+    """
+    Test suite for the active game reconnection endpoint.
+    """
+
+    def test_no_active_game_returns_null(self):
+        """
+        Tests that a user with no active game gets active_game: null.
+        """
+        self.user.active_game = None
+        self.user.save()
+
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('active_game'))  # type: ignore
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertIn('active_game', response.data)
+        self.assertIsNone(response.data['active_game'])
+
+    def test_with_active_game_returns_pk(self):
+        """
+        Tests that a user with an active game gets its primary key.
+        """
+        game = Game.objects.create(datetime=timezone.now(), finished=False)
+        self.user.active_game = game
+        self.user.save()
+
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('active_game'))  # type: ignore
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        assert response.data is not None
+        self.assertIn('active_game', response.data)
+        self.assertEqual(response.data['active_game'], game.pk)
+
+    def test_active_game_updates_after_change(self):
+        """
+        Tests that the endpoint reflects the current active_game after it is reassigned.
+        """
+        game1 = Game.objects.create(datetime=timezone.now(), finished=False)
+        game2 = Game.objects.create(datetime=timezone.now(), finished=False)
+
+        self.user.active_game = game1
+        self.user.save()
+
+        client = self.auth_client()
+        response: DRFResponse = client.get(reverse('active_game'))  # type: ignore
+        assert response.data is not None
+        self.assertEqual(response.data['active_game'], game1.pk)
+
+        # Switch to another game
+        self.user.active_game = game2
+        self.user.save()
+
+        response = client.get(reverse('active_game'))  # type: ignore
+        assert response.data is not None
+        self.assertEqual(response.data['active_game'], game2.pk)

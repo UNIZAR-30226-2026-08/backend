@@ -167,6 +167,45 @@ class ProfileView(APIView):
         """
         return Response(UserProfileSerializer(request.user).data)
     
+class ActiveGameView(APIView):
+    """
+    Returns the active game for the authenticated user, if any.
+
+    Useful for reconnection: when a player disconnects mid-game, the client
+    can call this endpoint on startup to find out which game they were in
+    and rejoin it.
+
+    GET /user/active-game/
+
+    Headers:
+        Authorization: Bearer <access_token>
+
+    Responses:
+        200: Returns the active game's primary key, or null if none.
+             { "active_game": 42 }
+             { "active_game": null }
+        401: Missing or invalid token.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request) -> Response:
+        """
+        Handles the request to retrieve the user's current active game.
+
+        Args:
+            request (Request): The HTTP request object.
+
+        Returns:
+            Response: The HTTP response containing the active game ID or null.
+        """
+        user: CustomUser = request.user  # type: ignore
+        active_game = user.active_game
+        if active_game is None:
+            return Response({'active_game': None}, status=status.HTTP_200_OK)
+        return Response({'active_game': active_game.pk}, status=status.HTTP_200_OK)
+
+    
 
 ############################################################################
 ########################### shop and items ###########################################

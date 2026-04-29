@@ -28,6 +28,7 @@ urlpatterns = [
     path('auth/refresh/',  TokenRefreshView.as_view(), name='token_refresh'),
     
     path('user/info/',  ProfileView.as_view(),  name='profile'),
+    path('user/active-game/', ActiveGameView.as_view(), name='active_game'),
     path('user/change-piece/', ChangeUserPieceView.as_view(), name='change_piece'),
     path('user/games-played/', GetGamesPlayedView.as_view(), name='get_games_played'),
 

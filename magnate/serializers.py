@@ -71,62 +71,6 @@ class PropertyRelationshipSerializer(serializers.ModelSerializer):
 
 
 ###############################################################################
-#############      Game serializers     #######################################
-###############################################################################
-
-class GameStatusSerializer(serializers.ModelSerializer):
-    """
-    Serializes the game status allowing reconnection. It excludes certain
-    fields from Game model and also includes active `property_relationships`.
-    Example:
-        A standard serialized response during the 'roll_the_dices' phase:
-        ```json
-        {
-            "id": 1,
-            "datetime": "2026-04-06T18:30:00Z",
-            "positions": {"42": 0, "85": 12},
-            "money": {"42": 1500, "85": 1350},
-            "active_phase_player": 42,
-            "active_turn_player": 42,
-            "phase": "roll_the_dices",
-            "players": [42, 85],
-            "ordered_players": [42, 85],
-            "streak": 0,
-            "possible_destinations": [],
-            "parking_money": 200,
-            "jail_remaining_turns": {'2': 3},
-            "finished": false,
-            "bonus_response": null,
-            "current_turn": 5,
-            "property_relationships": [
-                {"owner": 1, "square": 3, "houses": 2, "mortgage": False},
-                {"owner": 2, "square": 4, "houses": 3, "mortgage": False}
-                ],
-        }
-        ```
-    """
-    fantasy_event = FantasyEventSerializer(read_only=True)
-    property_relationships = PropertyRelationshipSerializer(many=True, read_only=True)
-    possible_destinations = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Game
-        exclude = ['proposal', 'current_auction',
-                   'bonus_response',
-                   'kick_out_task_id', 'next_phase_task_id']
-
-    def get_possible_destinations(self, obj):
-        """
-        Extracts only the keys from the destinations dictionary.
-        Returns a list of strings or integers depending on your dict keys.
-        """
-        if obj.possible_destinations:
-            # If keys are strings in the dict like {"42": ...}, 
-            # you can return them as-is or cast to int if needed.
-            return list(obj.possible_destinations.keys())
-        return []
-
-###############################################################################
 #############      Square serializers     #####################################
 ###############################################################################
 class BaseSquareSerializer(serializers.ModelSerializer):
@@ -1130,6 +1074,64 @@ class ChangePieceSerializer(serializers.Serializer):
             raise serializers.ValidationError('You do not own this piece.')
 
         return value
+
+###############################################################################
+#############      Game serializers     #######################################
+###############################################################################
+
+class GameStatusSerializer(serializers.ModelSerializer):
+    """
+    Serializes the game status allowing reconnection. It excludes certain
+    fields from Game model and also includes active `property_relationships`.
+    Example:
+        A standard serialized response during the 'roll_the_dices' phase:
+        ```json
+        {
+            "id": 1,
+            "datetime": "2026-04-06T18:30:00Z",
+            "positions": {"42": 0, "85": 12},
+            "money": {"42": 1500, "85": 1350},
+            "active_phase_player": 42,
+            "active_turn_player": 42,
+            "phase": "roll_the_dices",
+            "players": [42, 85],
+            "ordered_players": [42, 85],
+            "streak": 0,
+            "possible_destinations": [],
+            "parking_money": 200,
+            "jail_remaining_turns": {'2': 3},
+            "finished": false,
+            "bonus_response": null,
+            "current_turn": 5,
+            "proposal": null,
+            "property_relationships": [
+                {"owner": 1, "square": 3, "houses": 2, "mortgage": False},
+                {"owner": 2, "square": 4, "houses": 3, "mortgage": False}
+                ],
+        }
+        ```
+    """
+    fantasy_event = FantasyEventSerializer(read_only=True)
+    property_relationships = PropertyRelationshipSerializer(many=True, read_only=True)
+    possible_destinations = serializers.SerializerMethodField()
+    proposal = ActionTradeProposalSerializer(read_only=True)
+
+    class Meta:
+        model = Game
+        exclude = ['proposal', 'current_auction',
+                   'bonus_response',
+                   'kick_out_task_id', 'next_phase_task_id']
+
+    def get_possible_destinations(self, obj):
+        """
+        Extracts only the keys from the destinations dictionary.
+        Returns a list of strings or integers depending on your dict keys.
+        """
+        if obj.possible_destinations:
+            # If keys are strings in the dict like {"42": ...}, 
+            # you can return them as-is or cast to int if needed.
+            return list(obj.possible_destinations.keys())
+        return []
     
 # Final summary
 class GameSummarySerializer(serializers.ModelSerializer):

@@ -1123,7 +1123,7 @@ class GameStatusSerializer(serializers.ModelSerializer):
                    'kick_out_task_id', 'next_phase_task_id']
 
     def get_possible_destinations(self, obj):
-        if obj.possible_destinations:
+        if obj.possible_destinations and '__mock_dice__' not in obj.possible_destinations:
             return list([int(dest) for dest in obj.possible_destinations.keys()])
         return []
     

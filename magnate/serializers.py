@@ -79,11 +79,24 @@ class GameStatusSerializer(serializers.ModelSerializer):
         ```
     """
     property_relationships = PropertyRelationshipSerializer(many=True, read_only=True)
+    possible_destinations = serializers.SerializerMethodField()
+
     class Meta:
         model = Game
         exclude = ['proposal', 'fantasy_event', 'current_auction',
                    'bonus_response',
                    'kick_out_task_id', 'next_phase_task_id']
+
+    def get_possible_destinations(self, obj):
+        """
+        Extracts only the keys from the destinations dictionary.
+        Returns a list of strings or integers depending on your dict keys.
+        """
+        if obj.possible_destinations:
+            # If keys are strings in the dict like {"42": ...}, 
+            # you can return them as-is or cast to int if needed.
+            return list(obj.possible_destinations.keys())
+        return []
 
 ###############################################################################
 #############      Square serializers     #####################################

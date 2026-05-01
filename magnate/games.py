@@ -166,6 +166,7 @@ class GameManager:
             raise MaliciousUserInput(user, "cannot pay bail now")
 
         if not action.to_pay:
+            # Remain in jail
             stats = PlayerGameStatistic.objects.get(user=user,game=game)
             stats.turns_in_jail += 1
             stats.save()
@@ -188,8 +189,6 @@ class GameManager:
         
         move_result = _move_player_logic(square, steps)
         response.path = move_result["path"]
-
-
 
         game.money[str(user.pk)] -= bail_price
         game.parking_money += bail_price

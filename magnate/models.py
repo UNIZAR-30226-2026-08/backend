@@ -518,7 +518,7 @@ class Game(models.Model):
     ordered_players = models.JSONField(default=list)
     streak = models.IntegerField(default=0)
     #dict[string,int], key=square_id, value=dice_combination to get there
-    possible_destinations = models.JSONField(default=list, null=True, blank=True)
+    possible_destinations = models.JSONField(default=dict, null=True, blank=True)
     parking_money = models.PositiveIntegerField(default=0)
     # Maps user_id -> uint
     jail_remaining_turns = models.JSONField(default=dict, blank=True)
@@ -879,7 +879,7 @@ class ResponseThrowDices(ResponseMovement):
         dice2 (PositiveIntegerField): Value of the second standard die (1–6).
         dice_bus (PositiveIntegerField): Value of the special bus/wildcard die, used
             for tram or alternative routing mechanics.
-        destinations (JSONField): List of possible destination squares the player can
+        destinations (JSONField): Dict of possible destination squares the player can
             move to given the dice result. Each entry maps a square ``custom_id`` to
             the dice combination needed to reach it.
         triple (BooleanField): ``True`` if all three dice showed the same value,

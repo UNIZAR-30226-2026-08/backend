@@ -1118,7 +1118,7 @@ class GameStatusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Game
-        exclude = ['proposal', 'current_auction',
+        exclude = ['current_auction',
                    'bonus_response',
                    'kick_out_task_id', 'next_phase_task_id']
 

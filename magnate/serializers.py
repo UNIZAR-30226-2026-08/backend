@@ -3,6 +3,33 @@ from .models import *
 from django.contrib.auth.password_validation import validate_password
 from .models import CustomUser
 
+###############################################################################
+#############      Fantasy serializers     ####################################
+###############################################################################
+class FantasyEventSerializer(serializers.ModelSerializer):
+    """
+    Frontend Fantasy Payload Example:
+    ```json
+    {
+      "type": "win_plain_money",
+      "value": 20,
+      "cost": 130
+    }
+    ```
+    """
+    class Meta:
+        model = FantasyEvent
+        fields = ['fantasy_type', 'value', 'card_cost']
+
+class FantasyResultSerializer(serializers.ModelSerializer):
+    """
+    Serializer for FantasyResult model.
+    """
+    fantasy_event = FantasyEventSerializer(read_only=True)
+    class Meta:
+        model = FantasyResult
+        fields = ['fantasy_event', 'result']
+
 # handling baseSquare by custom_id
 class SquareCustomIdField(serializers.SlugRelatedField):
     """
@@ -78,12 +105,13 @@ class GameStatusSerializer(serializers.ModelSerializer):
         }
         ```
     """
+    fantasy_event = FantasyEventSerializer(read_only=True)
     property_relationships = PropertyRelationshipSerializer(many=True, read_only=True)
     possible_destinations = serializers.SerializerMethodField()
 
     class Meta:
         model = Game
-        exclude = ['proposal', 'fantasy_event', 'current_auction',
+        exclude = ['proposal', 'current_auction',
                    'bonus_response',
                    'kick_out_task_id', 'next_phase_task_id']
 
@@ -730,33 +758,6 @@ class GeneralActionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
-###############################################################################
-#############      Fantasy serializers     ####################################
-###############################################################################
-class FantasyEventSerializer(serializers.ModelSerializer):
-    """
-    Frontend Fantasy Payload Example:
-    ```json
-    {
-      "type": "win_plain_money",
-      "value": 20,
-      "cost": 130
-    }
-    ```
-    """
-    class Meta:
-        model = FantasyEvent
-        fields = ['fantasy_type', 'value', 'card_cost']
-
-class FantasyResultSerializer(serializers.ModelSerializer):
-    """
-    Serializer for FantasyResult model.
-    """
-    fantasy_event = FantasyEventSerializer(read_only=True)
-    class Meta:
-        model = FantasyResult
-        fields = ['fantasy_event', 'result']
 
 ###############################################################################
 ############      Response serializers     ####################################

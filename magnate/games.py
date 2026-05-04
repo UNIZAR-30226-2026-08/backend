@@ -12,6 +12,8 @@ import random
 from traceback import walk_stack 
 from django.db import transaction
 from django.db.models import Max
+
+from magnate.tasks import bot_play_callback
 from .serializers import *
 from .models import *
 from .fantasy import *
@@ -511,7 +513,7 @@ class GameManager:
         if game.phase == GameManager.BUSINESS:
             GameManager._set_next_phase_timer(game, user)
         elif game.phase == GameManager.ROLL_THE_DICES:
-            #GameManager._set_kick_out_timer(game, user)
+            GameManager._set_kick_out_timer(game, user)
             pass
             
         game.save()     
@@ -620,7 +622,7 @@ class GameManager:
         if game.phase == GameManager.BUSINESS:
             GameManager._set_next_phase_timer(game, user)
         elif game.phase == GameManager.ROLL_THE_DICES:
-            #GameManager._set_kick_out_timer(game, user)
+            GameManager._set_kick_out_timer(game, user)
             pass 
 
         game.save()
@@ -915,7 +917,7 @@ class GameManager:
             if game.phase == GameManager.BUSINESS:
                 GameManager._set_next_phase_timer(game, game.active_turn_player)
             elif game.phase == GameManager.ROLL_THE_DICES:
-                #GameManager._set_kick_out_timer(game, game.active_turn_player)
+                GameManager._set_kick_out_timer(game, game.active_turn_player)
                 pass
             
             game.save()
@@ -942,7 +944,7 @@ class GameManager:
             if game.phase == GameManager.BUSINESS:
                 GameManager._set_next_phase_timer(game, game.active_turn_player)
             elif game.phase == GameManager.ROLL_THE_DICES:
-                #GameManager._set_kick_out_timer(game, game.active_turn_player)
+                GameManager._set_kick_out_timer(game, game.active_turn_player)
                 pass
 
             game.save()
@@ -960,7 +962,7 @@ class GameManager:
             if game.phase == GameManager.BUSINESS:
                 GameManager._set_next_phase_timer(game, game.active_turn_player)
             elif game.phase == GameManager.ROLL_THE_DICES:
-                #GameManager._set_kick_out_timer(game, game.active_turn_player)
+                GameManager._set_kick_out_timer(game, game.active_turn_player)
                 pass
             
             game.save()
@@ -1009,7 +1011,7 @@ class GameManager:
         if game.phase == GameManager.BUSINESS:
             GameManager._set_next_phase_timer(game, game.active_turn_player)
         elif game.phase == GameManager.ROLL_THE_DICES:
-            #GameManager._set_kick_out_timer(game, game.active_turn_player)
+            GameManager._set_kick_out_timer(game, game.active_turn_player)
             pass
         
         game.save()
@@ -1065,7 +1067,7 @@ class GameManager:
 
         GameManager._cancel_all_timers(game)
 
-        #GameManager._set_kick_out_timer(game, next_player)
+        GameManager._set_kick_out_timer(game, next_player)
         pass
 
         game.save()
@@ -1197,7 +1199,7 @@ class GameManager:
             GameManager._cancel_all_timers(game)
                 
             # new task
-            #GameManager._set_kick_out_timer(game, next_player)
+            GameManager._set_kick_out_timer(game, next_player)
                 
         game.save()
 
@@ -1352,31 +1354,29 @@ class GameManager:
         if Bot.objects.filter(pk=user.pk).exists():
             bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
 
-    #@staticmethod
-    #def _set_kick_out_timer(game: Game, user: CustomUser):
-    #     """
-    #     Revokes any existing kick-out timer and sets a new one to remove an inactive player.
-    #     If the user is a bot, it schedules a bot play task.
-    #
-    #     Args:
-    #         game (Game): The current game instance.
-    #         user (CustomUser): The user subject to the kick-out timer.
-    #
-    #     Returns:
-    #         None
-    #     """
-    #    from .tasks import kick_out_callback, bot_play_callback
-    #    from .celery import app
-    #    
-    #    if game.kick_out_task_id:
-    #        app.control.revoke(game.kick_out_task_id, terminate=True)
-    #        
-    #    task = kick_out_callback.apply_async(args=[game.pk, user.pk], countdown=20)
-    #    game.kick_out_task_id = task.id
-    #    game.save()
-#
-    #    if Bot.objects.filter(pk=user.pk).exists():
-    #        bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
+    @staticmethod
+    def _set_kick_out_timer(game: Game, user: CustomUser):
+         """
+         Revokes any existing kick-out timer and sets a new one to remove an inactive player.
+         If the user is a bot, it schedules a bot play task.
+    
+         Args:
+             game (Game): The current game instance.
+             user (CustomUser): The user subject to the kick-out timer.
+    
+         Returns:
+             None
+         """
+         from .tasks import kick_out_callback, bot_play_callback
+         from .celery import app
+        
+         if game.kick_out_task_id:
+            app.control.revoke(game.kick_out_task_id, terminate=True)
+            game.kick_out_task_id = None
+            game.save()
+
+         if Bot.objects.filter(pk=user.pk).exists():
+            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
 
     @staticmethod
     def _cancel_all_timers(game: Game):

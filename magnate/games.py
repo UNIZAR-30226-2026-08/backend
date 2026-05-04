@@ -13,7 +13,7 @@ from traceback import walk_stack
 from django.db import transaction
 from django.db.models import Max
 
-from magnate.tasks import bot_play_callback
+
 from .serializers import *
 from .models import *
 from .fantasy import *

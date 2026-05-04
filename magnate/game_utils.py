@@ -42,7 +42,7 @@ def _build_square(game: Game,
     if relationship is None:
         raise MaliciousUserInput(user, "no user owns this square")
 
-    if relationship.owner != user:
+    if relationship.owner.pk != user.pk:
         raise MaliciousUserInput(user, "tried to build in an unowned property")
 
     square_group = building_square.group
@@ -129,7 +129,7 @@ def _demolish_square(game: Game,
     if relationship is None:
         raise MaliciousUserInput(user, "no user owns this square")
 
-    if relationship.owner != user:
+    if relationship.owner.pk != user.pk:
         raise MaliciousUserInput(user, "tried to demolish an unowned property")
 
     actual_houses = relationship.houses
@@ -219,7 +219,7 @@ def _unset_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, fre
     if relationship is None:
         raise MaliciousUserInput(user, "no user owns this square")
 
-    if relationship.owner != user:
+    if relationship.owner.pk != user.pk:
         raise MaliciousUserInput(user, "tried to unset mortgage an unowned property")
 
     if not relationship.mortgage:
@@ -324,7 +324,7 @@ def _calculate_rent_price(game: Game, user: CustomUser, square: BaseSquare) -> i
     """
     # If it is not owned or is owned by the same user, no rent is paid
     prop_rel = _get_relationship(game, square)
-    if not prop_rel or prop_rel.owner == user or prop_rel.mortgage: 
+    if not prop_rel or prop_rel.owner.pk == user.pk or prop_rel.mortgage: 
         return 0
 
     houses = prop_rel.houses
@@ -411,7 +411,7 @@ def _set_mortgage(game: Game, user: CustomUser, target_square: BaseSquare, free_
     if relationship is None:
         raise MaliciousUserInput(user, "no user owns this square")
 
-    if relationship.owner != user:
+    if relationship.owner.pk != user.pk:
         raise MaliciousUserInput(user, "tried to mortgage an unowned property")
 
     if relationship.mortgage:

@@ -1563,7 +1563,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                 await self.channel_layer.group_send(
                     self.game_group_name,
                     {
-                        'type': 'game_action_event',
+                        'type': 'vent',
                         'data': data
                     }
                 )

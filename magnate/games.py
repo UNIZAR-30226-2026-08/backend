@@ -87,7 +87,7 @@ class GameManager:
             response = Response()
             return _add_basic_response_data(game, response)
 
-        if user != game.active_phase_player and not isinstance(action, ActionBid): # if auction there are no turns
+        if user.pk != game.active_phase_player.pk and not isinstance(action, ActionBid): # if auction there are no turns
             raise MaliciousUserInput(user, "is not the active player")
 
 
@@ -716,7 +716,7 @@ class GameManager:
             if offer is None:
                 raise GameLogicError("there should be an active trade proposal")
 
-            if user != offer.destination_user:
+            if user.pk != offer.destination_user.pk:
                 raise MaliciousUserInput(user, f"cannot accept proposal {offer}")
 
             offering = offer.player
@@ -1040,7 +1040,7 @@ class GameManager:
         current_index = -1
         current_player_id = -1
         for p in players_list:
-            if p == game.active_turn_player:
+            if p.pk == game.active_turn_player.pk:
                 current_player_id = p.pk
                 current_index = game.ordered_players.index(current_player_id)
                 break
@@ -1094,7 +1094,7 @@ class GameManager:
         """
         if action.player.pk != user.pk or action.offered_money < 0 or action.asked_money < 0:
             raise MaliciousUserInput(user, "cannot do operation")
-        if action.destination_user not in game.players.all():
+        if action.destination_user.pk not in game.ordered_players:
             # FIXME: Change to internal order so that it handles player change to AI
             raise MaliciousUserInput(user, "referenced a player that is not in game")
 
@@ -1282,7 +1282,7 @@ class GameManager:
             
             for stat in all_participants:
                 participant = stat.user
-                if participant in active_players:
+                if participant.pk in [participant.pk for participant in active_players]:
                     # not eliminated
                     final_money_dict[str(participant.username)] = _calculate_net_worth(game, participant)
                 else:
@@ -1352,7 +1352,7 @@ class GameManager:
         game.save()
 
         if Bot.objects.filter(pk=user.pk).exists():
-            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
+            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=random.randint(8, 12))
 
     @staticmethod
     def _set_kick_out_timer(game: Game, user: CustomUser):
@@ -1376,7 +1376,7 @@ class GameManager:
             game.save()
 
          if Bot.objects.filter(pk=user.pk).exists():
-            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=2)
+            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=random.randint(8, 12))
 
     @staticmethod
     def _cancel_all_timers(game: Game):
@@ -1434,7 +1434,7 @@ class GameManager:
         
         for player in game.players.all():
             if Bot.objects.filter(pk=player.pk).exists():
-                bot_play_callback.apply_async(args=[game.pk, player.pk], countdown=random.randint(2, 6))
+                bot_play_callback.apply_async(args=[game.pk, player.pk], countdown=random.randint(8, 12))
 
     @staticmethod
     def _cancel_auction_timer(game: Game):

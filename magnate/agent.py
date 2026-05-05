@@ -630,7 +630,7 @@ class Agent:
         rel = _get_relationship(self.game, square)
         if rel is None:
             return self._ev_buying(square)
-        if rel.mortgage or rel.owner == self.user:
+        if rel.mortgage or rel.owner.pk == self.user.pk:
             return 0.0
         
         rent = self._get_current_rent(square, rel)
@@ -1156,7 +1156,7 @@ class Agent:
         budget = max(0, money - reserva)
         
         ev_propiedad = self._ev_buying(square) + float(square.buy_price)
-        puja_maxima = int(ev_propiedad * CTE_SUBASTA_ROI)
+        puja_maxima = int(round(ev_propiedad * CTE_SUBASTA_ROI))
         
         return min(budget, puja_maxima)
 

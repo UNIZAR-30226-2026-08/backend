@@ -1,6 +1,7 @@
+from amqp import channel
 from celery import shared_task
 from .models import *
-from .serializers import GeneralResponseSerializer
+from .serializers import GeneralActionSerializer, GeneralResponseSerializer
 from .exceptions import *
 
 from .games import GameManager
@@ -54,6 +55,8 @@ def auction_callback(game_pk: int) -> None:
         None
     """
     game = Game.objects.get(pk=game_pk)
+    if game.phase != GameManager.AUCTION:
+        return
     response = GameManager._end_auction(game)
     if response:
         broadcast_to_game(game, response)
@@ -190,6 +193,22 @@ def bot_play_callback(game_pk: int, user_pk: int) -> None:
     # decision
     agent = Agent(game, bot, bot.bot_level)
     action = agent.choose_action()
+
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return None
+    group_name = f"game_{game.pk}"
+    action_data = GeneralActionSerializer(action).data
+
+
+
+    async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                'type': 'game_action_event',
+                'data': action_data
+            }
+        )
 
     if action:
         response = async_to_sync(GameManager.process_action)(game, bot, action)

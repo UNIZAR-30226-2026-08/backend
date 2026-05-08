@@ -24,6 +24,7 @@ django-stubs-ext
 djangorestframework
 djangorestframework_simplejwt
 gunicorn
+uvicorn[standard]
 hyperlink
 idna
 Incremental

@@ -1356,6 +1356,7 @@ class GameManager:
 
     @staticmethod
     def _set_kick_out_timer(game: Game, user: CustomUser):
+         print("kick out timer set")
          """
          Revokes any existing kick-out timer and sets a new one to remove an inactive player.
          If the user is a bot, it schedules a bot play task.

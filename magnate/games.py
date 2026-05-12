@@ -545,7 +545,8 @@ class GameManager:
 
         if isinstance(action, ActionBuySquare):
             if isinstance(current_square, PropertySquare):
-                # TODO: Check money
+                if game.money[str(user.pk)] < current_square.buy_price:
+                    raise MaliciousUserInput(user, "does not have enough money to buy the property")
                 game.money[str(user.pk)] -= current_square.buy_price
                 stats = PlayerGameStatistic.objects.get(user=user,game=game)
                 stats.lost_money += current_square.buy_price
@@ -564,6 +565,8 @@ class GameManager:
                 new_property.save()
 
             elif isinstance(current_square, ServerSquare):
+                if game.money[str(user.pk)] < current_square.buy_price:
+                    raise MaliciousUserInput(user, "does not have enough money to buy the property")
                 game.money[str(user.pk)] -= current_square.buy_price
                 stats = PlayerGameStatistic.objects.get(user=user,game=game)
                 stats.lost_money += current_square.buy_price
@@ -572,6 +575,8 @@ class GameManager:
                 new_property.save()
             
             elif isinstance(current_square, BridgeSquare):
+                if game.money[str(user.pk)] < current_square.buy_price:
+                    raise MaliciousUserInput(user, "does not have enough money to buy the property")
                 game.money[str(user.pk)] -= current_square.buy_price
                 stats = PlayerGameStatistic.objects.get(user=user, game=game)
                 stats.lost_money += current_square.buy_price

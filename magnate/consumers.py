@@ -920,9 +920,10 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         room.delete()
 
         # TODO: Make this an option
-        GameManager._set_kick_out_timer(game, first_player)
         
         game.save()
+
+        GameManager._set_kick_out_timer(game, first_player)
 
         return game.pk
 

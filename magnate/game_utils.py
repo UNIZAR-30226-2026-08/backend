@@ -69,7 +69,7 @@ def _build_square(game: Game,
         if rel.houses < 0: 
             raise GameLogicError(f"negative house value")
         elif actual_houses + number_built - 1 > rel.houses and rel.square.get_real_instance() != building_square: 
-            print(actual_houses + number_built - 1, rel.houses, rel.square.custom_id, building_square.custom_id)
+            print(actual_houses, actual_houses + number_built - 1, rel.houses, rel.square.custom_id, building_square.custom_id)
             raise MaliciousUserInput(user, "already owns more than other")
 
     if actual_houses == 5:

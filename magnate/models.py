@@ -538,7 +538,7 @@ class Game(models.Model):
     current_turn = models.PositiveIntegerField(default=1)
 
     current_round = models.PositiveIntegerField(default=1)
-    max_rounds = models.PositiveIntegerField(default=50) # 0 for unlimited
+    max_rounds = models.PositiveIntegerField(default=2) # 0 for unlimited
 
 
 class Auction(models.Model):
@@ -844,6 +844,8 @@ class Response(models.Model):
     phase = models.CharField(choices=Game.GamePhase, max_length=20)
     positions = models.JSONField(default=dict, blank=True) # user -> cumtom_id (int)
     parking_money = models.PositiveIntegerField(default=0)
+    current_round = models.PositiveIntegerField(default=1)
+    max_rounds = models.PositiveIntegerField(default=2)
 
 class ResponseSkipPhase(Response):
     """

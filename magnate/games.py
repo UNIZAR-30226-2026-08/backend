@@ -931,7 +931,7 @@ class GameManager:
         max_bid_amount = max(bids.values())
         winners = [int(uid) for uid, amt in bids.items() if amt == max_bid_amount]
             
-        if len(winners)> 1:
+        if len(winners)> 1 or max_bid_amount == 0:
             if game.streak == 0:
                 game.phase = GameManager.BUSINESS
             else:
@@ -940,7 +940,8 @@ class GameManager:
             auction.is_active = False
             auction.winner = None
             auction.final_amount = max_bid_amount
-            auction.is_tie = True
+
+            auction.is_tie = len(winners) > 1
             auction.save()
 
             game.current_auction = None

@@ -745,5 +745,7 @@ def _add_basic_response_data(game: Game, response: Response) -> Response:
     response.phase = game.phase
     response.positions = game.positions
     response.parking_money = game.parking_money
+    response.current_round = game.current_round
+    response.max_rounds = game.max_rounds
 
     return response

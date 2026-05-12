@@ -298,6 +298,8 @@ class GameManager:
             response.triple = True
             square = current_pos_square
             all_squares = BaseSquare.objects.filter(board=square.board)
+            game.streak = 0
+            response.streak = game.streak
             # All squares are suitable destinations
             possible_destinations = [s.custom_id for s in all_squares]
             possible_destinations.remove(_get_jail_square().custom_id)

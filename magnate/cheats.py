@@ -151,6 +151,22 @@ def _cheat_create_property(game: Game, data: dict) -> dict:
         houses=houses,
         mortgage=mortgage,
     )
+    if isinstance(real_square, PropertySquare):
+            user_same_group = PropertyRelationship.objects.filter(
+                game=game, 
+                owner=player, 
+                square__propertysquare__group=real_square.group
+            )
+            total_in_group = PropertySquare.objects.filter(
+                group=real_square.group, 
+                board=real_square.board
+            ).count()
+
+            if user_same_group.count() == total_in_group:
+                # Si se completa el grupo y el cheat no forzó casas, las seteamos a 0
+                if houses == -1:
+                    user_same_group.update(houses=0)
+
     return {}
 
 def _cheat_delete_property(game: Game, data: dict) -> dict:
@@ -165,8 +181,24 @@ def _cheat_delete_property(game: Game, data: dict) -> dict:
     if square is None:
         raise CheatException(f"Square with custom_id {square_id} does not exist.")
 
-    deleted, _ = PropertyRelationship.objects.filter(game=game, square=square).delete()
-    if deleted == 0:
+    rel = PropertyRelationship.objects.filter(game=game, square=square).first()
+    if not rel:
         raise CheatException(f"Square {square_id} has no owner in this game.")
+        
+    owner = rel.owner
+    real_square = square.get_real_instance()
+    
+    # delete
+    rel.delete()
+
+    # delete properties int he group
+    if isinstance(real_square, PropertySquare):
+        user_same_group = PropertyRelationship.objects.filter(
+            game=game, 
+            owner=owner, 
+            square__propertysquare__group=real_square.group
+        )
+        user_same_group.update(houses=-1)
+
     return {}
 

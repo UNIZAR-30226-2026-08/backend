@@ -22,7 +22,8 @@ from .game_utils import (
     _move_player_logic, _build_square, _demolish_square, _get_jail_square,_set_mortgage,  
     _unset_mortgage, _get_relationship, _calculate_net_worth, _calculate_rent_price, 
     _get_user_square, _get_possible_destinations_ids, _get_square_by_custom_id,
-    _add_basic_response_data
+    _add_basic_response_data,
+    _handle_property_acquisition, _handle_property_trade, 
 )
 from channels.db import database_sync_to_async
 
@@ -546,48 +547,15 @@ class GameManager:
         prop_rel = _get_relationship(game, current_square)
 
         if isinstance(action, ActionBuySquare):
-            if isinstance(current_square, PropertySquare):
-                if game.money[str(user.pk)] < current_square.buy_price:
-                    raise MaliciousUserInput(user, "does not have enough money to buy the property")
-                game.money[str(user.pk)] -= current_square.buy_price
-                stats = PlayerGameStatistic.objects.get(user=user,game=game)
-                stats.lost_money += current_square.buy_price
-                stats.save()
-                new_property = PropertyRelationship(game=game, square=current_square, owner=user)
-                user_properties = PropertyRelationship.objects.filter(game=game, owner=user)
-                user_same_group_properties = user_properties.filter(square__propertysquare__group=current_square.group)
-
-                group_squares = PropertySquare.objects.filter(group=current_square.group, board = current_square.board)
-
-                if user_same_group_properties.count() == group_squares.count() - 1:
-                    new_property.houses = 0
-                    user_same_group_properties.update(houses=0)
-                else: 
-                    new_property.houses = -1
-                new_property.save()
-
-            elif isinstance(current_square, ServerSquare):
-                if game.money[str(user.pk)] < current_square.buy_price:
-                    raise MaliciousUserInput(user, "does not have enough money to buy the property")
-                game.money[str(user.pk)] -= current_square.buy_price
-                stats = PlayerGameStatistic.objects.get(user=user,game=game)
-                stats.lost_money += current_square.buy_price
-                stats.save()
-                new_property = PropertyRelationship(game=game, square=current_square, owner=user)
-                new_property.save()
-            
-            elif isinstance(current_square, BridgeSquare):
-                if game.money[str(user.pk)] < current_square.buy_price:
-                    raise MaliciousUserInput(user, "does not have enough money to buy the property")
-                game.money[str(user.pk)] -= current_square.buy_price
-                stats = PlayerGameStatistic.objects.get(user=user, game=game)
-                stats.lost_money += current_square.buy_price
-                stats.save()
-                new_property = PropertyRelationship(game=game, square=current_square, owner=user)
-                new_property.save()
-
-            else:
+            if not isinstance(current_square, (PropertySquare, ServerSquare, BridgeSquare)):
                 raise MaliciousUserInputAction(game, user, action)
+
+            _handle_property_acquisition(game, user, current_square)
+            stats = PlayerGameStatistic.objects.get(user=user,game=game)
+            stats.lost_money += current_square.buy_price
+            stats.save()
+            game.money[str(user.pk)] -= current_square.buy_price
+
         elif isinstance(action, ActionDropPurchase):
             if isinstance(action.square, (PropertySquare, ServerSquare, BridgeSquare)):
                 return GameManager._initiate_auction(game, action.square)
@@ -745,14 +713,10 @@ class GameManager:
                     raise MaliciousUserInput(offering, f"cannot go to negative in trade")
 
                 for relationship in offered_properties.all():
-                    relationship.owner = user
-                    relationship.houses = -1 # reset houses
-                    relationship.save()
+                    _handle_property_trade(game, user, relationship.square)
                     
                 for relationship in asked_properties.all():
-                    relationship.owner = offering
-                    relationship.houses = -1
-                    relationship.save()
+                    _handle_property_trade(game, offering, relationship.square)
 
                 game.money[str(offering.pk)] = offering_money
                 stats = PlayerGameStatistic.objects.get(user=offering, game=game)
@@ -983,24 +947,8 @@ class GameManager:
         stats = PlayerGameStatistic.objects.get(user=winner,game=game)
         stats.lost_money += highest_bid
         stats.save()
-        
-        new_property = PropertyRelationship(game=game, square=square, owner=winner)
-        
-        # groups n houses
-        if isinstance(square, PropertySquare):
-            user_properties = PropertyRelationship.objects.filter(game=game, owner=winner)
-            user_same_group_properties = user_properties.filter(square__propertysquare__group=square.group)
-            group_squares = PropertySquare.objects.filter(group=square.group, board = square.board)
 
-            if user_same_group_properties.count() == group_squares.count() - 1:
-                new_property.houses = 0
-                user_same_group_properties.update(houses=0)
-            else: 
-                new_property.houses = -1
-        else:
-            new_property.houses = -1
-            
-        new_property.save()
+        _handle_property_acquisition(game, winner, square)
 
         auction.winner = winner
         auction.final_amount = highest_bid

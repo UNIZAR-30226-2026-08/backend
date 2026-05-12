@@ -592,30 +592,30 @@ class GamesTest(TestCase):
     ###### TRADING TESTS ######
     ##########################
 
-    def test_trade_proposal_and_acceptance(self,  mock_next_phase, mock_kick_out, mock_auction):
+    def test_trade_proposal_and_acceptance(self, mock_next_phase, mock_kick_out, mock_auction):
         """
         Tests a complex trade proposal involving multiple properties and money exchange.
-
+    
         Args:
             mock_next_phase (Mock): Mocked next phase callback.
             mock_kick_out (Mock): Mocked kick out callback.
             mock_auction (Mock): Mocked auction callback.
-
+    
         Returns:
             None
         """
         """p1 and p2 exchange multiple properties and money"""
         squares = PropertySquare.objects.filter(buy_price__gt=0)[:4]
-        
+    
         rel1 = PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=squares[0], houses=-1)
         rel2 = PropertyRelationship.objects.create(game=self.game, owner=self.player1, square=squares[1], houses=-1)
-        
+    
         rel3 = PropertyRelationship.objects.create(game=self.game, owner=self.player2, square=squares[2], houses=-1)
         rel4 = PropertyRelationship.objects.create(game=self.game, owner=self.player2, square=squares[3], houses=-1)
-        
+    
         self.game.phase = GameManager.BUSINESS
         self.game.save()
-
+    
         # p1 offers rel1, rel2 and 200 money for rel3, rel4 and 300 money
         proposal = ActionTradeProposal.objects.create(
             game=self.game, player=self.player1, destination_user=self.player2,
@@ -623,39 +623,40 @@ class GamesTest(TestCase):
         )
         proposal.offered_properties.set([rel1, rel2])
         proposal.asked_properties.set([rel3, rel4])
-        
+    
         async_to_sync(GameManager.process_action)(self.game, self.player1, proposal)
         self.game.refresh_from_db()
-        
+    
         self.assertEqual(self.game.phase, GameManager.PROPOSAL_ACCEPTANCE)
         self.assertEqual(self.game.active_phase_player, self.player2)
-        
+    
         # p2 accepts trade
         answer = ActionTradeAnswer.objects.create(
             game=self.game, player=self.player2, choose=True
         )
         async_to_sync(GameManager.process_action)(self.game, self.player2, answer)
-        
+    
         self.game.refresh_from_db()
-        rel1.refresh_from_db()
-        rel2.refresh_from_db()
-        rel3.refresh_from_db()
-        rel4.refresh_from_db()
-        
+    
         # verify money exchange
-        self.assertEqual(self.game.money[str(self.player1.pk)], 1500 - 200 + 300) 
-        self.assertEqual(self.game.money[str(self.player2.pk)], 1500 - 300 + 200) 
-        
+        self.assertEqual(self.game.money[str(self.player1.pk)], 1500 - 200 + 300)
+        self.assertEqual(self.game.money[str(self.player2.pk)], 1500 - 300 + 200)
+    
+        # fetch new relationships by square since old ones were deleted and recreated
+        new_rel1 = PropertyRelationship.objects.get(game=self.game, square=squares[0])
+        new_rel2 = PropertyRelationship.objects.get(game=self.game, square=squares[1])
+        new_rel3 = PropertyRelationship.objects.get(game=self.game, square=squares[2])
+        new_rel4 = PropertyRelationship.objects.get(game=self.game, square=squares[3])
+    
         # verify transfer of properties
-        self.assertEqual(rel1.owner, self.player2)
-        self.assertEqual(rel2.owner, self.player2)
-        self.assertEqual(rel3.owner, self.player1)
-        self.assertEqual(rel4.owner, self.player1)
-        
+        self.assertEqual(new_rel1.owner, self.player2)
+        self.assertEqual(new_rel2.owner, self.player2)
+        self.assertEqual(new_rel3.owner, self.player1)
+        self.assertEqual(new_rel4.owner, self.player1)
+    
         # verify phase and active player reverted to p1
         self.assertEqual(self.game.phase, GameManager.BUSINESS)
         self.assertEqual(self.game.active_phase_player, self.player1)
-
 
     def test_trade_proposal_rejection(self,  mock_next_phase, mock_kick_out, mock_auction):
         """

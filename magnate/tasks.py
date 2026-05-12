@@ -157,6 +157,7 @@ def next_phase_callback(game_pk: int, user_pk: int) -> None:
 
 @shared_task
 def bot_play_callback(game_pk: int, user_pk: int) -> None:
+    print("bot play callback triggered")
     """
     Celery task that triggers the AI Agent for a bot player. 
     Revokes any pending timeout tasks (like kick-out or next-phase), delegates decision-making 

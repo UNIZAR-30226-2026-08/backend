@@ -377,16 +377,15 @@ class Agent:
         Returns:
             list[Action]: Accept (if funds permit) and reject ActionTradeAnswer instances.
         """
-        actions = []
         proposal = self.game.proposal
         money = self.game.money[str(self.user.pk)]
         offering_money = self.game.money[str(proposal.player.pk)]
     
         if proposal.asked_money <= money and proposal.offered_money <= offering_money:
-            actions.append(ActionTradeAnswer(game=self.game, player=self.user, choose=True, ))
+            if self._ev_trade_answer(True) > 0:
+                return [ActionTradeAnswer(game=self.game, player=self.user, choose=True)]
     
-        actions.append(ActionTradeAnswer(game=self.game, player=self.user, choose=False))
-        return actions
+        return [ActionTradeAnswer(game=self.game, player=self.user, choose=False)]
     
     def _get_possible_actions_auction(self) -> list[Action]:
         """

@@ -318,8 +318,8 @@ class Agent:
             trade = self._get_random_trade_proposal(money)
             if trade is not None:
                 actions.append(trade)
-    
-        actions.append(ActionNextPhase(game=self.game, player=self.user))
+        if not self.game.money[str(self.user.pk)] < 0:
+            actions.append(ActionNextPhase(game=self.game, player=self.user))
         return actions
         
     def _get_possible_actions_liquidation(self) -> list[Action]:

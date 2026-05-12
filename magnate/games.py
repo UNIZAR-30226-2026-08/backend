@@ -1356,7 +1356,6 @@ class GameManager:
 
     @staticmethod
     def _set_kick_out_timer(game: Game, user: CustomUser):
-         print("kick out timer set")
          """
          Revokes any existing kick-out timer and sets a new one to remove an inactive player.
          If the user is a bot, it schedules a bot play task.
@@ -1369,24 +1368,15 @@ class GameManager:
              None
          """
          from .tasks import kick_out_callback, bot_play_callback
-         print(1)
          from .celery import app
-         print(2)
         
          if game.kick_out_task_id:
-            print(3)
             app.control.revoke(game.kick_out_task_id, terminate=True)
-            print(4)
             game.kick_out_task_id = None
-            print(5)
             game.save()
-            print(7)
 
          if Bot.objects.filter(pk=user.pk).exists():
-            print(8)
-            print(9)
             bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=random.randint(8, 12))
-         print(10)
 
     @staticmethod
     def _cancel_all_timers(game: Game):

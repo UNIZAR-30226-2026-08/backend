@@ -537,6 +537,10 @@ class Game(models.Model):
     
     current_turn = models.PositiveIntegerField(default=1)
 
+    current_round = models.PositiveIntegerField(default=1)
+    max_rounds = models.PositiveIntegerField(default=50) # 0 for unlimited
+
+
 class Auction(models.Model):
     """
     Represents a property auction triggered when a player declines to buy a square.

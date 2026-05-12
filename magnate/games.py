@@ -12,7 +12,7 @@ import random
 from traceback import walk_stack 
 from django.db import transaction
 from django.db.models import Max
-
+from typing import Optional
 
 from .serializers import *
 from .models import *
@@ -1048,11 +1048,29 @@ class GameManager:
         if current_index == -1:
             raise GameLogicError('current player not found')
         
+
         next_index = (current_index + 1) % num_players
+        if next_index <= current_index:
+            game.current_round += 1
+            
         # The next active user is for both: phase and turn
         next_player = game.players.filter(pk=game.ordered_players[next_index]).first()
         if next_player is None:
             raise GameLogicError('next player is None')
+        
+
+        if game.current_round > game.max_rounds:
+            game.phase = GameManager.END_GAME
+            GameManager._cancel_all_timers(game)
+            if game.current_auction:
+                game.current_auction.is_active = False
+                game.current_auction.save()
+                game.current_auction = None
+            game.save()
+            
+          
+            cls._end_game_logic(game, next_player)
+            return
 
         game.active_phase_player = next_player
         game.active_turn_player = next_player
@@ -1249,7 +1267,7 @@ class GameManager:
         return response
 
     @classmethod
-    def _end_game_logic(cls, game: Game, user: CustomUser, action: Action) -> Response:
+    def _end_game_logic(cls, game: Game, user: CustomUser, action: Optional[Action] = None) -> Response:
         """
         Ends the game, applies final bonuses, generates the summary (GameSummary) 
         with the net worth of all participants (including eliminated ones), and 

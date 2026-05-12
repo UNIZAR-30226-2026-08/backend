@@ -1604,3 +1604,31 @@ class GamesTest(TestCase):
         self.assertNotEqual(self.game.positions[str(self.player1.pk)], jail_sq.custom_id)
         # roll_the_dices
         self.assertNotEqual(self.game.phase, GameManager.ROLL_THE_DICES)
+
+    
+    def test_max_rounds_ends_game(self, mock_next_phase, mock_kick_out, mock_auction):
+        """
+        Tests that the game ends automatically when the maximum number of rounds is reached.
+        """
+        # Configuramos la partida para estar en la última ronda permitida
+        self.game.max_rounds = 2
+        self.game.current_round = 2
+        
+        # Le damos el turno al ÚLTIMO jugador de la lista (p3)
+        self.game.active_turn_player = self.player3
+        self.game.active_phase_player = self.player3
+        self.game.phase = GameManager.BUSINESS
+        self.game.save()
+
+        # Al terminar p3, el índice vuelve a 0 (p1), sumando una ronda (ronda 3).
+        # Como 3 > max_rounds (2), debería disparar el final del juego.
+        action = ActionNextPhase(game=self.game, player=self.player3)
+        async_to_sync(GameManager.process_action)(self.game, self.player3, action)
+        
+        self.game.refresh_from_db()
+
+        # Verificaciones
+        self.assertEqual(self.game.phase, GameManager.END_GAME)
+        self.assertTrue(self.game.finished)
+        self.assertIsNotNone(self.game.bonus_response)
+        self.assertIsInstance(self.game.bonus_response, ResponseBonus)

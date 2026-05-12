@@ -360,10 +360,12 @@ class Agent:
     
         money = self.game.money[str(self.user.pk)]
     
-        if not actions:
-            actions.append(ActionSurrender(game=self.game, player=self.user))
-        elif money > 0:
+       
+        if money >= 0:
             actions.append(ActionNextPhase(game=self.game, player=self.user))
+
+        if not actions and money < 0:
+            actions.append(ActionSurrender(game=self.game, player=self.user))
     
         return actions
    
@@ -411,11 +413,11 @@ class Agent:
     
         pass_bid = ActionBid(game=self.game, player=self.user, amount=0)
     
-        if dropped or money <= 0 or is_jailed or already_bid:
+        if dropped or money<= 0 or is_jailed or already_bid:
             return [pass_bid]
     
         square_instance = auction.square.get_real_instance()
-        max_bid = self._max_willing_to_pay(square_instance)
+        max_bid = min(self._max_willing_to_pay(square_instance), money)
 
         if max_bid <= 0:
             return [pass_bid]

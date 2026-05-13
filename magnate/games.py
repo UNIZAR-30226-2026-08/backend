@@ -1307,6 +1307,8 @@ class GameManager:
             bots_in_game.delete()
 
             for player in active_players:
+                print(player.username)
+                print("quitarle active game")
                 player.active_game = None
                 player.save()
 

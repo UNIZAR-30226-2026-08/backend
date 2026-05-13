@@ -116,7 +116,6 @@ class Command(BaseCommand):
                 {'stat_field': 'built_houses',      'bonus_amount': 250},
                 {'stat_field': 'times_in_jail',     'bonus_amount': 100},
                 {'stat_field': 'num_trades',        'bonus_amount': 150},
-                {'stat_field': 'end_game',          'bonus_amount': 500},
             ]
             for bd in bonus_data:
                 BonusCategory.objects.create(**bd)

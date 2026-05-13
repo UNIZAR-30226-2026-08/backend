@@ -1287,6 +1287,7 @@ class GameManager:
 
             for stat in all_participants:
                 participant = stat.user
+                print(f"user {participant.username} num_played_games antes: {participant.num_played_games}")
                 
                 participant.num_played_games += 1
                 
@@ -1296,6 +1297,7 @@ class GameManager:
                     winner = participant
                     
                 participant.save()
+                print(f"user {participant.username} num_played_games después: {participant.num_played_games}")
 
             if winner:
                 winner.num_won_games += 1

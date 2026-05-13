@@ -207,11 +207,9 @@ class Command(BaseCommand):
 
             user1.num_played_games = 1
             user1.num_won_games = 1
-            user1.exp = 120
             user1.elo = 1050
             user1.save()
             user2.num_played_games = 1
-            user2.exp = 80
             user2.elo = 950
             user2.save()
 

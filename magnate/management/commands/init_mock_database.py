@@ -207,10 +207,16 @@ class Command(BaseCommand):
 
             user1.num_played_games = 1
             user1.num_won_games = 1
-            user1.elo = 1050
+            user1.elo = 1000
             user1.save()
-            user2.num_played_games = 1
-            user2.elo = 950
+            user2.num_played_games = 2
+            user2.elo = 2000
             user2.save()
+            user3.num_played_games = 3
+            user3.elo = 3000
+            user3.save()
+            user4.num_played_games = 4
+            user4.elo = 4000
+            user4.save()
 
             self.stdout.write('Mock database created')

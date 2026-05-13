@@ -185,6 +185,27 @@ class FantasyEventFactory:
                 card_cost = card_cost
                 )
 
+def _send_to_jail(game: Game, user: CustomUser) -> None:
+    """
+    Moves a player to jail, sets their remaining jail turns to 3,
+    resets their dice streak, and increments their times_in_jail statistic.
+
+    Args:
+        game (Game): The active game instance. Mutated in place; caller must save.
+        user (CustomUser): The player being jailed.
+
+    Returns:
+        None
+    """
+    jail_id = _get_jail_square().custom_id
+    game.positions[str(user.pk)] = int(jail_id)
+    game.jail_remaining_turns[str(user.pk)] = 3
+    game.streak = 0
+
+    stats = PlayerGameStatistic.objects.get(user=user, game=game)
+    stats.times_in_jail += 1
+    stats.save()
+
 #@database_sync_to_async
 def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEvent) -> FantasyResult:
     """
@@ -523,50 +544,32 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         )
     
     elif fantasy_event.fantasy_type == 'goToJail':
-        jail_id = _get_jail_square().custom_id
-        game.positions[str(user.pk)] = int(jail_id)
-        game.jail_remaining_turns[str(user.pk)] = 3
+        _send_to_jail(game, user)
         game.save()
-
-        stats = PlayerGameStatistic.objects.get(user=user,game=game)
-        stats.times_in_jail += 1
-        stats.save()
-
+    
         return FantasyResult(
-            fantasy_event = fantasy_event,
-            result = None
+            fantasy_event=fantasy_event,
+            result=None
         )
     
     elif fantasy_event.fantasy_type == 'sendToJail':
-        target_player = random.choice(game.players.exclude(pk=user.pk))
-        jail_id = _get_jail_square().custom_id
-        game.positions[str(target_player.pk)] = int(jail_id)
-        game.jail_remaining_turns[str(target_player.pk)] = 3
+        target_player = random.choice(list(game.players.exclude(pk=user.pk)))
+        _send_to_jail(game, target_player)
         game.save()
-
-        stats = PlayerGameStatistic.objects.get(user=target_player,game=game)
-        stats.times_in_jail += 1
-        stats.save()
-
+    
         return FantasyResult(
-            fantasy_event = fantasy_event,
-            result = {'target_player':target_player.pk}
+            fantasy_event=fantasy_event,
+            result={'target_player': target_player.pk}
         )
     
     elif fantasy_event.fantasy_type == 'everybodyToJail':
-        jail_id = _get_jail_square().custom_id
         for player in game.players.all():
-            game.positions[str(player.pk)] = int(jail_id)
-            game.jail_remaining_turns[str(player.pk)] = 3
-            stats = PlayerGameStatistic.objects.get(user=player,game=game)
-            stats.times_in_jail += 1
-            stats.save()
-
+            _send_to_jail(game, player)
         game.save()
-
+    
         return FantasyResult(
-            fantasy_event = fantasy_event,
-            result = None
+            fantasy_event=fantasy_event,
+            result=None
         )
     
     elif fantasy_event.fantasy_type == 'doubleOrNothing':

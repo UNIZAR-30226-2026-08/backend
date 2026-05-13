@@ -1215,7 +1215,6 @@ class GameManager:
 
         valid_categories_data = []
         for category in BonusCategory.objects.all():
-            print(category)
             field = category.stat_field
             max_value = stats.aggregate(Max(field)).get(f'{field}__max')
             if max_value and max_value > 0:
@@ -1279,6 +1278,9 @@ class GameManager:
                 if participant.pk in [participant.pk for participant in active_players]:
                     # not eliminated
                     final_money_dict[str(participant.username)] = _calculate_net_worth(game, participant)
+                    participant.points += final_money_dict[str(participant.username)]
+                    participant.elo += final_money_dict[str(participant.username)]
+                    participant.save()
                 else:
                     final_money_dict[str(participant.username)] = 0
             
@@ -1316,9 +1318,7 @@ class GameManager:
             bots_in_game = Bot.objects.filter(id__in=game.players.values_list('id', flat=True))
             bots_in_game.delete()
 
-            for player in active_players:
-                player.active_game = None
-                player.save()
+            active_players.update(active_game=None)
 
             return response
         else:

@@ -265,7 +265,7 @@ class ShopItemListViewTest(AuthTestCase):
         response: DRFResponse = client.get(reverse('shop_items'))  # type: ignore
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         assert response.data is not None
-        self.assertEqual(len(response.data), 6)
+        self.assertEqual(len(response.data), 16)
 
     def test_list_items_owned_flag(self):
         """

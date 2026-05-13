@@ -4,5 +4,16 @@
     {"model": "magnate.Item", "pk": 3, "fields": {"custom_id": 3, "itemType": "piece",  "price": 500}},
     {"model": "magnate.Item", "pk": 4, "fields": {"custom_id": 4, "itemType": "piece", "price": 1000}},
     {"model": "magnate.Item", "pk": 5, "fields": {"custom_id": 5, "itemType": "emoji", "price": 250}},
-    {"model": "magnate.Item", "pk": 6, "fields": {"custom_id": 6, "itemType": "emoji", "price": 500}}
+    {"model": "magnate.Item", "pk": 6, "fields": {"custom_id": 6, "itemType": "emoji", "price": 500}},
+    {"model": "magnate.Item", "pk": 7, "fields": {"custom_id": 7, "itemType": "emoji", "price": 500}},
+    {"model": "magnate.Item", "pk": 8, "fields": {"custom_id": 8, "itemType": "emoji", "price": 750}},
+    {"model": "magnate.Item", "pk": 9, "fields": {"custom_id": 9, "itemType": "emoji", "price": 750}},
+    {"model": "magnate.Item", "pk": 10, "fields": {"custom_id": 10, "itemType": "emoji", "price": 1000}},
+    {"model": "magnate.Item", "pk": 11, "fields": {"custom_id": 11, "itemType": "emoji", "price": 1500}},
+    {"model": "magnate.Item", "pk": 12, "fields": {"custom_id": 12, "itemType": "emoji", "price": 2000}},
+    {"model": "magnate.Item", "pk": 13, "fields": {"custom_id": 13, "itemType": "emoji", "price": 5000}},
+    {"model": "magnate.Item", "pk": 14, "fields": {"custom_id": 14, "itemType": "emoji", "price": 5000}},
+    {"model": "magnate.Item", "pk": 15, "fields": {"custom_id": 15, "itemType": "emoji", "price": 5000}},
+    {"model": "magnate.Item", "pk": 16, "fields": {"custom_id": 16, "itemType": "emoji", "price": 5000}}
+    
 ]

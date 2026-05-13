@@ -1198,8 +1198,12 @@ class GameManager:
 
         stats = PlayerGameStatistic.objects.filter(game=game)
 
+        print("stats count:", stats.count())
+        print("stats:", list(stats.values()))
+
         valid_categories_data = []
         for category in BonusCategory.objects.all():
+            print(category)
             field = category.stat_field
             max_value = stats.aggregate(Max(field)).get(f'{field}__max')
             if max_value and max_value > 0:

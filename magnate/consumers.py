@@ -683,9 +683,10 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
                 if not is_owner:
                         await self.send_error("Solo el host puede iniciar una partida.")
                         return
-                num_players = await self.get_num_players(self.room_code)
 
-                if num_players < MIN_PRIVATE_GAME_PLAYERS:
+                target_players = await self.get_target_players(self.room_code)
+
+                if target_players < MIN_PRIVATE_GAME_PLAYERS:
                     await self.send_error(f"Se necesitan {MIN_PRIVATE_GAME_PLAYERS} jugadores para iniciar la partida.")
                     return
             
@@ -1104,7 +1105,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         user_from_db.save()
 
     @database_sync_to_async
-    def get_num_players(self, room_code):
+    def get_target_players(self, room_code):
         """
         Retrieves the current number of players in a private room.
 
@@ -1116,9 +1117,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         """
         # Return the current number of players in the room
         room = PrivateRoom.objects.get(room_code=room_code)
-        if not room:
-            return 0
-        return room.players.count()
+        return room.target_players
 
     @database_sync_to_async
     def check_all_ready(self, room_code):

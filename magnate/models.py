@@ -1069,8 +1069,8 @@ class BonusCategory(models.Model):
     """
     Defines a bonus awarded to a player for achieving a milestone in a specific stat field.
 
-    Each ``BonusCategory`` maps one ``PlayerGameStatistic`` field (or the ``end_game``
-    event) to a fixed ``bonus_amount`` in platform points. At the end of a game, the
+    Each ``BonusCategory`` maps one ``PlayerGameStatistic`` field
+    to a fixed ``bonus_amount`` in platform points. At the end of a game, the
     server checks each category and awards the bonus to qualifying players.
 
     Attributes:
@@ -1078,7 +1078,7 @@ class BonusCategory(models.Model):
             or ``end_game`` to award a bonus simply for finishing a game. One of:
             ``walked_squares``, ``won_money``, ``lost_money``, ``num_fantasy_events``,
             ``built_houses``, ``demolished_houses``, ``times_in_jail``, ``turns_in_jail``,
-            ``num_paid_rents``, ``num_trades``, ``num_mortgages``, ``end_game``.
+            ``num_paid_rents``, ``num_trades``, ``num_mortgages``.
             Must be unique — only one bonus rule per stat field.
         bonus_amount (PositiveIntegerField): The number of platform points awarded when
             the qualifying condition for this category is met.

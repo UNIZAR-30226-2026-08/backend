@@ -464,7 +464,9 @@ class Agent:
         if not opponents.exists():
             return None
 
-        my_properties = [rel for rel in PropertyRelationship.objects.filter(game=self.game, owner=self.user).select_related('square') if is_tradable(rel)]        
+        my_properties = [rel for rel in PropertyRelationship.objects.filter(game=self.game, owner=self.user).select_related('square') if is_tradable(rel)]      
+        if not my_properties:
+            return None  
         best_trade_params = None
         
         best_ev = float('-inf')

@@ -856,7 +856,7 @@ class Agent:
             money_lost=proposal.offered_money
         )
         
-        return my_benefit - (rival_benefit / opponents)
+        return my_benefit - (rival_benefit / opponents) + random.randint(-15, 15) #un poco de varianza
 
     def _evaluate_trade_net_benefit(self, player, properties_gained, properties_lost, money_gained, money_lost) -> float:
         """

@@ -1276,6 +1276,15 @@ class GameConsumer(AsyncWebsocketConsumer):
         "msg": "Hello everyone!"
     }
     ```
+
+    ### Chat Emoji
+    ```json
+    {
+        "type": "ChatEmoji",
+        "emoji": id 
+    }
+    ```
+ 
  
     ---
     ## Messages: Server → Client
@@ -1403,6 +1412,9 @@ class GameConsumer(AsyncWebsocketConsumer):
  
     // Send a chat message:
     socket.send(JSON.stringify({ type: "ChatMessage", msg: "Good luck!" }));
+
+    // Send an emoji:
+    socket.send(JSON.stringify({ type: "ChatEmoji", emoji: 1 }));
     ```
     """
     async def connect(self):
@@ -1521,6 +1533,33 @@ class GameConsumer(AsyncWebsocketConsumer):
                         'msg': message
                     }
                 )
+            return
+        elif data.get('type') == 'ChatEmoji':
+            try:
+                emoji_id = int(data.get('emoji'))
+            except (TypeError, ValueError):
+                await self.send_error("Invalid emoji id.")
+                return
+
+            owns_emoji = await database_sync_to_async(
+                lambda: self.user.owned_items.filter(
+                    custom_id=emoji_id,
+                    itemType=Item.ItemType.emoji
+                ).exists()
+            )()
+            if not owns_emoji:
+                await self.send_error(f"You do not own {emoji_id}")
+                return
+
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    'type': 'emoji_event',
+                    'game': self.game_id,
+                    'user': self.user.username,
+                    'emoji': emoji_id
+                }
+            )
             return
         elif data.get('type') == 'Cheat':
             try:
@@ -1645,6 +1684,23 @@ class GameConsumer(AsyncWebsocketConsumer):
             'game': event['game'],
             'user': event['user'],
             'msg': event['msg']
+        }))
+
+    async def emoji_event(self, event):
+        """
+        Handler for emoji reactions in the game. Sends the emoji to the client.
+    
+        Args:
+            event (dict): The event dictionary containing 'game', 'user', and 'emoji'.
+    
+        Returns:
+            None
+        """
+        await self.send(text_data=json.dumps({
+            'event_type': 'chat_emoji',
+            'game': event['game'],
+            'user': event['user'],
+            'emoji': event['emoji']
         }))
 
     async def send_error(self, message):

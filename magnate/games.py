@@ -125,11 +125,15 @@ class GameManager:
                 raise MaliciousUserInputAction(game, user, action)
             response = cls._bid_property_auction_logic(game, user, action)
         elif game.phase == cls.END_GAME:
-            # en principio no check instance porque siempre queremos esta info
-            response = cls._end_game_logic(game,user,action)
-            #return cls._end_game_logic(game,user,action)
+            pass
+            # en principio no check instance porque la partida ya ha acabado
+            # response = cls._end_game_logic(game,user,action)
+            # return cls._end_game_logic(game,user,action)
         else: 
             raise GameLogicError(f"Unrecognized or unhandled phase: {game.phase}")
+
+        if game.phase == cls.END_GAME:
+            response = cls._end_game_logic(game, user, action)
 
         return _add_basic_response_data(game, response)
 
@@ -1025,7 +1029,7 @@ class GameManager:
             game.save()
             
           
-            cls._end_game_logic(game, next_player)
+            #cls._end_game_logic(game, next_player) ###############
             return
 
         game.active_phase_player = next_player

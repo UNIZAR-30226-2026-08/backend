@@ -1,0 +1,13 @@
+[
+  {"model": "magnate.bonuscategory", "pk": 1, "fields": {"stat_field": "walked_squares",     "bonus_amount": 200}},
+  {"model": "magnate.bonuscategory", "pk": 2, "fields": {"stat_field": "won_money",           "bonus_amount": 200}},
+  {"model": "magnate.bonuscategory", "pk": 3, "fields": {"stat_field": "lost_money",          "bonus_amount": 200}},
+  {"model": "magnate.bonuscategory", "pk": 4, "fields": {"stat_field": "num_fantasy_events",  "bonus_amount": 200}},
+  {"model": "magnate.bonuscategory", "pk": 5, "fields": {"stat_field": "built_houses",        "bonus_amount": 200}},
+  {"model": "magnate.bonuscategory", "pk": 6, "fields": {"stat_field": "demolished_houses",   "bonus_amount": 200}},
+  {"model": "magnate.bonuscategory", "pk": 7, "fields": {"stat_field": "times_in_jail",       "bonus_amount": 200}},
+  {"model": "magnate.bonuscategory", "pk": 8, "fields": {"stat_field": "turns_in_jail",       "bonus_amount": 200}},
+  {"model": "magnate.bonuscategory", "pk": 9, "fields": {"stat_field": "num_paid_rents",      "bonus_amount": 200}},
+  {"model": "magnate.bonuscategory", "pk": 10, "fields": {"stat_field": "num_trades",         "bonus_amount": 200}},
+  {"model": "magnate.bonuscategory", "pk": 11, "fields": {"stat_field": "num_mortgages",      "bonus_amount": 200}}
+]

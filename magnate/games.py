@@ -125,11 +125,15 @@ class GameManager:
                 raise MaliciousUserInputAction(game, user, action)
             response = cls._bid_property_auction_logic(game, user, action)
         elif game.phase == cls.END_GAME:
-            # TODO: check instance???
+            pass
+            # en principio no check instance porque la partida ya ha acabado
             # response = cls._end_game_logic(game,user,action)
-            return cls._end_game_logic(game,user,action)
+            # return cls._end_game_logic(game,user,action)
         else: 
             raise GameLogicError(f"Unrecognized or unhandled phase: {game.phase}")
+
+        if game.phase == cls.END_GAME:
+            response = cls._end_game_logic(game, user, action)
 
         return _add_basic_response_data(game, response)
 
@@ -1025,7 +1029,7 @@ class GameManager:
             game.save()
             
           
-            cls._end_game_logic(game, next_player)
+            #cls._end_game_logic(game, next_player) ###############
             return
 
         game.active_phase_player = next_player
@@ -1163,6 +1167,21 @@ class GameManager:
 
             game.save()   
             return #endgame logic called afterwards
+        
+        from .models import Bot
+        bots_in_game = Bot.objects.filter(id__in=game.players.values_list('id', flat=True))
+        if game.players.count() == bots_in_game.count(): #solo quedan bots
+            game.phase = GameManager.END_GAME
+            GameManager._cancel_all_timers(game)
+
+            if game.current_auction:
+                auction = game.current_auction
+                auction.is_active = False
+                auction.save()
+                game.current_auction = None
+
+            game.save()
+            return
 
         if game.active_turn_player.pk == user.pk and next_player:
             game.active_turn_player = next_player
@@ -1196,6 +1215,7 @@ class GameManager:
 
         valid_categories_data = []
         for category in BonusCategory.objects.all():
+            print(category)
             field = category.stat_field
             max_value = stats.aggregate(Max(field)).get(f'{field}__max')
             if max_value and max_value > 0:
@@ -1295,6 +1315,10 @@ class GameManager:
             from .models import Bot
             bots_in_game = Bot.objects.filter(id__in=game.players.values_list('id', flat=True))
             bots_in_game.delete()
+
+            for player in active_players:
+                player.active_game = None
+                player.save()
 
             return response
         else:

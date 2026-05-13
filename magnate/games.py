@@ -1213,9 +1213,6 @@ class GameManager:
 
         stats = PlayerGameStatistic.objects.filter(game=game)
 
-        print("stats count:", stats.count())
-        print("stats:", list(stats.values()))
-
         valid_categories_data = []
         for category in BonusCategory.objects.all():
             print(category)
@@ -1223,12 +1220,8 @@ class GameManager:
             max_value = stats.aggregate(Max(field)).get(f'{field}__max')
             if max_value and max_value > 0:
                 valid_categories_data.append((category, max_value))
-        
-        print(valid_categories_data)
 
         chosen_data = random.sample(valid_categories_data, min(num_bonuses, len(valid_categories_data)))
-
-        print(chosen_data)
 
         response = ResponseBonus()
         bonuses = {}
@@ -1244,8 +1237,6 @@ class GameManager:
                 'bonus_amount': category.bonus_amount,
                 'winners': winners
             }
-
-        print(bonuses)
 
         response.bonuses = bonuses
         game.save()

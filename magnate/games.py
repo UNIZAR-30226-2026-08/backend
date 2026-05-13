@@ -1306,6 +1306,10 @@ class GameManager:
             bots_in_game = Bot.objects.filter(id__in=game.players.values_list('id', flat=True))
             bots_in_game.delete()
 
+            for player in active_players:
+                player.active_game = None
+                player.save()
+
             return response
         else:
             raise GameLogicError('game was already ended')

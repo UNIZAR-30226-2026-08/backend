@@ -125,9 +125,9 @@ class GameManager:
                 raise MaliciousUserInputAction(game, user, action)
             response = cls._bid_property_auction_logic(game, user, action)
         elif game.phase == cls.END_GAME:
-            # TODO: check instance???
-            # response = cls._end_game_logic(game,user,action)
-            return cls._end_game_logic(game,user,action)
+            # en principio no check instance porque siempre queremos esta info
+            response = cls._end_game_logic(game,user,action)
+            #return cls._end_game_logic(game,user,action)
         else: 
             raise GameLogicError(f"Unrecognized or unhandled phase: {game.phase}")
 
@@ -1200,8 +1200,12 @@ class GameManager:
             max_value = stats.aggregate(Max(field)).get(f'{field}__max')
             if max_value and max_value > 0:
                 valid_categories_data.append((category, max_value))
+        
+        print(valid_categories_data)
 
         chosen_data = random.sample(valid_categories_data, min(num_bonuses, len(valid_categories_data)))
+
+        print(chosen_data)
 
         response = ResponseBonus()
         bonuses = {}
@@ -1217,6 +1221,8 @@ class GameManager:
                 'bonus_amount': category.bonus_amount,
                 'winners': winners
             }
+
+        print(bonuses)
 
         response.bonuses = bonuses
         game.save()

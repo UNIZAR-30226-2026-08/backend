@@ -1039,7 +1039,6 @@ class PlayerGameStatistic(models.Model):
     num_paid_rents = models.PositiveIntegerField(default=0)
     num_trades = models.PositiveIntegerField(default=0)
     num_mortgages = models.PositiveIntegerField(default=0)
-    end_game = models.PositiveBigIntegerField(default=0)
     
     class Meta:
         # 1 player and game for each stats
@@ -1097,7 +1096,6 @@ class BonusCategory(models.Model):
         num_paid_rents    = 'num_paid_rents'
         num_trades        = 'num_trades'
         num_mortgages     = 'num_mortgages'
-        end_game = 'end_game'
 
     stat_field = models.CharField(choices=StatField, max_length=30, unique=True)
     bonus_amount = models.PositiveIntegerField(default=200)

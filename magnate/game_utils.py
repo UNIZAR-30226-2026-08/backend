@@ -753,12 +753,13 @@ def _add_basic_response_data(game: Game, response: Response) -> Response:
 def _handle_property_acquisition(game: Game, user: CustomUser, square: BaseSquare) -> None:
     new_property = PropertyRelationship(game=game, square=square, owner=user)
     if isinstance(square, PropertySquare):
+        property_square = square.get_real_instance()
         user_properties = PropertyRelationship.objects.filter(game=game, owner=user)
         user_same_group_properties = user_properties.filter(
-                square__propertysquare__group=square.group)
+                square__propertysquare__group=property_square.group)
 
         group_squares = PropertySquare.objects.filter(
-                group=square.group, board = square.board)
+                group=property_square.group, board = property_square.board)
 
         if user_same_group_properties.count() == group_squares.count() - 1:
             new_property.houses = 0
@@ -773,10 +774,11 @@ def _handle_property_trade(game: Game, new_owner: CustomUser, square: BaseSquare
     old_owner = old_relationship.owner
     if isinstance(square, PropertySquare):
         # Remove color groups
+        property_square = square.get_real_instance()
         PropertyRelationship.objects.filter(
             game=game,
             owner=old_owner,
-            square__propertysquare__group=square.propertysquare.group
+            square__propertysquare__group=property_square.group
         ).update(houses=-1)
 
     old_relationship.delete()

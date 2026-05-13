@@ -17,11 +17,11 @@ from magnate.game_utils import (
 ################################################################################
 
 EPSILON = {
-    "very_easy": 1.0,   # 100% random
-    "easy":      0.8,
-    "medium":    0.6,
-    "hard":      0.4,
-    "very_hard": 0.2,
+    "very_easy": 0.5,   # 100% random
+    "easy":      0.35,
+    "medium":    0.2,
+    "hard":      0.1,
+    "very_hard": 0.05,
     "expert":    0.0,   # 100% EV-based
 }
 
@@ -285,7 +285,7 @@ class Agent:
                     if group_min is None or rel.houses <= group_min:
                         actions.append(ActionBuild(game=self.game, player=self.user, square=rel.square, houses=1))
     
-            if isinstance(square, PropertySquare) and rel.houses > 0 and not rel.mortgage:
+            if money < 0 and isinstance(square, PropertySquare) and rel.houses > 0 and not rel.mortgage:
                 group_max = (PropertyRelationship.objects
                     .filter(game=self.game, owner=self.user, square__propertysquare__group=square.group)
                     .exclude(square=rel.square).order_by('-houses').values_list('houses', flat=True).first())
@@ -293,7 +293,7 @@ class Agent:
                     actions.append(ActionDemolish(game=self.game, player=self.user, square=rel.square, houses=1))
     
             if not rel.mortgage and isinstance(square, (PropertySquare, BridgeSquare, ServerSquare)):
-                can_mortgage = True
+                can_mortgage = money < 0
                 
                 if isinstance(square, PropertySquare):
                     group_has_houses = PropertyRelationship.objects.filter(
@@ -334,11 +334,12 @@ class Agent:
         """
         actions = []
         owned = PropertyRelationship.objects.filter(game=self.game, owner=self.user).select_related('square')
-    
+        money = self.game.money[str(self.user.pk)]
         for rel in owned:
             square = rel.square.get_real_instance()
+            
     
-            if isinstance(square, PropertySquare) and rel.houses > 0:
+            if money < 0 and isinstance(square, PropertySquare) and rel.houses > 0:
                 group_max = (PropertyRelationship.objects
                     .filter(game=self.game, owner=self.user, square__propertysquare__group=square.group)
                     .exclude(square=rel.square).order_by('-houses').values_list('houses', flat=True).first())
@@ -346,7 +347,7 @@ class Agent:
                     actions.append(ActionDemolish(game=self.game, player=self.user, square=rel.square, houses=1))
     
             if not rel.mortgage and isinstance(square, (PropertySquare, BridgeSquare, ServerSquare)):
-                can_mortgage = True
+                can_mortgage = money < 0
                 if isinstance(square, PropertySquare):
                     group_has_houses = PropertyRelationship.objects.filter(
                         game=self.game, owner=self.user,

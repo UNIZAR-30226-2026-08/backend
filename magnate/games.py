@@ -495,6 +495,8 @@ class GameManager:
             
             game.money[str(user.pk)] -= card_cost
             game.parking_money += card_cost
+            game.money = dict(game.money) # to update
+            game.save(update_fields=['money', 'parking_money'])
             stats = PlayerGameStatistic.objects.get(user=user, game=game)
             stats.lost_money += card_cost
             stats.save()
@@ -503,6 +505,7 @@ class GameManager:
             fantasy_result.save()
             response.fantasy_result = fantasy_result
             game.fantasy_event = None
+            game.save()
             
         else:
             new_fantasy = FantasyEventFactory.generate()
@@ -511,13 +514,17 @@ class GameManager:
             fantasy_result.save()
             response.fantasy_result = fantasy_result
             game.fantasy_event = None
+            game.save()
         
         if game.streak == 0:
-            game.phase = GameManager.BUSINESS
+            if game.money[str(user.pk)] < 0:
+                game.phase = GameManager.LIQUIDATION
+            else:
+                game.phase = GameManager.BUSINESS
         else:
             game.phase = GameManager.ROLL_THE_DICES
 
-        if game.phase == GameManager.BUSINESS:
+        if game.phase == GameManager.BUSINESS or game.phase == GameManager.LIQUIDATION:
             GameManager._set_next_phase_timer(game, user)
         elif game.phase == GameManager.ROLL_THE_DICES:
             GameManager._set_kick_out_timer(game, user)

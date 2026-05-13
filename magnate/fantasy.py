@@ -465,6 +465,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         for player in opponents_list:
             game.money[str(player.pk)] += money_to_share
+            game.save()
             stats = PlayerGameStatistic.objects.get(user=player,game=game)
             stats.won_money += money_to_share
             stats.save()
@@ -575,6 +576,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             stats.won_money += game.money[str(user.pk)]
             stats.save()
             game.money[str(user.pk)] *= 2
+            game.save()
         else:
             previous_money = game.money[str(user.pk)]
             game.parking_money += previous_money
@@ -582,7 +584,8 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
             stats.lost_money += previous_money
             stats.save()
             game.money[str(user.pk)] = 0
-        game.save()
+            game.save()
+        
 
         return FantasyResult(
             fantasy_event = fantasy_event,
@@ -661,6 +664,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
 
         for player in opponents_list:
             game.money[str(player.pk)] -= money_to_share
+            game.save()
             stats = PlayerGameStatistic.objects.get(user=player,game=game)
             stats.lost_money += money_to_share
             stats.save()

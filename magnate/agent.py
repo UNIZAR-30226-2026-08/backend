@@ -660,11 +660,9 @@ class Agent:
         if not square.buy_price or square.buy_price <= 0:
             return 0.0
 
-        # 1. Own benefit
         rent_increase = self._calculate_rent_delta(square, self.user, gaining=True)
         ev_propiedad = rent_increase * self._expected_visits()
         
-        # 2. Block value (ONLY if opponent has cards of this group)
         ev_bloqueo = 0.0
         opponents = self.game.players.exclude(pk=self.user.pk)
         num_opponents = max(1, opponents.count())
@@ -708,6 +706,11 @@ class Agent:
             return 0.0
     
         square = auction.square.get_real_instance()
+
+        dropped = ActionDropPurchase.objects.filter(game=self.game, player=self.user, square=auction.square).exists()
+        if dropped:
+            return 0.0
+        
         worth  = self._ev_buying(square) + (square.buy_price if square.buy_price else 0)
         return worth - float(amount)
 

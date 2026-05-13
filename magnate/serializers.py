@@ -966,7 +966,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = (
             'pk',
             'username', 
-            'points', 'exp', 'elo',
+            'points', 'elo',
             'date_joined',
             'num_played_games',
             'num_won_games',

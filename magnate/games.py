@@ -1279,6 +1279,7 @@ class GameManager:
                     # not eliminated
                     final_money_dict[str(participant.username)] = _calculate_net_worth(game, participant)
                     participant.points += final_money_dict[str(participant.username)]
+                    participant.elo += final_money_dict[str(participant.username)]
                     participant.save()
                 else:
                     final_money_dict[str(participant.username)] = 0
@@ -1288,7 +1289,6 @@ class GameManager:
 
             for stat in all_participants:
                 participant = stat.user
-                print(f"user {participant.username} num_played_games antes: {participant.num_played_games}")
                 
                 participant.num_played_games += 1
                 
@@ -1298,7 +1298,6 @@ class GameManager:
                     winner = participant
                     
                 participant.save()
-                print(f"user {participant.username} num_played_games después: {participant.num_played_games}")
 
             if winner:
                 winner.num_won_games += 1

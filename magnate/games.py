@@ -1167,6 +1167,21 @@ class GameManager:
 
             game.save()   
             return #endgame logic called afterwards
+        
+        from .models import Bot
+        bots_in_game = Bot.objects.filter(id__in=game.players.values_list('id', flat=True))
+        if game.players.count() == bots_in_game.count(): #solo quedan bots
+            game.phase = GameManager.END_GAME
+            GameManager._cancel_all_timers(game)
+
+            if game.current_auction:
+                auction = game.current_auction
+                auction.is_active = False
+                auction.save()
+                game.current_auction = None
+
+            game.save()
+            return
 
         if game.active_turn_player.pk == user.pk and next_player:
             game.active_turn_player = next_player

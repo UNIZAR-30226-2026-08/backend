@@ -7,6 +7,8 @@ from magnate.exceptions import GameLogicError
 
 from magnate.game_utils import _build_square, _demolish_square, _get_jail_square, _unset_mortgage
 
+COST_PARKING_MONEY = 500
+
 class FantasyEventFactory:
     """
     Factory class for generating random FantasyEvent instances.
@@ -155,7 +157,7 @@ class FantasyEventFactory:
             card_cost = 50
 
         elif fantasy_type == 'getParkingMoney':
-            card_cost = 500
+            card_cost = COST_PARKING_MONEY
 
         elif fantasy_type == 'reviveProperty':
             card_cost = 100
@@ -597,12 +599,12 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
         
     
     elif fantasy_event.fantasy_type == 'getParkingMoney':
-        parking_money = game.parking_money
-        game.money[str(user.pk)] += game.parking_money
+        parking_money = game.parking_money - COST_PARKING_MONEY
+        game.money[str(user.pk)] += parking_money
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
-        stats.won_money += game.parking_money
+        stats.won_money += parking_money
         stats.save()
-        game.parking_money = 0
+        game.parking_money = COST_PARKING_MONEY
         game.save()
 
         return FantasyResult(

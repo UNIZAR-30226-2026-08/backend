@@ -766,8 +766,8 @@ class FantasyTest(TestCase):
                                                     self.player1,
                                                     event)
         self.assertEqual(result.fantasy_event.fantasy_type,'getParkingMoney')
-        self.assertEqual(self.game.money[str(self.player1.pk)],1600)
-        self.assertEqual(self.game.parking_money, 0)
+        self.assertEqual(self.game.money[str(self.player1.pk)],1100)
+        self.assertEqual(self.game.parking_money, 500)
 
     def test_revive_property1(self):
         """

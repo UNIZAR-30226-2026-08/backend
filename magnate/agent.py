@@ -27,7 +27,6 @@ EPSILON = {
 
 PROB_CAER = 1 / 54       # Probability of landing on a square (excluding jail)
 CTE_FANTASIA = 0.0       # Default neutral value for unknown fantasy cards
-CTE_SUBASTA_ROI = 0.75   # Maximum bid capped at 75% of EV to ensure ROI
 TOTAL_TURNS = 500         # Dynamic baseline, multiplied by other players
 
 class Agent:
@@ -418,14 +417,16 @@ class Agent:
             return [pass_bid]
     
         square_instance = auction.square.get_real_instance()
-        max_bid = min(self._max_willing_to_pay(square_instance), money)
 
-        if max_bid <= 0:
-            return [pass_bid]
+        buy_price = square_instance.buy_price if square_instance.buy_price else 0
+        if buy_price > 0 and money >= int(buy_price * 0.6):
+            min_bid = int(buy_price * 0.6)
+            max_bid = min(buy_price*1.2, money) # Limitado al dinero disponible
+            high = random.randint(min_bid, max_bid)
+        else:
+            high = 0
 
-        high = max(1, max_bid)
-    
-        unique_bids = {0, high}
+        unique_bids = {0, high} if high > 0 else {0}
 
         return [ActionBid(game=self.game, player=self.user, amount=amt) for amt in sorted(unique_bids)]
 
@@ -1098,74 +1099,8 @@ class Agent:
                 
         return 0.0
 
-    def _calculate_dynamic_reserve(self) -> int:
-        """
-        Calculates the maximum possible rent currently owed on the board by opponents.
-        Used to establish a safety reserve for the bot.
 
-        Args:
-            None
-
-        Returns:
-            int: The maximum rent value found on the board.
-
-        Raises:
-            GameLogicError: If an owned square is processed but lacks a property relationship.
-        """
-        owned_by_others = self._get_buyables_owned_by_others()
-        if not owned_by_others:
-            return 0
-        
-        max_rent = 0
-        for sq in owned_by_others:
-            rel = _get_relationship(self.game, sq)
-            if rel is None:
-                raise GameLogicError("Owned square with no relationship?")
-            rent = self._get_current_rent(sq, rel)
-            if rent > max_rent:
-                max_rent = rent
-                
-        return max_rent
-
-    def _minimum_safety_cash(self) -> float:
-        """
-        Calculates the minimum liquid cash the bot should retain.
-        Scaled by the number of players and the maximum potential board rent.
-
-        Args:
-            None
-
-        Returns:
-            float: The calculated safety cash amount.
-        """
-        n_players = self.game.players.count()
-        return float(self._calculate_dynamic_reserve() * n_players)
-
-    def _max_willing_to_pay(self, square: BaseSquare) -> int:
-        """
-        Calculates the maximum auction bid ensuring Return on Investment (ROI) and 
-        protecting the dynamic safety cash reserve.
-
-        Args:
-            square (BaseSquare): The buyable square up for auction.
-
-        Returns:
-            int: The maximum safe amount the bot is willing to bid.
-
-        Raises:
-            ValueError: If the square is not a buyable property type.
-        """
-        if not isinstance(square, (PropertySquare, ServerSquare, BridgeSquare)):
-            raise ValueError("Max bid only applies to buyable squares")
-        
-        money = self.game.money[str(self.user.pk)]
-        reserva = self._calculate_dynamic_reserve()
-        budget = max(0, money - reserva)
-        
-        ev_propiedad = self._ev_buying(square) + float(square.buy_price)
-        puja_maxima = int(round(ev_propiedad * CTE_SUBASTA_ROI))
-        
-        return min(budget, puja_maxima)
+    
 
     def _get_all_unowned_buyables(self) -> list[BaseSquare]:
         """

@@ -1218,7 +1218,8 @@ class GameManager:
             ResponseBonus: An object mapping the chosen bonus categories and their winners.
         """
 
-        stats = PlayerGameStatistic.objects.filter(game=game)
+        active_players = game.players.values_list('pk', flat=True)
+        stats = PlayerGameStatistic.objects.filter(game=game, user__pk__in=active_players)
 
         valid_categories_data = []
         for category in BonusCategory.objects.all():

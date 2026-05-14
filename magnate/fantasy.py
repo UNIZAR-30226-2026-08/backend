@@ -600,6 +600,7 @@ def apply_fantasy_event(game: Game, user: CustomUser , fantasy_event: FantasyEve
     
     elif fantasy_event.fantasy_type == 'getParkingMoney':
         parking_money = game.parking_money - COST_PARKING_MONEY
+        parking_money = max(parking_money, 0)
         game.money[str(user.pk)] += parking_money
         stats = PlayerGameStatistic.objects.get(user=user,game=game)
         stats.won_money += parking_money

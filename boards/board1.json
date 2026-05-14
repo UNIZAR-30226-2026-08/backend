@@ -260,14 +260,14 @@
         "in_successor": 106,
         "out_successor": 16,
         "buy_price": 250,
-        "rent_prices": [20,40]
+        "rent_prices": [50,250]
     },
     {
         "id": 35,
         "in_successor": 113,
         "out_successor": 36,
         "buy_price": 250,
-        "rent_prices": [20,40]
+        "rent_prices": [50,250]
     }
     ],
 
@@ -299,13 +299,13 @@
         "id": 5,
         "id_successor": 6,
         "buy_price": 300,
-        "rent_prices": [20,60]
+        "rent_prices": [60,300]
     },
     {
         "id": 25,
         "id_successor": 26,
         "buy_price": 300,
-        "rent_prices": [20,60]
+        "rent_prices": [60,300]
     }
     ],
 

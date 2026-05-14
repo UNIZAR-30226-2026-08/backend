@@ -992,6 +992,7 @@ class ResponseBonus(Response):
             nested structure describing multiple bonus categories awarded.
     """
     bonuses = models.JSONField(default=dict, blank=True)
+    last_money = models.JSONField(default=dict, blank=True)
 
 ###############################################################################
 

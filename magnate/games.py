@@ -1205,7 +1205,6 @@ class GameManager:
                 
         game.save()
 
-    #TODO: llegar a fase final donde se reparte esto
     @classmethod
     def _apply_end_bonuses(cls, game: Game, num_bonuses: int = 3) -> ResponseBonus:
         """
@@ -1287,12 +1286,26 @@ class GameManager:
                 participant = stat.user
                 if participant.pk in [participant.pk for participant in active_players]:
                     # not eliminated
-                    final_money_dict[str(participant.username)] = _calculate_net_worth(game, participant)
-                    participant.points += final_money_dict[str(participant.username)]
-                    participant.elo += final_money_dict[str(participant.username)]
+                    final_money_dict[str(participant.pk)] = _calculate_net_worth(game, participant)
+                    participant.points += final_money_dict[str(participant.pk)]
+                    participant.elo += final_money_dict[str(participant.pk)]
                     participant.save()
                 else:
-                    final_money_dict[str(participant.username)] = 0
+                    final_money_dict[str(participant.pk)] = 0
+
+            bonus_per_player = {}
+            for field, info in response.bonuses.items():
+                bonus_amount = info['bonus_amount']
+                for winner_pk in info['winners']:
+                    key = str(winner_pk)
+                    bonus_per_player[key] = bonus_per_player.get(key, 0) + bonus_amount
+
+            # last_money = dinero final sin contar los bonuses
+            last_money_dict = {
+                pk: amount - bonus_per_player.get(pk, 0)
+                for pk, amount in final_money_dict.items()
+            }
+            response.last_money = last_money_dict
             
             winner = None
             max_money = -1
@@ -1302,7 +1315,7 @@ class GameManager:
                 
                 participant.num_played_games += 1
                 
-                p_money = final_money_dict.get(str(participant.username), 0)
+                p_money = final_money_dict.get(str(participant.pk), 0)
                 if p_money > max_money:
                     max_money = p_money
                     winner = participant
@@ -1319,6 +1332,7 @@ class GameManager:
                 end_date=timezone.now(),
                 final_money=final_money_dict
             )
+
 
             response.save()
             game.bonus_response = response

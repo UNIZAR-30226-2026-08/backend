@@ -1301,6 +1301,9 @@ class GameManager:
                     key = str(winner_pk)
                     bonus_per_player[key] = bonus_per_player.get(key, 0) + bonus_amount
 
+            pk_to_username = {str(stat.user.pk): stat.user.username for stat in all_participants}
+            final_money_dict = {pk: final_money_dict[username] for pk, username in pk_to_username.items()}
+
             # last_money = dinero final sin contar los bonuses
             last_money_dict = {
                 pk: amount - bonus_per_player.get(pk, 0)

@@ -305,7 +305,7 @@ class PublicQueueConsumer(AsyncWebsocketConsumer):
             )
 
             # initialize money and positions (see then what the optimal money)
-            game.money = {str(u.pk): 1500 for u in users}
+            game.money = {str(u.pk): 3000 for u in users}
             game.positions = {str(u.pk): 0 for u in users}
             
 

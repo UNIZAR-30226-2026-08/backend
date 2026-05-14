@@ -898,7 +898,7 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             phase=GameManager.ROLL_THE_DICES
         )
 
-        game.money = {str(u.pk): 1500 for u in users}
+        game.money = {str(u.pk): 3000 for u in users}
         game.positions = {str(u.pk): 0 for u in users}
 
         game.players.set(users)

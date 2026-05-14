@@ -569,7 +569,7 @@ class GameManager:
 
         elif isinstance(action, ActionDropPurchase):
             if isinstance(action.square, (PropertySquare, ServerSquare, BridgeSquare)):
-                return GameManager._initiate_auction(game, action.square)
+                return GameManager._initiate_auction(game, action.square, user)
             else:
                 raise MaliciousUserInputAction(game, user, action)
         elif isinstance(action, ActionTakeTram):
@@ -760,7 +760,7 @@ class GameManager:
             raise MaliciousUserInputAction(game, user, action)
         
     @staticmethod
-    def _initiate_auction(game: Game, square: BaseSquare) -> Response:
+    def _initiate_auction(game: Game, square: BaseSquare, player: CustomUser) -> Response:
         """
         Transitions the game into an AUCTION phase for a dropped property.
 
@@ -772,6 +772,8 @@ class GameManager:
             Response: Standard response.
         """
         GameManager._cancel_all_timers(game)
+
+        ActionDropPurchase.objects.get_or_create(game=game, player=player, square=square)
 
         game.next_phase_task_id = None
         game.phase = GameManager.AUCTION

@@ -292,18 +292,16 @@ class GamesTest(TestCase):
         self.assertEqual(self.game.current_auction.square, self.property_square)
 
         # 2. Pujas ocultas de los jugadores
-        bid_p1 = ActionBid(game=self.game, player=self.player1, amount=100)
         bid_p2 = ActionBid(game=self.game, player=self.player2, amount=300) # <- Ganador
         bid_p3 = ActionBid(game=self.game, player=self.player3, amount=250)
 
-        async_to_sync(GameManager.process_action)(self.game, self.player1, bid_p1)
         async_to_sync(GameManager.process_action)(self.game, self.player2, bid_p2)
         result = async_to_sync(GameManager.process_action)(self.game, self.player3, bid_p3)
 
         self.game.refresh_from_db()
         auction = Auction.objects.filter(game=self.game).last()
         bids = auction.bids #type:ignore
-        self.assertEqual(len(bids), 3)
+        self.assertEqual(len(bids), 2)
         self.assertEqual(bids.get(str(self.player2.pk)), 300)
 
 
@@ -337,7 +335,7 @@ class GamesTest(TestCase):
         if self.server_square is None:
             raise GameLogicError("no server square")
 
-        GameManager._initiate_auction(self.game, self.server_square)
+        GameManager._initiate_auction(self.game, self.server_square,self.player1)
 
         self.game.refresh_from_db()
         self.assertEqual(self.game.phase, GameManager.AUCTION)
@@ -374,16 +372,14 @@ class GamesTest(TestCase):
         if not self.property_square:
             raise GameLogicError("no property square")
 
-        GameManager._initiate_auction(self.game, self.property_square)
+        GameManager._initiate_auction(self.game, self.property_square, self.player1)
         self.game.refresh_from_db()
 
-        bid_p1 = ActionBid(game=self.game, player=self.player1, amount=300)
-        bid_p2 = ActionBid(game=self.game, player=self.player2, amount=300) # Tie
+        bid_p2 = ActionBid(game=self.game, player=self.player2, amount=300)
+        bid_p3 = ActionBid(game=self.game, player=self.player3, amount=300) # Tie
 
-        async_to_sync(GameManager.process_action)(self.game, self.player1, bid_p1)
         async_to_sync(GameManager.process_action)(self.game, self.player2, bid_p2)
-
-        result = GameManager._end_auction(self.game)
+        result = async_to_sync(GameManager.process_action)(self.game, self.player3, bid_p3)
 
         if not isinstance(result, ResponseAuction):
             raise GameLogicError("Wrong type")

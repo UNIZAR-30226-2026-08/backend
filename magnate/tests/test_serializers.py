@@ -151,7 +151,7 @@ class SerializerTest(TestCase):
         self.assertEqual(data["type"],'BridgeSquare')
         self.assertEqual(data["custom_id"],15)
         self.assertEqual(data["buy_price"],250)
-        self.assertEqual(data["rent_prices"],[20,40])
+        self.assertEqual(data["rent_prices"],[50,250])
 
     def test_tram_square(self):
         """
@@ -188,7 +188,7 @@ class SerializerTest(TestCase):
         self.assertEqual(data["type"],'ServerSquare')
         self.assertEqual(data["custom_id"],25)
         self.assertEqual(data["buy_price"],300)
-        self.assertEqual(data["rent_prices"],[20,60])
+        self.assertEqual(data["rent_prices"],[60,300])
 
     def test_exit_square(self):
         """

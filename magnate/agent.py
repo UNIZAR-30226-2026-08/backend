@@ -422,7 +422,7 @@ class Agent:
         if buy_price > 0 and money >= int(buy_price * 0.6):
             min_bid = int(buy_price * 0.6)
             max_bid = min(buy_price*1.2, money) # Limitado al dinero disponible
-            high = random.randint(min_bid, max_bid)
+            high = random.randint(int(min_bid), int(max_bid))
         else:
             high = 0
 

@@ -879,8 +879,10 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
         users = real_users.copy()
 
         # fill with bots
+        bots = False
         huecos = room.target_players - len(real_users)
         for i in range(huecos):
+            bots = True
             bot_username = f"Bot_{room_code}_{i+1}" 
             bot_user, _ = Bot.objects.get_or_create(
                 username=bot_username
@@ -895,7 +897,8 @@ class PrivateRoomConsumer(AsyncWebsocketConsumer):
             datetime=timezone.now(),
             active_turn_player=users[0], # Se ajusta abajo
             active_phase_player=users[0],
-            phase=GameManager.ROLL_THE_DICES
+            phase=GameManager.ROLL_THE_DICES,
+            has_bots = bots
         )
 
         game.money = {str(u.pk): 3000 for u in users}

@@ -1287,9 +1287,10 @@ class GameManager:
                 if participant.username in [participant.username for participant in active_players]:
                     # not eliminated
                     final_money_dict[str(participant.username)] = _calculate_net_worth(game, participant)
-                    participant.points += final_money_dict[str(participant.username)]
-                    participant.elo += final_money_dict[str(participant.username)]
-                    participant.save()
+                    if not game.has_bots:
+                        participant.points += final_money_dict[str(participant.username)]
+                        participant.elo += final_money_dict[str(participant.username)]
+                        participant.save()
                 else:
                     final_money_dict[str(participant.username)] = 0
 
@@ -1313,7 +1314,8 @@ class GameManager:
             for stat in all_participants:
                 participant = stat.user
                 
-                participant.num_played_games += 1
+                if not game.has_bots:
+                    participant.num_played_games += 1
                 
                 p_money = final_money_dict.get(str(participant.username), 0)
                 if p_money > max_money:
@@ -1323,15 +1325,17 @@ class GameManager:
                 participant.save()
 
             if winner:
-                winner.num_won_games += 1
-                winner.save()
-                
-            GameSummary.objects.create(
-                game=game,
-                start_date=game.datetime,
-                end_date=timezone.now(),
-                final_money=final_money_dict
-            )
+                if not game.has_bots:
+                    winner.num_won_games += 1
+                    winner.save()
+            
+            if not game.has_bots:
+                GameSummary.objects.create(
+                    game=game,
+                    start_date=game.datetime,
+                    end_date=timezone.now(),
+                    final_money=final_money_dict
+                )
 
 
             response.save()

@@ -466,6 +466,7 @@ class Game(models.Model):
     money = models.JSONField(default=dict, blank=True)
     active_phase_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='phase_to_play')
     active_turn_player = models.ForeignKey('CustomUser', on_delete=models.SET_NULL, null=True, related_name='turns_to_play')
+    has_bots = models.BooleanField(default=False)
 
     class GamePhase(models.TextChoices):
         """

@@ -1284,14 +1284,14 @@ class GameManager:
             
             for stat in all_participants:
                 participant = stat.user
-                if participant.pk in [participant.pk for participant in active_players]:
+                if participant.username in [participant.username for participant in active_players]:
                     # not eliminated
-                    final_money_dict[str(participant.pk)] = _calculate_net_worth(game, participant)
-                    participant.points += final_money_dict[str(participant.pk)]
-                    participant.elo += final_money_dict[str(participant.pk)]
+                    final_money_dict[str(participant.username)] = _calculate_net_worth(game, participant)
+                    participant.points += final_money_dict[str(participant.username)]
+                    participant.elo += final_money_dict[str(participant.username)]
                     participant.save()
                 else:
-                    final_money_dict[str(participant.pk)] = 0
+                    final_money_dict[str(participant.username)] = 0
 
             bonus_per_player = {}
             for field, info in response.bonuses.items():
@@ -1315,7 +1315,7 @@ class GameManager:
                 
                 participant.num_played_games += 1
                 
-                p_money = final_money_dict.get(str(participant.pk), 0)
+                p_money = final_money_dict.get(str(participant.username), 0)
                 if p_money > max_money:
                     max_money = p_money
                     winner = participant

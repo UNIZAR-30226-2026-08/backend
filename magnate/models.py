@@ -1,6 +1,15 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from polymorphic.models import PolymorphicModel
+import json 
+
+try:
+    with open('config.json') as f:
+        CONFIG = json.load(f)
+except FileNotFoundError:
+    print("Error: The file 'data.json' was not found.")
+
+NUM_ROUNDS = CONFIG["NUM_ROUNDS"]
 
 class CustomUser(AbstractUser):
     """
@@ -538,7 +547,7 @@ class Game(models.Model):
     current_turn = models.PositiveIntegerField(default=1)
 
     current_round = models.PositiveIntegerField(default=1)
-    max_rounds = models.PositiveIntegerField(default=2) # 0 for unlimited
+    max_rounds = models.PositiveIntegerField(default=NUM_ROUNDS) # 0 for unlimited
 
 
 class Auction(models.Model):

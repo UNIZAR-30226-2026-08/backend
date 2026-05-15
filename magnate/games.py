@@ -1381,7 +1381,7 @@ class GameManager:
         game.save()
 
         if Bot.objects.filter(pk=user.pk).exists():
-            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=random.randint(5, 8))
+            bot_play_callback.apply_async(args=[game.pk, user.pk], countdown=random.randint(8, 12))
 
     @staticmethod
     def _set_kick_out_timer(game: Game, user: CustomUser):

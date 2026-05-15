@@ -59,13 +59,12 @@ class FantasyEventFactory:
         fantasy_type = random.choice(FantasyEvent.FantasyType.values)
         if fantasy_type == 'sendToJail':
             fantasy_type = random.choice(['winPlainMoney','losePlainMoney'])
-            print("exclusion 1")
         elif fantasy_type == 'everybodyToJail':
             fantasy_type = random.choice(['winPlainMoney','losePlainMoney'])
-            print("exclusion 2")
         elif fantasy_type == 'goToJail':
             fantasy_type = random.choice(['winPlainMoney','losePlainMoney'])
-            print("exclusion 3")
+        elif fantasy_type == 'freeHouse':
+            fantasy_type = random.choice(['doubleOrNothing','getParkingMoney'])
         value = None
         card_cost = None
 

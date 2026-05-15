@@ -57,7 +57,12 @@ class FantasyEventFactory:
                 ``card_cost``, and ``value`` (``None`` when not applicable) populated.
         """
         fantasy_type = random.choice(FantasyEvent.FantasyType.values)
-
+        if fantasy_type == 'sendToJail':
+            fantasy_type = random.choice(['winPlainMoney','losePlainMoney'])
+            print("exclusion 1")
+        elif fantasy_type == 'everybodyToJail':
+            fantasy_type = random.choice(['winPlainMoney','losePlainMoney'])
+            print("exclusion 2")
         value = None
         card_cost = None
 
